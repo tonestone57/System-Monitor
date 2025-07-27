@@ -30,43 +30,9 @@ const uint32 MSG_KILL_PROCESS = 'kill';
 
 ProcessView::ProcessView(BRect frame)
     : BView(frame, "ProcessView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW | B_PULSE_NEEDED),
-      fLastPulseSystemTime(0)
+      fProcessListView(NULL), fContextMenu(NULL), fLastPulseSystemTime(0)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
-
-    BBox* procBox = new BBox("ProcessListBox");
-    procBox->SetLabel("Processes");
-
-    fProcessListView = new BColumnListView(BRect(0,0,0,0), "process_clv",
-                                           B_FOLLOW_ALL_SIDES,
-                                           B_WILL_DRAW | B_NAVIGABLE,
-                                           B_PLAIN_BORDER, true);
-
-    fProcessListView->AddColumn(new BIntegerColumn("PID", 60, 30, 100), kPIDColumn);
-    fProcessListView->AddColumn(new BStringColumn("Name", 180, 50, 500, B_TRUNCATE_END), kProcessNameColumn);
-    fProcessListView->AddColumn(new BStringColumn("CPU %", 70, 40, 100, B_TRUNCATE_END, B_ALIGN_RIGHT), kCPUUsageColumn);
-    fProcessListView->AddColumn(new BStringColumn("Memory", 100, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kMemoryUsageColumn);
-    fProcessListView->AddColumn(new BIntegerColumn("Threads", 60, 30, 100, B_ALIGN_RIGHT), kThreadCountColumn);
-    fProcessListView->AddColumn(new BStringColumn("User", 80, 40, 150, B_TRUNCATE_END), kUserNameColumn);
-
-    fProcessListView->SetSortColumn(fProcessListView->ColumnAt(kCPUUsageColumn), false, false);
-
-    // Context Menu
-    fContextMenu = new BPopUpMenu("ProcessContext", false, false);
-    fContextMenu->AddItem(new BMenuItem("Kill Process", new BMessage(MSG_KILL_PROCESS)));
-
-    font_height fh;
-    procBox->GetFontHeight(&fh);
-    BGroupLayout* layout = new BGroupLayout(B_VERTICAL, 0);
-    procBox->SetLayout(layout);
-    layout->SetInsets(B_USE_DEFAULT_SPACING, fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING,
-                   B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    layout->AddView(fProcessListView);
-
-    BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
-        .SetInsets(0)
-        .Add(procBox)
-    .End();
 }
 
 ProcessView::~ProcessView()
@@ -76,10 +42,47 @@ ProcessView::~ProcessView()
 
 void ProcessView::AttachedToWindow()
 {
-    fProcessListView->SetTarget(this);
+    BView::AttachedToWindow();
+
+    if (fProcessListView == NULL) {
+        BBox* procBox = new BBox("ProcessListBox");
+        procBox->SetLabel("Processes");
+
+        fProcessListView = new BColumnListView(BRect(0,0,0,0), "process_clv",
+                                               B_FOLLOW_ALL_SIDES,
+                                               B_WILL_DRAW | B_NAVIGABLE,
+                                               B_PLAIN_BORDER, true);
+
+        fProcessListView->AddColumn(new BIntegerColumn("PID", 60, 30, 100), kPIDColumn);
+        fProcessListView->AddColumn(new BStringColumn("Name", 180, 50, 500, B_TRUNCATE_END), kProcessNameColumn);
+        fProcessListView->AddColumn(new BStringColumn("CPU %", 70, 40, 100, B_TRUNCATE_END, B_ALIGN_RIGHT), kCPUUsageColumn);
+        fProcessListView->AddColumn(new BStringColumn("Memory", 100, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kMemoryUsageColumn);
+        fProcessListView->AddColumn(new BIntegerColumn("Threads", 60, 30, 100, B_ALIGN_RIGHT), kThreadCountColumn);
+        fProcessListView->AddColumn(new BStringColumn("User", 80, 40, 150, B_TRUNCATE_END), kUserNameColumn);
+
+        fProcessListView->SetSortColumn(fProcessListView->ColumnAt(kCPUUsageColumn), false, false);
+        fProcessListView->SetTarget(this);
+
+        // Context Menu
+        fContextMenu = new BPopUpMenu("ProcessContext", false, false);
+        fContextMenu->AddItem(new BMenuItem("Kill Process", new BMessage(MSG_KILL_PROCESS)));
+
+        font_height fh;
+        procBox->GetFontHeight(&fh);
+        BGroupLayout* layout = new BGroupLayout(B_VERTICAL, 0);
+        procBox->SetLayout(layout);
+        layout->SetInsets(B_USE_DEFAULT_SPACING, fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING,
+                       B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+        layout->AddView(fProcessListView);
+
+        BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
+            .SetInsets(0)
+            .Add(procBox)
+        .End();
+    }
+
     UpdateData();
     fLastPulseSystemTime = system_time();
-    BView::AttachedToWindow();
 }
 
 void ProcessView::MessageReceived(BMessage* message)
