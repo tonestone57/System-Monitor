@@ -87,13 +87,27 @@ static void AddInfoRow(BGridLayout* grid, int32& row, const char* labelText, BSt
 
 SysInfoView::SysInfoView(BRect frame)
     : BView(frame, "SysInfoView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW),
-      fDiskInfoTextView(NULL), fDiskInfoScrollView(NULL), fMainSectionsBox(NULL),
-      fKernelNameValue(NULL), fKernelVersionValue(NULL), fKernelBuildValue(NULL),
-      fCPUArchValue(NULL), fUptimeValue(NULL), fCPUModelValue(NULL),
-      fMicrocodeValue(NULL), fCPUCoresValue(NULL), fCPUClockSpeedValue(NULL),
-      fL1CacheValue(NULL), fL2CacheValue(NULL), fL3CacheValue(NULL),
-      fCPUFeaturesValue(NULL), fGPUTypeValue(NULL), fGPUDriverValue(NULL),
-      fGPUVRAMValue(NULL), fScreenResolutionValue(NULL), fTotalRAMValue(NULL)
+      fKernelNameValue(NULL),
+      fKernelVersionValue(NULL),
+      fKernelBuildValue(NULL),
+      fCPUArchValue(NULL),
+      fUptimeValue(NULL),
+      fCPUModelValue(NULL),
+      fMicrocodeValue(NULL),
+      fCPUCoresValue(NULL),
+      fCPUClockSpeedValue(NULL),
+      fL1CacheValue(NULL),
+      fL2CacheValue(NULL),
+      fL3CacheValue(NULL),
+      fCPUFeaturesValue(NULL),
+      fGPUTypeValue(NULL),
+      fGPUDriverValue(NULL),
+      fGPUVRAMValue(NULL),
+      fScreenResolutionValue(NULL),
+      fTotalRAMValue(NULL),
+      fDiskInfoTextView(NULL),
+      fDiskInfoScrollView(NULL),
+      fMainSectionsBox(NULL)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     CreateLayout();
