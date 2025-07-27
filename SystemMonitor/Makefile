@@ -1,7 +1,7 @@
 ## Haiku Generic Makefile ##
 
 # The name of the binary
-NAME = System Monitor
+NAME = SystemMonitor
 
 # The type of binary (APP, SHARED, STATIC, DRIVER)
 TYPE = APP

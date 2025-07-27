@@ -36,7 +36,6 @@ ProcessView::ProcessView(BRect frame)
 
     BBox* procBox = new BBox("ProcessListBox");
     procBox->SetLabel("Processes");
-    procBox->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
     BRect clvRect = procBox->Bounds();
     font_height fh;
@@ -62,10 +61,11 @@ ProcessView::ProcessView(BRect frame)
     fContextMenu = new BPopUpMenu("ProcessContext", false, false);
     fContextMenu->AddItem(new BMenuItem("Kill Process", new BMessage(MSG_KILL_PROCESS)));
 
-    BLayoutBuilder::Group<>(procBox, B_VERTICAL, 0)
-        .SetInsets(B_USE_DEFAULT_SPACING, fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING, 
-                   B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
-        .Add(fProcessListView);
+    BGroupLayout* layout = new BGroupLayout(B_VERTICAL, 0);
+    procBox->SetLayout(layout);
+    layout->SetInsets(B_USE_DEFAULT_SPACING, fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING,
+                   B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+    layout->AddView(fProcessListView);
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
         .SetInsets(0)

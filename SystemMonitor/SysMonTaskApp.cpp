@@ -62,9 +62,14 @@ public:
         mainSplit->AddChild(leftGroup);
         mainSplit->AddChild(rightGroup);
         
+        // Set split weights (left side slightly larger)
+        mainSplit->SetItemWeight(0, 0.6f, true);
+        mainSplit->SetItemWeight(1, 0.4f, true);
+
         BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
             .SetInsets(5)
-            .Add(mainSplit);
+            .Add(mainSplit)
+        .End();
     }
     
     virtual void AttachedToWindow() {
@@ -129,9 +134,9 @@ MainWindow::MainWindow(BRect frame)
     fSystemButton->SetValue(B_CONTROL_OFF);
     
     // Make buttons behave like radio buttons
-    fPerformanceButton->SetBehavior(B_ONE_STATE_BUTTON);
-    fProcessesButton->SetBehavior(B_ONE_STATE_BUTTON);
-    fSystemButton->SetBehavior(B_ONE_STATE_BUTTON);
+//    fPerformanceButton->SetBehavior(B_ONE_STATE_BUTTON);
+//    fProcessesButton->SetBehavior(B_ONE_STATE_BUTTON);
+//    fSystemButton->SetBehavior(B_ONE_STATE_BUTTON);
 
     // Create the main content area with card layout
     BView* contentView = new BView("content", 0);
@@ -160,7 +165,7 @@ MainWindow::MainWindow(BRect frame)
             .Add(fSystemButton)
             .AddGlue()
         .End()
-        .Add(fCardLayout)
+        .Add(contentView)
     .End();
     
     // Configure window
