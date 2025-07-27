@@ -37,13 +37,7 @@ ProcessView::ProcessView(BRect frame)
     BBox* procBox = new BBox("ProcessListBox");
     procBox->SetLabel("Processes");
 
-    BRect clvRect = procBox->Bounds();
-    font_height fh;
-    procBox->GetFontHeight(&fh);
-    clvRect.top += fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING;
-    clvRect.InsetBy(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-
-    fProcessListView = new BColumnListView(clvRect, "process_clv",
+    fProcessListView = new BColumnListView(BRect(0,0,0,0), "process_clv",
                                            B_FOLLOW_ALL_SIDES,
                                            B_WILL_DRAW | B_NAVIGABLE,
                                            B_PLAIN_BORDER, true);
@@ -169,6 +163,7 @@ void ProcessView::KillSelectedProcess() {
 
 void ProcessView::UpdateData()
 {
+    printf("ProcessView::UpdateData() called\n");
     fLocker.Lock();
 
     bigtime_t currentSystemTime = system_time();
