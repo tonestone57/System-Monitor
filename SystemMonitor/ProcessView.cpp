@@ -130,12 +130,12 @@ ProcessView::~ProcessView()
 void ProcessView::AttachedToWindow()
 {
     fProcessListView->SetTarget(this);
-    for (int32 i = 0; i < fProcessListView->CountColumns(); i++) {
-        BColumn* column = fProcessListView->ColumnAt(i);
-        BMessage* message = new BMessage(MSG_SORT_COLUMN);
-        message->AddInt32("column", i);
-        column->SetInvoker(new BInvoker(message, this));
-    }
+    // for (int32 i = 0; i < fProcessListView->CountColumns(); i++) {
+    //     BColumn* column = fProcessListView->ColumnAt(i);
+    //     BMessage* message = new BMessage(MSG_SORT_COLUMN);
+    //     message->AddInt32("column", i);
+    //     column->SetInvoker(new BInvoker(message, this));
+    // }
     UpdateData();
     fLastPulseSystemTime = system_time();
     BView::AttachedToWindow();
@@ -147,16 +147,16 @@ void ProcessView::MessageReceived(BMessage* message)
         case MSG_KILL_PROCESS:
             KillSelectedProcess();
             break;
-        case MSG_SORT_COLUMN:
-        {
-            int32 column_index;
-            if (message->FindInt32("column", &column_index) == B_OK) {
-                fProcessListView->SetSortColumn(fProcessListView->ColumnAt(column_index),
-                    !fProcessListView->ColumnAt(column_index)->IsSortKey(), false);
-                fProcessListView->Invalidate();
-            }
-            break;
-        }
+        // case MSG_SORT_COLUMN:
+        // {
+        //     int32 column_index;
+        //     if (message->FindInt32("column", &column_index) == B_OK) {
+        //         fProcessListView->SetSortColumn(fProcessListView->ColumnAt(column_index),
+        //             !fProcessListView->ColumnAt(column_index)->IsSortKey(), false);
+        //         fProcessListView->Invalidate();
+        //     }
+        //     break;
+        // }
         default:
             BView::MessageReceived(message);
             break;
