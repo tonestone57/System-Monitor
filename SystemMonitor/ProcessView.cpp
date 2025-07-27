@@ -45,9 +45,6 @@ void ProcessView::AttachedToWindow()
     BView::AttachedToWindow();
 
     if (fProcessListView == NULL) {
-        BBox* procBox = new BBox("ProcessListBox");
-        procBox->SetLabel("Processes");
-
         fProcessListView = new BColumnListView(BRect(0,0,0,0), "process_clv",
                                                B_FOLLOW_ALL_SIDES,
                                                B_WILL_DRAW | B_NAVIGABLE,
@@ -67,17 +64,9 @@ void ProcessView::AttachedToWindow()
         fContextMenu = new BPopUpMenu("ProcessContext", false, false);
         fContextMenu->AddItem(new BMenuItem("Kill Process", new BMessage(MSG_KILL_PROCESS)));
 
-        font_height fh;
-        procBox->GetFontHeight(&fh);
-        BGroupLayout* layout = new BGroupLayout(B_VERTICAL, 0);
-        procBox->SetLayout(layout);
-        layout->SetInsets(B_USE_DEFAULT_SPACING, fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING,
-                       B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-        layout->AddView(fProcessListView);
-
         BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
             .SetInsets(0)
-            .Add(procBox)
+        .Add(fProcessListView)
         .End();
     }
 
