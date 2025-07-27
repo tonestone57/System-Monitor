@@ -2,7 +2,6 @@
 #include <LayoutBuilder.h>
 #include <private/interface/ColumnListView.h>
 #include <private/interface/ColumnTypes.h>
-#include <private/interface/FloatColumn.h>
 #include <Button.h>
 #include <kernel/image.h>
 #include <pwd.h>
@@ -15,6 +14,20 @@
 #include <MenuItem.h>
 #include <Font.h>
 #include <set>
+
+static int CPUCompare(const BRow* row1, const BRow* row2, BColumnListView* view)
+{
+    BStringField* field1 = (BStringField*)row1->GetField(kCPUUsageColumn);
+    BStringField* field2 = (BStringField*)row2->GetField(kCPUUsageColumn);
+    return strtof(field1->String(), NULL) - strtof(field2->String(), NULL);
+}
+
+static int MemoryCompare(const BRow* row1, const BRow* row2, BColumnListView* view)
+{
+    BStringField* field1 = (BStringField*)row1->GetField(kMemoryUsageColumn);
+    BStringField* field2 = (BStringField*)row2->GetField(kMemoryUsageColumn);
+    return strtoll(field1->String(), NULL, 10) - strtoll(field2->String(), NULL, 10);
+}
 
 // Column identifiers
 enum {
@@ -51,12 +64,14 @@ ProcessView::ProcessView(BRect frame)
 
     fProcessListView->AddColumn(new BIntegerColumn("PID", 60, 30, 100), kPIDColumn);
     fProcessListView->AddColumn(new BStringColumn("Name", 180, 50, 500, B_TRUNCATE_END), kProcessNameColumn);
-        fProcessListView->AddColumn(new BFloatColumn("CPU %", 70, 40, 100, B_ALIGN_RIGHT), kCPUUsageColumn);
-        fProcessListView->AddColumn(new BIntegerColumn("Memory", 100, 50, 200, B_ALIGN_RIGHT), kMemoryUsageColumn);
+    fProcessListView->AddColumn(new BStringColumn("CPU %", 70, 40, 100, B_TRUNCATE_END, B_ALIGN_RIGHT), kCPUUsageColumn);
+    fProcessListView->AddColumn(new BStringColumn("Memory", 100, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kMemoryUsageColumn);
     fProcessListView->AddColumn(new BIntegerColumn("Threads", 60, 30, 100, B_ALIGN_RIGHT), kThreadCountColumn);
     fProcessListView->AddColumn(new BStringColumn("User", 80, 40, 150, B_TRUNCATE_END), kUserNameColumn);
 
     fProcessListView->SetSortColumn(fProcessListView->ColumnAt(kCPUUsageColumn), false, false);
+    fProcessListView->SetSortFunction((int32)kCPUUsageColumn, &CPUCompare);
+    fProcessListView->SetSortFunction((int32)kMemoryUsageColumn, &MemoryCompare);
 
     // Context Menu
     fContextMenu = new BPopUpMenu("ProcessContext", false, false);
@@ -262,16 +277,22 @@ void ProcessView::UpdateData()
             row->SetField(new BIntegerField(currentProc.id), kPIDColumn);
             row->SetField(new BStringField(currentProc.name.String()), kProcessNameColumn);
 
-            row->SetField(new BFloatField(currentProc.cpuUsage), kCPUUsageColumn);
-            row->SetField(new BIntegerField(currentProc.memoryUsageBytes), kMemoryUsageColumn);
+            char cpuStr[16];
+            snprintf(cpuStr, sizeof(cpuStr), "%.1f", currentProc.cpuUsage);
+            row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
+
+            row->SetField(new BStringField(FormatBytes(currentProc.memoryUsageBytes).String()), kMemoryUsageColumn);
             row->SetField(new BIntegerField(currentProc.threadCount), kThreadCountColumn);
             row->SetField(new BStringField(currentProc.userName.String()), kUserNameColumn);
             fProcessListView->AddRow(row);
         } else { // Existing process, update fields
             ((BStringField*)row->GetField(kProcessNameColumn))->SetString(currentProc.name.String());
 
-            ((BFloatField*)row->GetField(kCPUUsageColumn))->SetValue(currentProc.cpuUsage);
-            ((BIntegerField*)row->GetField(kMemoryUsageColumn))->SetValue(currentProc.memoryUsageBytes);
+            char cpuStr[16];
+            snprintf(cpuStr, sizeof(cpuStr), "%.1f", currentProc.cpuUsage);
+            ((BStringField*)row->GetField(kCPUUsageColumn))->SetString(cpuStr);
+
+            ((BStringField*)row->GetField(kMemoryUsageColumn))->SetString(FormatBytes(currentProc.memoryUsageBytes).String());
             ((BIntegerField*)row->GetField(kThreadCountColumn))->SetValue(currentProc.threadCount);
             ((BStringField*)row->GetField(kUserNameColumn))->SetString(currentProc.userName.String());
             fProcessListView->UpdateRow(row);
