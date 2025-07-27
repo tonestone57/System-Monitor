@@ -427,15 +427,15 @@ void SysInfoView::LoadData() {
                 buffer[len] = '\0';
                 BString microcodeStr = BString(buffer).Trim();
                 fMicrocodeValue->SetText(microcodeStr);
-                fMicrocodeValue->Parent()->SetHidden(false);
+                fMicrocodeValue->Parent()->Show();
             } else if (fMicrocodeValue) {
-                fMicrocodeValue->Parent()->SetHidden(true);
+                fMicrocodeValue->Parent()->Hide();
             }
         } else if (fMicrocodeValue) {
-            fMicrocodeValue->Parent()->SetHidden(true);
+            fMicrocodeValue->Parent()->Hide();
         }
     } else if (fMicrocodeValue) {
-        fMicrocodeValue->Parent()->SetHidden(true);
+        fMicrocodeValue->Parent()->Hide();
     }
 
     if (fCPUCoresValue) fCPUCoresValue->SetText(BString() << sysInfo.cpu_count);
@@ -447,7 +447,7 @@ void SysInfoView::LoadData() {
         if (get_cpu_topology_info(topology, &topologyNodeCount) == B_OK) {
             uint64_t max_freq = 0;
             for (uint32_t i = 0; i < topologyNodeCount; i++) {
-                if (topology[i].type == B_CPU_TOPOLOGY_CORE) {
+                if (topology[i].type == B_TOPOLOGY_CORE) {
                     if (topology[i].data.core.default_frequency > max_freq)
                         max_freq = topology[i].data.core.default_frequency;
                 }
@@ -458,7 +458,7 @@ void SysInfoView::LoadData() {
         delete[] topology;
     }
 
-    GetCPUInfo(&sysInfo);
+    this->GetCPUInfo(&sysInfo);
 
     // --- RAM Info ---
     if (fTotalRAMValue) fTotalRAMValue->SetText(FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE).String());
