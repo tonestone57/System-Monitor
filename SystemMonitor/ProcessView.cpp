@@ -15,6 +15,20 @@
 #include <Font.h>
 #include <set>
 
+static int CPUCompare(const BRow* row1, const BRow* row2, const BColumn* column)
+{
+    BStringField* field1 = (BStringField*)row1->GetField(column->LogicalFieldNum());
+    BStringField* field2 = (BStringField*)row2->GetField(column->LogicalFieldNum());
+    return strtof(field1->String(), NULL) - strtof(field2->String(), NULL);
+}
+
+static int MemoryCompare(const BRow* row1, const BRow* row2, const BColumn* column)
+{
+    BStringField* field1 = (BStringField*)row1->GetField(column->LogicalFieldNum());
+    BStringField* field2 = (BStringField*)row2->GetField(column->LogicalFieldNum());
+    return strtoll(field1->String(), NULL, 10) - strtoll(field2->String(), NULL, 10);
+}
+
 // Column identifiers
 enum {
     kPIDColumn,
@@ -27,7 +41,6 @@ enum {
 
 // Context Menu Messages
 const uint32 MSG_KILL_PROCESS = 'kill';
-const uint32 MSG_SORT_COLUMN = 'sort';
 
 ProcessView::ProcessView(BRect frame)
     : BView(frame, "ProcessView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW | B_PULSE_NEEDED),
@@ -57,6 +70,10 @@ ProcessView::ProcessView(BRect frame)
     fProcessListView->AddColumn(new BStringColumn("User", 80, 40, 150, B_TRUNCATE_END), kUserNameColumn);
 
     fProcessListView->SetSortColumn(fProcessListView->ColumnAt(kCPUUsageColumn), false, false);
+    fProcessListView->ColumnAt(kCPUUsageColumn)->SetSortFunction(
+        (int (*)(const BRow*, const BRow*, const BColumn*))CPUCompare);
+    fProcessListView->ColumnAt(kMemoryUsageColumn)->SetSortFunction(
+        (int (*)(const BRow*, const BRow*, const BColumn*))MemoryCompare);
 
     // Context Menu
     fContextMenu = new BPopUpMenu("ProcessContext", false, false);
@@ -81,10 +98,6 @@ ProcessView::~ProcessView()
 void ProcessView::AttachedToWindow()
 {
     fProcessListView->SetTarget(this);
-    for (int32 i = 0; i < fProcessListView->CountColumns(); i++) {
-        BColumn* column = fProcessListView->ColumnAt(i);
-        column->SetInvoker(new BInvoker(new BMessage(MSG_SORT_COLUMN), this));
-    }
     UpdateData();
     fLastPulseSystemTime = system_time();
     BView::AttachedToWindow();
@@ -96,16 +109,6 @@ void ProcessView::MessageReceived(BMessage* message)
         case MSG_KILL_PROCESS:
             KillSelectedProcess();
             break;
-        case MSG_SORT_COLUMN:
-        {
-            int32 column_index;
-            if (message->FindInt32("column", &column_index) == B_OK) {
-                fProcessListView->SetSortColumn(fProcessListView->ColumnAt(column_index),
-                    !fProcessListView->ColumnAt(column_index)->IsSortKey(), false);
-                fProcessListView->Invalidate();
-            }
-            break;
-        }
         default:
             BView::MessageReceived(message);
             break;
