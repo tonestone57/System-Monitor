@@ -32,9 +32,6 @@ private:
     BStringView* fCachedMemValue;
     
     GraphView* fCacheGraphView;
-    float fCacheHistory[HISTORY_SIZE];
-    int fCacheHistoryIndex;
-    uint64 fTotalSystemMemory;
     
     BLocker fLocker;
 };

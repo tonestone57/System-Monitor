@@ -15,12 +15,9 @@
 // MemView Implementation
 MemView::MemView(BRect frame)
     : BView(frame, "MemoryView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW | B_PULSE_NEEDED),
-      fCacheGraphView(NULL),
-      fCacheHistoryIndex(0),
-      fTotalSystemMemory(0)
+      fCacheGraphView(NULL)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
-    memset(fCacheHistory, -1, sizeof(fCacheHistory)); // Initialize to -1 (uninitialized)
 
     BBox* statsBox = new BBox("MemoryStatsBox");
     statsBox->SetLabel("Memory Statistics");
@@ -57,7 +54,7 @@ MemView::MemView(BRect frame)
     gridLayout->SetColumnWeight(2, 1.0f);
     statsBox->SetLayout(gridLayout);
 
-    fCacheGraphView = new GraphView(BRect(0, 0, 10, 10), "cacheGraph", fCacheHistory, &fCacheHistoryIndex, &fTotalSystemMemory);
+    fCacheGraphView = new GraphView("cacheGraph", (rgb_color){0, 128, 255, 255});
     fCacheGraphView->SetExplicitMinSize(BSize(0, 60));
     fCacheGraphView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 100));
 
