@@ -43,7 +43,6 @@ private:
     BStringView* fL3CacheValue;
     BStringView* fCPUFeaturesValue;
     BStringView* fCPUFamilyValue;
-    BStringView* fCPUModelValue;
     BStringView* fCPUSteppingValue;
     
     // GPU Info

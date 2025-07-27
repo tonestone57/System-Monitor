@@ -12,8 +12,7 @@
 CPUView::CPUView()
     : BView("CPUView", B_WILL_DRAW | B_PULSE_NEEDED),
       fPreviousIdleTime(nullptr),
-      fCpuCount(0),
-      fFirstTime(true)
+      fCpuCount(0)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     CreateLayout();
@@ -97,31 +96,32 @@ void CPUView::GetCPUUsage(float& overallUsage, std::vector<float>& perCoreUsage)
         return;
     }
 
-    system_info sysInfo;
-    get_system_info(&sysInfo);
+    bigtime_t currentTimeSnapshot = system_time();
+    static bigtime_t previousTimeSnapshot = currentTimeSnapshot;
+    bigtime_t elapsedWallTime = currentTimeSnapshot - previousTimeSnapshot;
+    previousTimeSnapshot = currentTimeSnapshot;
 
-    bigtime_t totalActiveTime = 0;
-    for (uint32 i = 0; i < fCpuCount; i++) {
+    if (elapsedWallTime <= 0) {
+        overallUsage = 0.0f;
+        return;
+    }
+
+    float totalDeltaActiveTime = 0;
+
+    for (uint32 i = 0; i < fCpuCount; ++i) {
         cpu_info info;
         if (get_cpu_info(i, 1, &info) == B_OK) {
-            bigtime_t active_time = info.active_time;
-            bigtime_t delta = active_time - fPreviousIdleTime[i];
-            if (delta < 0) delta = 0;
-            totalActiveTime += delta;
-            perCoreUsage[i] = (float)delta / (float)(system_time() - fPreviousSysInfo.cpu_infos[i].active_time) * 100.0f;
-            if (perCoreUsage[i] < 0.0f) perCoreUsage[i] = 0.0f;
-            if (perCoreUsage[i] > 100.0f) perCoreUsage[i] = 100.0f;
-            fPreviousIdleTime[i] = active_time;
+            bigtime_t delta = info.active_time - fPreviousIdleTime[i];
+            if (delta < 0) delta = 0; // Handle time rollover
+            totalDeltaActiveTime += delta;
+            fPreviousIdleTime[i] = info.active_time;
         }
     }
 
-    bigtime_t total_time = (sysInfo.cpu_count * (system_time() - fPreviousSysInfo.boot_time));
-    overallUsage = (float)totalActiveTime / (float)total_time * 100.0f;
+    overallUsage = (float)totalDeltaActiveTime / (elapsedWallTime * fCpuCount) * 100.0f;
 
     if (overallUsage < 0.0f) overallUsage = 0.0f;
     if (overallUsage > 100.0f) overallUsage = 100.0f;
-
-    fPreviousSysInfo = sysInfo;
 }
 
 void CPUView::UpdateData()

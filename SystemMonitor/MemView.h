@@ -8,6 +8,8 @@
 
 class BBox;
 
+const int HISTORY_SIZE = 60;
+
 class MemView : public BView {
 public:
     MemView(BRect frame);
