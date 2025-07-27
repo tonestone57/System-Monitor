@@ -55,6 +55,8 @@ ProcessView::ProcessView(BRect frame)
     fContextMenu = new BPopUpMenu("ProcessContext", false, false);
     fContextMenu->AddItem(new BMenuItem("Kill Process", new BMessage(MSG_KILL_PROCESS)));
 
+    font_height fh;
+    procBox->GetFontHeight(&fh);
     BGroupLayout* layout = new BGroupLayout(B_VERTICAL, 0);
     procBox->SetLayout(layout);
     layout->SetInsets(B_USE_DEFAULT_SPACING, fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING,
