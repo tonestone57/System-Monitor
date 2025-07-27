@@ -90,45 +90,47 @@ void CPUView::Pulse() {
     UpdateData();
 }
 
-void CPUView::GetCPUUsage(float* overallUsage) {
+void CPUView::GetCPUUsage(float& overallUsage, std::vector<float>& perCoreUsage)
+{
     if (fCpuCount == 0 || fPreviousIdleTime == NULL) {
-        *overallUsage = -1.0f;
+        overallUsage = -1.0f;
         return;
     }
 
-    bigtime_t currentTimeSnapshot = system_time();
-    static bigtime_t previousTimeSnapshot = currentTimeSnapshot;
-    bigtime_t elapsedWallTime = currentTimeSnapshot - previousTimeSnapshot;
-    previousTimeSnapshot = currentTimeSnapshot;
+    system_info sysInfo;
+    get_system_info(&sysInfo);
 
-    if (elapsedWallTime <= 0) {
-        *overallUsage = 0.0f;
-        return;
-    }
-
-    float totalDeltaActiveTime = 0;
-
-    for (uint32 i = 0; i < fCpuCount; ++i) {
+    bigtime_t totalActiveTime = 0;
+    for (uint32 i = 0; i < fCpuCount; i++) {
         cpu_info info;
         if (get_cpu_info(i, 1, &info) == B_OK) {
-            bigtime_t delta = info.active_time - fPreviousIdleTime[i];
-            if (delta < 0) delta = 0; // Handle time rollover
-            totalDeltaActiveTime += delta;
-            fPreviousIdleTime[i] = info.active_time;
+            bigtime_t active_time = info.active_time;
+            bigtime_t delta = active_time - fPreviousIdleTime[i];
+            if (delta < 0) delta = 0;
+            totalActiveTime += delta;
+            perCoreUsage[i] = (float)delta / (float)(system_time() - fPreviousSysInfo.cpu_infos[i].active_time) * 100.0f;
+            if (perCoreUsage[i] < 0.0f) perCoreUsage[i] = 0.0f;
+            if (perCoreUsage[i] > 100.0f) perCoreUsage[i] = 100.0f;
+            fPreviousIdleTime[i] = active_time;
         }
     }
 
-    *overallUsage = (float)totalDeltaActiveTime / (elapsedWallTime * fCpuCount) * 100.0f;
+    bigtime_t total_time = (sysInfo.cpu_count * (system_time() - fPreviousSysInfo.boot_time));
+    overallUsage = (float)totalActiveTime / (float)total_time * 100.0f;
 
-    if (*overallUsage < 0.0f) *overallUsage = 0.0f;
-    if (*overallUsage > 100.0f) *overallUsage = 100.0f;
+    if (overallUsage < 0.0f) overallUsage = 0.0f;
+    if (overallUsage > 100.0f) overallUsage = 100.0f;
+
+    fPreviousSysInfo = sysInfo;
 }
 
-void CPUView::UpdateData() {
+void CPUView::UpdateData()
+{
     fLocker.Lock();
 
     float overallUsage;
-    GetCPUUsage(&overallUsage);
+    fPerCoreUsage.resize(fCpuCount);
+    GetCPUUsage(overallUsage, fPerCoreUsage);
 
     if (overallUsage >= 0) {
         char buffer[32];
@@ -137,31 +139,9 @@ void CPUView::UpdateData() {
     } else {
         fOverallUsageValue->SetText("N/A");
     }
-    
+
     if (fGraphView && overallUsage >= 0)
         fGraphView->AddSample(overallUsage);
-
-    // Per-core usage calculation
-    bigtime_t currentTime = system_time();
-    static bigtime_t previousTime = currentTime;
-    bigtime_t elapsed = currentTime - previousTime;
-    previousTime = currentTime;
-
-    if (elapsed > 0 && fCpuCount > 0) {
-        fPerCoreUsage.resize(fCpuCount);
-        for (uint32 i = 0; i < fCpuCount; ++i) {
-            cpu_info info;
-            if (get_cpu_info(i, 1, &info) == B_OK) {
-                bigtime_t delta = info.active_time - fPreviousIdleTime[i];
-                if (delta < 0) delta = 0;
-                fPerCoreUsage[i] = (float)delta / elapsed * 100.0f;
-                if (fPerCoreUsage[i] < 0.0f) fPerCoreUsage[i] = 0.0f;
-                if (fPerCoreUsage[i] > 100.0f) fPerCoreUsage[i] = 100.0f;
-            } else {
-                fPerCoreUsage[i] = -1.0f; // Error indicator
-            }
-        }
-    }
 
     fLocker.Unlock();
 }

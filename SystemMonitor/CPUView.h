@@ -21,7 +21,7 @@ public:
 private:
     void CreateLayout();
     void UpdateData();
-    void GetCPUUsage(float* overallUsage);
+    void GetCPUUsage(float& overallUsage, std::vector<float>& perCoreUsage);
     
     BStringView* fOverallUsageValue;
     LiveGraphView* fGraphView;
@@ -29,7 +29,6 @@ private:
     bigtime_t* fPreviousIdleTime;
     uint32 fCpuCount;
     system_info fPreviousSysInfo;
-    bool fFirstTime;
     
     std::vector<float> fPerCoreUsage;
     
