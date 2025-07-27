@@ -15,17 +15,17 @@
 #include <Font.h>
 #include <set>
 
-static int CPUCompare(const BRow* row1, const BRow* row2, BColumnListView* view)
+static int CPUCompare(const BRow* row1, const BRow* row2, const BColumn* column)
 {
-    BStringField* field1 = (BStringField*)row1->GetField(kCPUUsageColumn);
-    BStringField* field2 = (BStringField*)row2->GetField(kCPUUsageColumn);
+    BStringField* field1 = (BStringField*)row1->GetField(column->GetColumnID());
+    BStringField* field2 = (BStringField*)row2->GetField(column->GetColumnID());
     return strtof(field1->String(), NULL) - strtof(field2->String(), NULL);
 }
 
-static int MemoryCompare(const BRow* row1, const BRow* row2, BColumnListView* view)
+static int MemoryCompare(const BRow* row1, const BRow* row2, const BColumn* column)
 {
-    BStringField* field1 = (BStringField*)row1->GetField(kMemoryUsageColumn);
-    BStringField* field2 = (BStringField*)row2->GetField(kMemoryUsageColumn);
+    BStringField* field1 = (BStringField*)row1->GetField(column->GetColumnID());
+    BStringField* field2 = (BStringField*)row2->GetField(column->GetColumnID());
     return strtoll(field1->String(), NULL, 10) - strtoll(field2->String(), NULL, 10);
 }
 
@@ -70,8 +70,10 @@ ProcessView::ProcessView(BRect frame)
     fProcessListView->AddColumn(new BStringColumn("User", 80, 40, 150, B_TRUNCATE_END), kUserNameColumn);
 
     fProcessListView->SetSortColumn(fProcessListView->ColumnAt(kCPUUsageColumn), false, false);
-    fProcessListView->SetSortFunction((int32)kCPUUsageColumn, &CPUCompare);
-    fProcessListView->SetSortFunction((int32)kMemoryUsageColumn, &MemoryCompare);
+    fProcessListView->ColumnAt(kCPUUsageColumn)->SetSortFunction(
+        (int (*)(const BRow*, const BRow*))CPUCompare);
+    fProcessListView->ColumnAt(kMemoryUsageColumn)->SetSortFunction(
+        (int (*)(const BRow*, const BRow*))MemoryCompare);
 
     // Context Menu
     fContextMenu = new BPopUpMenu("ProcessContext", false, false);
