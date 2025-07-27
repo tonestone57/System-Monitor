@@ -133,9 +133,9 @@ MainWindow::MainWindow(BRect frame)
     fSystemButton->SetValue(B_CONTROL_OFF);
     
     // Make buttons behave like radio buttons
-    fPerformanceButton->SetBehavior(B_ONE_STATE_BUTTON);
-    fProcessesButton->SetBehavior(B_ONE_STATE_BUTTON);
-    fSystemButton->SetBehavior(B_ONE_STATE_BUTTON);
+    fPerformanceButton->SetBehavior(B_RADIO_BUTTON);
+    fProcessesButton->SetBehavior(B_RADIO_BUTTON);
+    fSystemButton->SetBehavior(B_RADIO_BUTTON);
 
     // Create the main content area with card layout
     BView* contentView = new BView("content", 0);
