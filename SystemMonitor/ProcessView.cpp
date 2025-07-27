@@ -15,6 +15,55 @@
 #include <Font.h>
 #include <set>
 
+
+class BCPUColumn : public BStringColumn {
+public:
+    BCPUColumn(const char* title, float width, float minWidth, float maxWidth,
+                uint32 truncate, alignment align = B_ALIGN_LEFT)
+        : BStringColumn(title, width, minWidth, maxWidth, truncate, align) {}
+
+    virtual int CompareFields(BField* field1, BField* field2) {
+        float val1 = atof(((BStringField*)field1)->String());
+        float val2 = atof(((BStringField*)field2)->String());
+        if (val1 < val2) return -1;
+        if (val1 > val2) return 1;
+        return 0;
+    }
+};
+
+class BMemoryColumn : public BStringColumn {
+public:
+    BMemoryColumn(const char* title, float width, float minWidth, float maxWidth,
+                   uint32 truncate, alignment align = B_ALIGN_LEFT)
+        : BStringColumn(title, width, minWidth, maxWidth, truncate, align) {}
+
+    virtual int CompareFields(BField* field1, BField* field2) {
+        // Simple comparison based on string length first, then lexicographically
+        // This is a heuristic and might not be perfect for all cases (e.g. 900 KiB vs 1.0 MiB)
+        // A more robust solution would parse the units (KiB, MiB) and convert to a common base.
+        const char* str1 = ((BStringField*)field1)->String();
+        const char* str2 = ((BStringField*)field2)->String();
+
+        // For the scope of this fix, we'll assume sorting by magnitude is the goal
+        // and we can achieve that by parsing the value.
+        // A more complex implementation would be needed for perfect sorting of formatted strings.
+        float val1 = 0, val2 = 0;
+        char unit1[5] = {0}, unit2[5] = {0};
+        sscanf(str1, "%f %s", &val1, unit1);
+        sscanf(str2, "%f %s", &val2, unit2);
+
+        if (strcmp(unit1, "MiB") == 0) val1 *= 1024;
+        if (strcmp(unit1, "GiB") == 0) val1 *= 1024 * 1024;
+        if (strcmp(unit2, "MiB") == 0) val2 *= 1024;
+        if (strcmp(unit2, "GiB") == 0) val2 *= 1024 * 1024;
+
+        if (val1 < val2) return -1;
+        if (val1 > val2) return 1;
+        return 0;
+    }
+};
+
+
 // Column identifiers
 enum {
     kPIDColumn,
@@ -51,8 +100,8 @@ ProcessView::ProcessView(BRect frame)
 
     fProcessListView->AddColumn(new BIntegerColumn("PID", 60, 30, 100), kPIDColumn);
     fProcessListView->AddColumn(new BStringColumn("Name", 180, 50, 500, B_TRUNCATE_END), kProcessNameColumn);
-    fProcessListView->AddColumn(new BStringColumn("CPU %", 70, 40, 100, B_TRUNCATE_END, B_ALIGN_RIGHT), kCPUUsageColumn);
-    fProcessListView->AddColumn(new BStringColumn("Memory", 100, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kMemoryUsageColumn);
+    fProcessListView->AddColumn(new BCPUColumn("CPU %", 70, 40, 100, B_TRUNCATE_END, B_ALIGN_RIGHT), kCPUUsageColumn);
+    fProcessListView->AddColumn(new BMemoryColumn("Memory", 100, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kMemoryUsageColumn);
     fProcessListView->AddColumn(new BIntegerColumn("Threads", 60, 30, 100, B_ALIGN_RIGHT), kThreadCountColumn);
     fProcessListView->AddColumn(new BStringColumn("User", 80, 40, 150, B_TRUNCATE_END), kUserNameColumn);
 
