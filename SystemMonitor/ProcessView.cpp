@@ -15,18 +15,13 @@
 #include <Font.h>
 #include <set>
 
-static int CPUCompare(const BRow* row1, const BRow* row2, const BColumn* column)
+int CompareProcesses(const void* a, const void* b)
 {
-    BStringField* field1 = (BStringField*)row1->GetField(column->ID());
-    BStringField* field2 = (BStringField*)row2->GetField(column->ID());
-    return strtof(field1->String(), NULL) - strtof(field2->String(), NULL);
-}
-
-static int MemoryCompare(const BRow* row1, const BRow* row2, const BColumn* column)
-{
-    BStringField* field1 = (BStringField*)row1->GetField(column->ID());
-    BStringField* field2 = (BStringField*)row2->GetField(column->ID());
-    return strtoll(field1->String(), NULL, 10) - strtoll(field2->String(), NULL, 10);
+    BRow* row1 = *(BRow**)a;
+    BRow* row2 = *(BRow**)b;
+    BStringField* field1 = (BStringField*)row1->GetField(kCPUUsageColumn);
+    BStringField* field2 = (BStringField*)row2->GetField(kCPUUsageColumn);
+    return strtof(field2->String(), NULL) - strtof(field1->String(), NULL);
 }
 
 // Column identifiers
@@ -72,8 +67,6 @@ void ProcessView::AttachedToWindow()
         fProcessListView->AddColumn(new BStringColumn("User", 80, 40, 150, B_TRUNCATE_END), kUserNameColumn);
 
         fProcessListView->SetSortColumn(fProcessListView->ColumnAt(kCPUUsageColumn), false, false);
-        fProcessListView->ColumnAt(kCPUUsageColumn)->SetSortFunction(CPUCompare);
-        fProcessListView->ColumnAt(kMemoryUsageColumn)->SetSortFunction(MemoryCompare);
         fProcessListView->SetTarget(this);
 
         // Context Menu
@@ -304,6 +297,7 @@ void ProcessView::UpdateData()
         i++;
     }
 
+    fProcessListView->SortItems(CompareProcesses);
     fLastPulseSystemTime = currentSystemTime;
     fLocker.Unlock();
 }
