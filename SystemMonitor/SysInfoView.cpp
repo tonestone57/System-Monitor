@@ -152,6 +152,9 @@ void SysInfoView::CreateLayout()
     AddInfoRow(cpuGrid, row, "L1 Cache (I/D):", fL1CacheValue);
     AddInfoRow(cpuGrid, row, "L2 Cache:", fL2CacheValue);
     AddInfoRow(cpuGrid, row, "L3 Cache:", fL3CacheValue);
+    AddInfoRow(cpuGrid, row, "Family:", fCPUFamilyValue);
+    AddInfoRow(cpuGrid, row, "Model:", fCPUModelValue);
+    AddInfoRow(cpuGrid, row, "Stepping:", fCPUSteppingValue);
     AddInfoRow(cpuGrid, row, "Features:", fCPUFeaturesValue);
     fCPUFeaturesValue->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
     cpuBox->SetLayout(cpuGrid);
@@ -297,21 +300,23 @@ BString SysInfoView::GetCPUBrandString()
 #endif
 }
 
-BString SysInfoView::GetCPUFeatureFlags()
+void SysInfoView::GetCPUInfo(system_info* sysInfo)
 {
-    BString info;
-
-    system_info sysInfo;
-    if (get_system_info(&sysInfo) == B_OK) {
-        info.SetToFormat("CPU count: %" B_PRId32 "\n", sysInfo.cpu_count);
-    }
-
 #if defined(__x86_64__) || defined(__i386__)
-    info += "Architecture: x86\n";
-
-    BString brand = GetCPUBrandString();
-    if (!brand.IsEmpty()) {
-        info += BString("CPU: ") << brand << "\n";
+    unsigned int eax, ebx, ecx, edx;
+    if (__get_cpuid(1, &eax, &ebx, &ecx, &edx)) {
+        int family = (eax >> 8) & 0xf;
+        int model = (eax >> 4) & 0xf;
+        int stepping = eax & 0xf;
+        if (family == 0xf) {
+            family += (eax >> 20) & 0xff;
+        }
+        if (family == 6 || family == 15) {
+            model += ((eax >> 16) & 0xf) << 4;
+        }
+        fCPUFamilyValue->SetText(BString() << family);
+        fCPUModelValue->SetText(BString() << model);
+        fCPUSteppingValue->SetText(BString() << stepping);
     }
 
     BString features;
@@ -325,13 +330,7 @@ BString SysInfoView::GetCPUFeatureFlags()
     if (hasAVX2())    features += "AVX2 ";
     if (hasAVX512())  features += "AVX-512 ";
     if (hasAES())     features += "AES-NI ";
-    info += BString("Features: ") << (features.IsEmpty() ? "None detected" : features) << "\n";
-
-    unsigned int eax, ebx, ecx, edx;
-    if (__get_cpuid(1, &eax, &ebx, &ecx, &edx)) {
-        int logicalProcessors = (ebx >> 16) & 0xff;
-        info += BString().SetToFormat("Logical Processors: %d\n", logicalProcessors);
-    }
+    fCPUFeaturesValue->SetText(features.IsEmpty() ? "None detected" : features);
 
     for (int i = 0; ; ++i) {
         if (!__get_cpuid_count(4, i, &eax, &ebx, &ecx, &edx)) break;
@@ -344,31 +343,21 @@ BString SysInfoView::GetCPUFeatureFlags()
         int sets = ecx + 1;
         int sizeKB = (ways * partitions * lineSize * sets) / 1024;
 
-        info += BString().SetToFormat("L%d Cache: %d KB\n", level, sizeKB);
+        switch (level) {
+        case 1:
+            fL1CacheValue->SetText(BString() << sizeKB << " KB");
+            break;
+        case 2:
+            fL2CacheValue->SetText(BString() << sizeKB << " KB");
+            break;
+        case 3:
+            fL3CacheValue->SetText(BString() << sizeKB << " KB");
+            break;
+        }
     }
-
-#elif defined(__aarch64__)
-    info += "Architecture: ARM64\n";
-    info += "Feature detection not implemented.\n";
-
-#elif defined(__arm__)
-    info += "Architecture: ARM (32-bit)\n";
-    info += "Feature detection not implemented.\n";
-
-#elif defined(__riscv)
-    info += "Architecture: RISC-V\n";
-    info += "Feature detection not implemented.\n";
-
-#elif defined(__sparc__)
-    info += "Architecture: SPARC\n";
-    info += "Feature detection not available.\n";
-
 #else
-    info += "Architecture: Unknown\n";
-    info += "Feature detection not supported.\n";
+    fCPUFeaturesValue->SetText("Feature detection not supported on this architecture.");
 #endif
-
-    return info;
 }
 
 void SysInfoView::LoadData() {
@@ -427,31 +416,49 @@ void SysInfoView::LoadData() {
     if (fCPUModelValue) fCPUModelValue->SetText(cpuBrand.IsEmpty() ? "Unknown CPU" : cpuBrand);
 
     // Microcode
-    int fd = open("/dev/microcode_info", O_RDONLY);
-    if (fd >= 0) {
-        char buffer[32] = {};
-        ssize_t len = read(fd, buffer, sizeof(buffer) - 1);
-        close(fd);
-        if (len > 0 && fMicrocodeValue) {
-            buffer[len] = '\0';
-            BString microcodeStr = BString(buffer).Trim();
-            fMicrocodeValue->SetText(microcodeStr);
-            fMicrocodeValue->Show();
+    BEntry microcodeEntry("/dev/microcode_info");
+    if (microcodeEntry.Exists()) {
+        int fd = open("/dev/microcode_info", O_RDONLY);
+        if (fd >= 0) {
+            char buffer[32] = {};
+            ssize_t len = read(fd, buffer, sizeof(buffer) - 1);
+            close(fd);
+            if (len > 0 && fMicrocodeValue) {
+                buffer[len] = '\0';
+                BString microcodeStr = BString(buffer).Trim();
+                fMicrocodeValue->SetText(microcodeStr);
+                fMicrocodeValue->Parent()->SetHidden(false);
+            } else if (fMicrocodeValue) {
+                fMicrocodeValue->Parent()->SetHidden(true);
+            }
         } else if (fMicrocodeValue) {
-            fMicrocodeValue->Hide();
+            fMicrocodeValue->Parent()->SetHidden(true);
         }
     } else if (fMicrocodeValue) {
-        fMicrocodeValue->Hide();
+        fMicrocodeValue->Parent()->SetHidden(true);
     }
 
     if (fCPUCoresValue) fCPUCoresValue->SetText(BString() << sysInfo.cpu_count);
-    if (fCPUClockSpeedValue) fCPUClockSpeedValue->SetText("See features →");
-    if (fL1CacheValue) fL1CacheValue->SetText("See features →");
-    if (fL2CacheValue) fL2CacheValue->SetText("See features →");
-    if (fL3CacheValue) fL3CacheValue->SetText("See features →");
 
-    BString flags = GetCPUFeatureFlags();
-    if (fCPUFeaturesValue) fCPUFeaturesValue->SetText(flags.IsEmpty() ? "Unavailable" : flags);
+    cpu_topology_node_info* topology = NULL;
+    uint32_t topologyNodeCount = 0;
+    if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK) {
+        topology = new cpu_topology_node_info[topologyNodeCount];
+        if (get_cpu_topology_info(topology, &topologyNodeCount) == B_OK) {
+            uint64_t max_freq = 0;
+            for (uint32_t i = 0; i < topologyNodeCount; i++) {
+                if (topology[i].type == B_CPU_TOPOLOGY_CORE) {
+                    if (topology[i].data.core.default_frequency > max_freq)
+                        max_freq = topology[i].data.core.default_frequency;
+                }
+            }
+            if (max_freq > 0)
+                fCPUClockSpeedValue->SetText(FormatHertz(max_freq));
+        }
+        delete[] topology;
+    }
+
+    GetCPUInfo(&sysInfo);
 
     // --- RAM Info ---
     if (fTotalRAMValue) fTotalRAMValue->SetText(FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE).String());
@@ -497,16 +504,29 @@ void SysInfoView::LoadData() {
             diskTextData << "Volume Name: " << fsInfo.volume_name << "\n";
 
             BDirectory rootDir;
-            volume.GetRootDirectory(&rootDir);
+            if (volume.GetRootDirectory(&rootDir) != B_OK) {
+                diskTextData << "Error getting root directory\n";
+                continue;
+            }
             BEntry entry;
-            rootDir.GetEntry(&entry);
+            if (rootDir.GetEntry(&entry) != B_OK) {
+                diskTextData << "Error getting root entry\n";
+                continue;
+            }
             BPath path;
-            entry.GetPath(&path);
+            if (entry.GetPath(&path) != B_OK) {
+                diskTextData << "Error getting path\n";
+                continue;
+            }
             diskTextData << "Mount Point: " << path.Path() << "\n";
 
             diskTextData << "File System: " << fsInfo.fsh_name << "\n";
             diskTextData << "Total Size: " << FormatBytes(fsInfo.total_blocks * fsInfo.block_size).String() << "\n";
             diskTextData << "Free Size: " << FormatBytes(fsInfo.free_blocks * fsInfo.block_size).String();
+        } else {
+            if (diskTextData.Length() > 0)
+                diskTextData << "\n---\n";
+            diskTextData << "Error getting filesystem info for a volume.\n";
         }
     }
 
