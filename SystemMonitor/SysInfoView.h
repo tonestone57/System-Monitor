@@ -25,7 +25,6 @@ private:
     BString FormatHertz(uint64 hertz);
     BString FormatUptime(bigtime_t bootTime);
     BString GetCPUBrandString();
-    BString GetCPUFeatureFlags();
     
     // OS Info
     BStringView* fKernelNameValue;

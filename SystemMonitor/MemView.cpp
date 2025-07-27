@@ -11,66 +11,6 @@
 #include <LayoutBuilder.h>
 #include <Font.h>
 
-// GraphView Implementation
-GraphView::GraphView(BRect frame, const char* name, const float* historyData, const int* historyIndex, const uint64* totalValue)
-    : BView(frame, name, B_FOLLOW_ALL_SIDES, B_WILL_DRAW),
-      fHistoryData(historyData),
-      fHistoryIndex(historyIndex),
-      fTotalValue(totalValue) {
-    SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
-    fGraphColor = (rgb_color){ 0, 128, 255, 255 }; // Blue
-}
-
-void GraphView::AttachedToWindow()
-{
-    BView::AttachedToWindow();
-}
-
-void GraphView::Draw(BRect updateRect)
-{
-    SetLowColor(ViewColor());
-    FillRect(updateRect, B_SOLID_LOW);
-
-    if (!fHistoryData || !fHistoryIndex || !fTotalValue || *fTotalValue == 0) {
-        BFont font;
-        GetFont(&font);
-        font_height fh;
-        font.GetHeight(&fh);
-        const char* message = "Graph N/A";
-        float stringWidth = font.StringWidth(message);
-        BPoint textPoint(Bounds().Width() / 2 - stringWidth / 2, Bounds().Height() / 2 + fh.ascent / 2);
-        DrawString(message, textPoint);
-        return;
-    }
-
-    SetHighColor(fGraphColor);
-
-    BRect bounds = Bounds();
-    float barWidth = bounds.Width() / HISTORY_SIZE;
-    int currentIndex = *fHistoryIndex;
-
-    for (int i = 0; i < HISTORY_SIZE; i++) {
-        int historyIdx = (currentIndex + i) % HISTORY_SIZE;
-        float value = fHistoryData[historyIdx];
-
-        if (value < 0) continue; // Skip uninitialized data points
-
-        float barHeight = (value / 100.0f) * bounds.Height();
-        if (barHeight < 0) barHeight = 0;
-        if (barHeight > bounds.Height()) barHeight = bounds.Height();
-
-        BRect barRect;
-        barRect.left = bounds.left + i * barWidth;
-        barRect.right = barRect.left + barWidth - 1;
-        barRect.top = bounds.bottom - barHeight;
-        barRect.bottom = bounds.bottom;
-
-        FillRect(barRect);
-    }
-
-    SetHighColor(0, 0, 0); // Black border
-    StrokeRect(bounds);
-}
 
 // MemView Implementation
 MemView::MemView(BRect frame)
