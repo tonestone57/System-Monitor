@@ -115,24 +115,14 @@ void MemView::UpdateData()
         fFreeMemValue->SetText(FormatBytes(freeBytes).String());
         fCachedMemValue->SetText(FormatBytes(cachedBytes).String());
 
-        fTotalSystemMemory = totalBytes;
-
-        if (fTotalSystemMemory > 0) {
-            float cachePercent = (float)cachedBytes / fTotalSystemMemory * 100.0f;
+        if (totalBytes > 0) {
+            float cachePercent = (float)cachedBytes / totalBytes * 100.0f;
             if (cachePercent < 0.0f) cachePercent = 0.0f;
             if (cachePercent > 100.0f) cachePercent = 100.0f;
-            fCacheHistory[fCacheHistoryIndex] = cachePercent;
-        } else {
-            fCacheHistory[fCacheHistoryIndex] = 0;
-        }
-        fCacheHistoryIndex = (fCacheHistoryIndex + 1) % HISTORY_SIZE;
-
-        if (fCacheGraphView) {
-            fCacheGraphView->Invalidate();
+            fCacheGraphView->AddSample(cachePercent);
         }
 
     } else {
-        fTotalSystemMemory = 0;
         fTotalMemValue->SetText("Error");
         fUsedMemValue->SetText("Error");
         fFreeMemValue->SetText("Error");
