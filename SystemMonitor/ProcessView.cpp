@@ -36,6 +36,7 @@ ProcessView::ProcessView(BRect frame)
 
     BBox* procBox = new BBox("ProcessListBox");
     procBox->SetLabel("Processes");
+    procBox->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
     BRect clvRect = procBox->Bounds();
     font_height fh;

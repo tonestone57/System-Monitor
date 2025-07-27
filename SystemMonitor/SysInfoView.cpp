@@ -109,10 +109,12 @@ void SysInfoView::CreateLayout()
     fMainSectionsBox = new BBox(Bounds(), "mainSysInfoBox", B_FOLLOW_ALL_SIDES,
                                  B_WILL_DRAW | B_FRAME_EVENTS, B_PLAIN_BORDER);
     fMainSectionsBox->SetLabel("System Information");
+    fMainSectionsBox->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
     // --- OS Section ---
     BBox* osBox = new BBox("OSInfo");
     osBox->SetLabel("Operating System");
+    osBox->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     BGridLayout* osGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     osGrid->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING,
                       B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
@@ -127,6 +129,7 @@ void SysInfoView::CreateLayout()
     // --- CPU Section ---
     BBox* cpuBox = new BBox("CPUInfo");
     cpuBox->SetLabel("Processor");
+    cpuBox->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     BGridLayout* cpuGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     cpuGrid->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING,
                        B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
@@ -145,6 +148,7 @@ void SysInfoView::CreateLayout()
     // --- Graphics Section ---
     BBox* graphicsBox = new BBox("GraphicsInfo");
     graphicsBox->SetLabel("Graphics");
+    graphicsBox->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     BGridLayout* graphicsGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     graphicsGrid->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING,
                             B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
@@ -158,6 +162,7 @@ void SysInfoView::CreateLayout()
     // --- Memory Section ---
     BBox* memoryBox = new BBox("MemoryInfo");
     memoryBox->SetLabel("Memory");
+    memoryBox->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     BGridLayout* memoryGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     memoryGrid->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING,
                           B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
@@ -168,6 +173,7 @@ void SysInfoView::CreateLayout()
     // --- Disk Section ---
     BBox* diskBox = new BBox("DiskInfo");
     diskBox->SetLabel("Disk Volumes");
+    diskBox->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     fDiskInfoTextView = new BTextView("diskInfoTextView");
     fDiskInfoTextView->SetWordWrap(false);
     fDiskInfoTextView->MakeEditable(false);
