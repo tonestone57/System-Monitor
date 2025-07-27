@@ -2,6 +2,7 @@
 #include <LayoutBuilder.h>
 #include <private/interface/ColumnListView.h>
 #include <private/interface/ColumnTypes.h>
+#include <private/interface/FloatColumn.h>
 #include <Button.h>
 #include <kernel/image.h>
 #include <pwd.h>
@@ -14,15 +15,6 @@
 #include <MenuItem.h>
 #include <Font.h>
 #include <set>
-
-int CompareProcesses(const void* a, const void* b)
-{
-    BRow* row1 = *(BRow**)a;
-    BRow* row2 = *(BRow**)b;
-    BStringField* field1 = (BStringField*)row1->GetField(kCPUUsageColumn);
-    BStringField* field2 = (BStringField*)row2->GetField(kCPUUsageColumn);
-    return strtof(field2->String(), NULL) - strtof(field1->String(), NULL);
-}
 
 // Column identifiers
 enum {
@@ -39,9 +31,46 @@ const uint32 MSG_KILL_PROCESS = 'kill';
 
 ProcessView::ProcessView(BRect frame)
     : BView(frame, "ProcessView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW | B_PULSE_NEEDED),
-      fProcessListView(NULL), fContextMenu(NULL), fLastPulseSystemTime(0)
+      fLastPulseSystemTime(0)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+
+    BBox* procBox = new BBox("ProcessListBox");
+    procBox->SetLabel("Processes");
+
+    BRect clvRect = procBox->Bounds();
+    font_height fh;
+    procBox->GetFontHeight(&fh);
+    clvRect.top += fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING;
+    clvRect.InsetBy(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+
+    fProcessListView = new BColumnListView(clvRect, "process_clv",
+                                           B_FOLLOW_ALL_SIDES,
+                                           B_WILL_DRAW | B_NAVIGABLE,
+                                           B_PLAIN_BORDER, true);
+
+    fProcessListView->AddColumn(new BIntegerColumn("PID", 60, 30, 100), kPIDColumn);
+    fProcessListView->AddColumn(new BStringColumn("Name", 180, 50, 500, B_TRUNCATE_END), kProcessNameColumn);
+        fProcessListView->AddColumn(new BFloatColumn("CPU %", 70, 40, 100, B_ALIGN_RIGHT), kCPUUsageColumn);
+        fProcessListView->AddColumn(new BIntegerColumn("Memory", 100, 50, 200, B_ALIGN_RIGHT), kMemoryUsageColumn);
+    fProcessListView->AddColumn(new BIntegerColumn("Threads", 60, 30, 100, B_ALIGN_RIGHT), kThreadCountColumn);
+    fProcessListView->AddColumn(new BStringColumn("User", 80, 40, 150, B_TRUNCATE_END), kUserNameColumn);
+
+    fProcessListView->SetSortColumn(fProcessListView->ColumnAt(kCPUUsageColumn), false, false);
+
+    // Context Menu
+    fContextMenu = new BPopUpMenu("ProcessContext", false, false);
+    fContextMenu->AddItem(new BMenuItem("Kill Process", new BMessage(MSG_KILL_PROCESS)));
+
+    BLayoutBuilder::Group<>(procBox, B_VERTICAL, 0)
+        .SetInsets(B_USE_DEFAULT_SPACING, fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING,
+                   B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
+        .Add(fProcessListView);
+
+    BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
+        .SetInsets(0)
+        .Add(procBox)
+    .End();
 }
 
 ProcessView::~ProcessView()
@@ -51,36 +80,10 @@ ProcessView::~ProcessView()
 
 void ProcessView::AttachedToWindow()
 {
-    BView::AttachedToWindow();
-
-    if (fProcessListView == NULL) {
-        fProcessListView = new BColumnListView(BRect(0,0,0,0), "process_clv",
-                                               B_FOLLOW_ALL_SIDES,
-                                               B_WILL_DRAW | B_NAVIGABLE,
-                                               B_PLAIN_BORDER, true);
-
-        fProcessListView->AddColumn(new BIntegerColumn("PID", 60, 30, 100), kPIDColumn);
-        fProcessListView->AddColumn(new BStringColumn("Name", 180, 50, 500, B_TRUNCATE_END), kProcessNameColumn);
-        fProcessListView->AddColumn(new BStringColumn("CPU %", 70, 40, 100, B_TRUNCATE_END, B_ALIGN_RIGHT), kCPUUsageColumn);
-        fProcessListView->AddColumn(new BStringColumn("Memory", 100, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kMemoryUsageColumn);
-        fProcessListView->AddColumn(new BIntegerColumn("Threads", 60, 30, 100, B_ALIGN_RIGHT), kThreadCountColumn);
-        fProcessListView->AddColumn(new BStringColumn("User", 80, 40, 150, B_TRUNCATE_END), kUserNameColumn);
-
-        fProcessListView->SetSortColumn(fProcessListView->ColumnAt(kCPUUsageColumn), false, false);
-        fProcessListView->SetTarget(this);
-
-        // Context Menu
-        fContextMenu = new BPopUpMenu("ProcessContext", false, false);
-        fContextMenu->AddItem(new BMenuItem("Kill Process", new BMessage(MSG_KILL_PROCESS)));
-
-        BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
-            .SetInsets(0)
-        .Add(fProcessListView)
-        .End();
-    }
-
+    fProcessListView->SetTarget(this);
     UpdateData();
     fLastPulseSystemTime = system_time();
+    BView::AttachedToWindow();
 }
 
 void ProcessView::MessageReceived(BMessage* message)
@@ -166,7 +169,6 @@ void ProcessView::KillSelectedProcess() {
 
 void ProcessView::UpdateData()
 {
-    printf("ProcessView::UpdateData() called\n");
     fLocker.Lock();
 
     bigtime_t currentSystemTime = system_time();
@@ -260,22 +262,16 @@ void ProcessView::UpdateData()
             row->SetField(new BIntegerField(currentProc.id), kPIDColumn);
             row->SetField(new BStringField(currentProc.name.String()), kProcessNameColumn);
 
-            char cpuStr[16];
-            snprintf(cpuStr, sizeof(cpuStr), "%.1f", currentProc.cpuUsage);
-            row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
-
-            row->SetField(new BStringField(FormatBytes(currentProc.memoryUsageBytes).String()), kMemoryUsageColumn);
+            row->SetField(new BFloatField(currentProc.cpuUsage), kCPUUsageColumn);
+            row->SetField(new BIntegerField(currentProc.memoryUsageBytes), kMemoryUsageColumn);
             row->SetField(new BIntegerField(currentProc.threadCount), kThreadCountColumn);
             row->SetField(new BStringField(currentProc.userName.String()), kUserNameColumn);
             fProcessListView->AddRow(row);
         } else { // Existing process, update fields
             ((BStringField*)row->GetField(kProcessNameColumn))->SetString(currentProc.name.String());
 
-            char cpuStr[16];
-            snprintf(cpuStr, sizeof(cpuStr), "%.1f", currentProc.cpuUsage);
-            ((BStringField*)row->GetField(kCPUUsageColumn))->SetString(cpuStr);
-
-            ((BStringField*)row->GetField(kMemoryUsageColumn))->SetString(FormatBytes(currentProc.memoryUsageBytes).String());
+            ((BFloatField*)row->GetField(kCPUUsageColumn))->SetValue(currentProc.cpuUsage);
+            ((BIntegerField*)row->GetField(kMemoryUsageColumn))->SetValue(currentProc.memoryUsageBytes);
             ((BIntegerField*)row->GetField(kThreadCountColumn))->SetValue(currentProc.threadCount);
             ((BStringField*)row->GetField(kUserNameColumn))->SetString(currentProc.userName.String());
             fProcessListView->UpdateRow(row);
@@ -297,7 +293,6 @@ void ProcessView::UpdateData()
         i++;
     }
 
-    fProcessListView->SortItems(CompareProcesses);
     fLastPulseSystemTime = currentSystemTime;
     fLocker.Unlock();
 }
