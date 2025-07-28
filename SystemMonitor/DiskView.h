@@ -28,7 +28,7 @@ public:
 
 private:
     void UpdateData();
-    void GetDiskInfo(BVolume& volume, DiskInfo& info);
+    status_t GetDiskInfo(BVolume& volume, DiskInfo& info);
     BString FormatBytes(uint64 bytes);
     
     BBox* fDiskInfoBox;

@@ -1,7 +1,7 @@
 #include "DiskView.h"
 #include <LayoutBuilder.h>
 #include <StringView.h>
-#include <stdio.h>
+#include <cstdio>
 #include <Directory.h>
 #include <Entry.h>
 #include <Path.h>
@@ -100,36 +100,43 @@ BString DiskView::FormatBytes(uint64 bytes) {
     return str;
 }
 
-void DiskView::GetDiskInfo(BVolume& volume, DiskInfo& info) {
+status_t DiskView::GetDiskInfo(BVolume& volume, DiskInfo& info) {
     fs_info fsInfo;
-    if (fs_stat_dev(volume.Device(), &fsInfo) == B_OK) {
-        info.totalSize = fsInfo.total_blocks * fsInfo.block_size;
-        info.freeSize = fsInfo.free_blocks * fsInfo.block_size;
-        info.fileSystemType = fsInfo.fsh_name;
-
-        // Get mount point
-        BDirectory mountDir;
-        volume.GetRootDirectory(&mountDir);
-        BEntry mountEntry;
-        mountDir.GetEntry(&mountEntry);
-        BPath mountPath;
-        mountEntry.GetPath(&mountPath);
-        info.mountPoint = mountPath.Path();
-
-        // Use volume name if available, otherwise device name
-        char volumeName[B_FILE_NAME_LENGTH];
-        if (volume.GetName(volumeName) == B_OK && strlen(volumeName) > 0) {
-            info.deviceName = volumeName;
-        } else {
-            info.deviceName = fsInfo.device_name;
-        }
-    } else {
-        info.totalSize = 0;
-        info.freeSize = 0;
-        info.fileSystemType = "Error";
-        info.mountPoint = "Error";
-        info.deviceName = "Error";
+    status_t status = fs_stat_dev(volume.Device(), &fsInfo);
+    if (status != B_OK) {
+        return status;
     }
+
+    info.totalSize = fsInfo.total_blocks * fsInfo.block_size;
+    info.freeSize = fsInfo.free_blocks * fsInfo.block_size;
+    info.fileSystemType = fsInfo.fsh_name;
+
+    // Get mount point
+    BDirectory mountDir;
+    status = volume.GetRootDirectory(&mountDir);
+    if (status != B_OK) {
+        return status;
+    }
+    BEntry mountEntry;
+    status = mountDir.GetEntry(&mountEntry);
+    if (status != B_OK) {
+        return status;
+    }
+    BPath mountPath;
+    status = mountEntry.GetPath(&mountPath);
+    if (status != B_OK) {
+        return status;
+    }
+    info.mountPoint = mountPath.Path();
+
+    // Use volume name if available, otherwise device name
+    char volumeName[B_FILE_NAME_LENGTH];
+    if (volume.GetName(volumeName) == B_OK && strlen(volumeName) > 0) {
+        info.deviceName = volumeName;
+    } else {
+        info.deviceName = fsInfo.device_name;
+    }
+    return B_OK;
 }
 
 void DiskView::UpdateData()
@@ -155,11 +162,19 @@ void DiskView::UpdateData()
         if (volume.Capacity() <= 0) continue;
 
         DiskInfo currentDiskInfo;
-        GetDiskInfo(volume, currentDiskInfo);
+        if (GetDiskInfo(volume, currentDiskInfo) != B_OK) {
+            continue;
+        }
 
         if (currentDiskInfo.totalSize == 0) continue;
 
         BRow* row = new BRow();
+        struct RowGuard {
+            BRow*& fRow;
+            RowGuard(BRow*& row) : fRow(row) {}
+            ~RowGuard() { if (fRow) delete fRow; }
+        } rowGuard(row);
+
         uint64 usedSize = currentDiskInfo.totalSize - currentDiskInfo.freeSize;
         double usagePercent = 0.0;
         if (currentDiskInfo.totalSize > 0) {
@@ -168,15 +183,16 @@ void DiskView::UpdateData()
         char percentStr[16];
         snprintf(percentStr, sizeof(percentStr), "%.1f%%", usagePercent);
 
-        row->SetField(new BStringField(currentDiskInfo.deviceName.String()), kDeviceColumn);
-        row->SetField(new BStringField(currentDiskInfo.mountPoint.String()), kMountPointColumn);
-        row->SetField(new BStringField(currentDiskInfo.fileSystemType.String()), kFSTypeColumn);
-        row->SetField(new BStringField(FormatBytes(currentDiskInfo.totalSize).String()), kTotalSizeColumn);
-        row->SetField(new BStringField(FormatBytes(usedSize).String()), kUsedSizeColumn);
-        row->SetField(new BStringField(FormatBytes(currentDiskInfo.freeSize).String()), kFreeSizeColumn);
+        row->SetField(new BStringField(currentDiskInfo.deviceName), kDeviceColumn);
+        row->SetField(new BStringField(currentDiskInfo.mountPoint), kMountPointColumn);
+        row->SetField(new BStringField(currentDiskInfo.fileSystemType), kFSTypeColumn);
+        row->SetField(new BStringField(FormatBytes(currentDiskInfo.totalSize)), kTotalSizeColumn);
+        row->SetField(new BStringField(FormatBytes(usedSize)), kUsedSizeColumn);
+        row->SetField(new BStringField(FormatBytes(currentDiskInfo.freeSize)), kFreeSizeColumn);
         row->SetField(new BStringField(percentStr), kUsagePercentageColumn);
 
         fDiskListView->AddRow(row);
+        row = nullptr; // The BColumnListView now owns the row
     }
 
     fLocker.Unlock();
