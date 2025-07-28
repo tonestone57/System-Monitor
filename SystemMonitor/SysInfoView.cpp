@@ -176,15 +176,13 @@ void SysInfoView::CreateLayout()
     fDiskInfoTextView->SetWordWrap(false);
     fDiskInfoTextView->MakeEditable(false);
     fDiskInfoTextView->SetViewColor(255, 255, 255, 255);
-    fDiskInfoScrollView = new BScrollView("diskInfoScroller", fDiskInfoTextView,
-        0, false, true, B_NO_BORDER);
-    fDiskInfoScrollView->SetExplicitMinSize(BSize(0, 80));
 
     BGroupLayout* rootLayout = new BGroupLayout(B_VERTICAL);
     rootLayout->SetInsets(B_USE_DEFAULT_SPACING);
-    this->SetLayout(rootLayout);
 
-    BLayoutBuilder::Group<>(rootLayout)
+    BGroupView* groupView = new BGroupView(B_VERTICAL);
+    BLayoutBuilder::Group<>(groupView)
+        .SetInsets(B_USE_DEFAULT_SPACING)
         .Add(osTitle)
         .Add(osGrid)
         .AddStrut(B_USE_DEFAULT_SPACING)
@@ -198,8 +196,15 @@ void SysInfoView::CreateLayout()
         .Add(memoryGrid)
         .AddStrut(B_USE_DEFAULT_SPACING)
         .Add(diskTitle)
-        .Add(fDiskInfoScrollView)
+        .Add(fDiskInfoTextView)
         .AddGlue();
+
+    BScrollView* scrollView = new BScrollView("sysInfoScroller", groupView, B_FOLLOW_ALL, 0, false, true);
+
+    BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
+        .SetInsets(0)
+        .Add(scrollView)
+    .End();
 }
 
 void SysInfoView::AttachedToWindow()
