@@ -98,7 +98,7 @@ SysInfoView::SysInfoView(BRect frame)
       fDiskInfoScrollView(NULL),
       fMainSectionsBox(NULL)
 {
-    SetViewColor(255, 255, 255, 255);
+    SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     CreateLayout();
 }
 
@@ -109,8 +109,7 @@ SysInfoView::~SysInfoView()
 
 void SysInfoView::CreateLayout()
 {
-    // Set white background for the main view
-    SetViewColor(255, 255, 255, 255);
+    SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
     BFont titleFont(be_bold_font);
     titleFont.SetSize(titleFont.Size() * 1.2);
@@ -118,138 +117,96 @@ void SysInfoView::CreateLayout()
     // --- OS Section ---
     BStringView* osTitle = new BStringView("os_title", "OPERATING SYSTEM");
     osTitle->SetFont(&titleFont);
-    osTitle->SetViewColor(255, 255, 255, 255);
 
     fKernelNameValue = new BStringView("kernel_name", "Kernel Name: N/A");
-    fKernelNameValue->SetViewColor(255, 255, 255, 255);
-
     fKernelVersionValue = new BStringView("kernel_version", "Kernel Version: N/A");
-    fKernelVersionValue->SetViewColor(255, 255, 255, 255);
-
     fKernelBuildValue = new BStringView("kernel_build", "Build Date/Time: N/A");
-    fKernelBuildValue->SetViewColor(255, 255, 255, 255);
-
     fCPUArchValue = new BStringView("cpu_arch", "CPU Architecture: N/A");
-    fCPUArchValue->SetViewColor(255, 255, 255, 255);
-
     fUptimeValue = new BStringView("uptime", "System Uptime: N/A");
-    fUptimeValue->SetViewColor(255, 255, 255, 255);
 
     // --- CPU Section ---
-    BStringView* cpuTitle = new BStringView("cpu_title", "PROCESSOR");
+    BStringView* cpuTitle = new BStringView("cpu_title", "\n\nPROCESSOR");
     cpuTitle->SetFont(&titleFont);
-    cpuTitle->SetViewColor(255, 255, 255, 255);
 
     fCPUModelValue = new BStringView("cpu_model", "Model: N/A");
-    fCPUModelValue->SetViewColor(255, 255, 255, 255);
-
     fMicrocodeValue = new BStringView("cpu_microcode", "Microcode: N/A");
-    fMicrocodeValue->SetViewColor(255, 255, 255, 255);
-
     fCPUCoresValue = new BStringView("cpu_cores", "Cores: N/A");
-    fCPUCoresValue->SetViewColor(255, 255, 255, 255);
-
     fCPUClockSpeedValue = new BStringView("cpu_clock", "Clock Speed: N/A");
-    fCPUClockSpeedValue->SetViewColor(255, 255, 255, 255);
-
     fL1CacheValue = new BStringView("cpu_l1", "L1 Cache (I/D): N/A");
-    fL1CacheValue->SetViewColor(255, 255, 255, 255);
-
     fL2CacheValue = new BStringView("cpu_l2", "L2 Cache: N/A");
-    fL2CacheValue->SetViewColor(255, 255, 255, 255);
-
     fL3CacheValue = new BStringView("cpu_l3", "L3 Cache: N/A");
-    fL3CacheValue->SetViewColor(255, 255, 255, 255);
-
     fCPUSteppingValue = new BStringView("cpu_stepping", "Stepping: N/A");
-    fCPUSteppingValue->SetViewColor(255, 255, 255, 255);
-
     fCPUFeaturesValue = new BStringView("cpu_features", "Features: N/A");
-    fCPUFeaturesValue->SetViewColor(255, 255, 255, 255);
     fCPUFeaturesValue->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 
     // --- Graphics Section ---
-    BStringView* graphicsTitle = new BStringView("graphics_title", "GRAPHICS");
+    BStringView* graphicsTitle = new BStringView("graphics_title", "\n\nGRAPHICS");
     graphicsTitle->SetFont(&titleFont);
-    graphicsTitle->SetViewColor(255, 255, 255, 255);
 
     fGPUTypeValue = new BStringView("gpu_type", "GPU Type: N/A");
-    fGPUTypeValue->SetViewColor(255, 255, 255, 255);
-
     fGPUDriverValue = new BStringView("gpu_driver", "Driver: N/A");
-    fGPUDriverValue->SetViewColor(255, 255, 255, 255);
-
     fGPUVRAMValue = new BStringView("gpu_vram", "VRAM: N/A");
-    fGPUVRAMValue->SetViewColor(255, 255, 255, 255);
-
     fScreenResolutionValue = new BStringView("screen_resolution", "Resolution: N/A");
-    fScreenResolutionValue->SetViewColor(255, 255, 255, 255);
 
     // --- Memory Section ---
-    BStringView* memoryTitle = new BStringView("memory_title", "MEMORY");
+    BStringView* memoryTitle = new BStringView("memory_title", "\n\nMEMORY");
     memoryTitle->SetFont(&titleFont);
-    memoryTitle->SetViewColor(255, 255, 255, 255);
 
     fTotalRAMValue = new BStringView("total_ram", "Total RAM: N/A");
-    fTotalRAMValue->SetViewColor(255, 255, 255, 255);
 
     // --- Disk Section ---
-    BStringView* diskTitle = new BStringView("disk_title", "DISK VOLUMES");
+    BStringView* diskTitle = new BStringView("disk_title", "\n\nDISK VOLUMES");
     diskTitle->SetFont(&titleFont);
-    diskTitle->SetViewColor(255, 255, 255, 255);
 
     fDiskInfoTextView = new BTextView("diskInfoTextView");
     fDiskInfoTextView->SetWordWrap(false);
     fDiskInfoTextView->MakeEditable(false);
-    fDiskInfoTextView->SetViewColor(255, 255, 255, 255);
+    fDiskInfoTextView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
-    // Create the main content view with white background
-    BGroupView* groupView = new BGroupView(B_VERTICAL);
-    groupView->SetViewColor(255, 255, 255, 255);
-    
-    BLayoutBuilder::Group<>(groupView)
+    BGridLayout* gridLayout = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+    BLayoutBuilder::Grid<>(gridLayout)
         .SetInsets(B_USE_DEFAULT_SPACING)
-        .Add(osTitle)
-        .Add(fKernelNameValue)
-        .Add(fKernelVersionValue)
-        .Add(fKernelBuildValue)
-        .Add(fCPUArchValue)
-        .Add(fUptimeValue)
-        .AddStrut(B_USE_DEFAULT_SPACING * 2)
-        .Add(cpuTitle)
-        .Add(fCPUModelValue)
-        .Add(fMicrocodeValue)
-        .Add(fCPUCoresValue)
-        .Add(fCPUClockSpeedValue)
-        .Add(fL1CacheValue)
-        .Add(fL2CacheValue)
-        .Add(fL3CacheValue)
-        .Add(fCPUSteppingValue)
-        .Add(fCPUFeaturesValue)
-        .AddStrut(B_USE_DEFAULT_SPACING * 2)
-        .Add(graphicsTitle)
-        .Add(fGPUTypeValue)
-        .Add(fGPUDriverValue)
-        .Add(fGPUVRAMValue)
-        .Add(fScreenResolutionValue)
-        .AddStrut(B_USE_DEFAULT_SPACING * 2)
-        .Add(memoryTitle)
-        .Add(fTotalRAMValue)
-        .AddStrut(B_USE_DEFAULT_SPACING * 2)
-        .Add(diskTitle)
-        .Add(fDiskInfoTextView)
-        .AddGlue();
+        .Add(osTitle, 0, 0, 2, 1)
+        .Add(fKernelNameValue, 0, 1, 1, 1)
+        .Add(fKernelVersionValue, 0, 2, 1, 1)
+        .Add(fKernelBuildValue, 0, 3, 1, 1)
+        .Add(fCPUArchValue, 0, 4, 1, 1)
+        .Add(fUptimeValue, 0, 5, 1, 1)
+        .Add(BSpaceLayoutItem::CreateVerticalStrut(B_USE_DEFAULT_SPACING * 2), 0, 6, 1, 1)
+        .Add(cpuTitle, 0, 7, 2, 1)
+        .Add(fCPUModelValue, 0, 8, 1, 1)
+        .Add(fMicrocodeValue, 0, 9, 1, 1)
+        .Add(fCPUCoresValue, 0, 10, 1, 1)
+        .Add(fCPUClockSpeedValue, 0, 11, 1, 1)
+        .Add(fL1CacheValue, 0, 12, 1, 1)
+        .Add(fL2CacheValue, 0, 13, 1, 1)
+        .Add(fL3CacheValue, 0, 14, 1, 1)
+        .Add(fCPUSteppingValue, 0, 15, 1, 1)
+        .Add(fCPUFeaturesValue, 0, 16, 1, 1)
+        .Add(BSpaceLayoutItem::CreateVerticalStrut(B_USE_DEFAULT_SPACING * 2), 0, 17, 1, 1)
+        .Add(graphicsTitle, 0, 18, 2, 1)
+        .Add(fGPUTypeValue, 0, 19, 1, 1)
+        .Add(fGPUDriverValue, 0, 20, 1, 1)
+        .Add(fGPUVRAMValue, 0, 21, 1, 1)
+        .Add(fScreenResolutionValue, 0, 22, 1, 1)
+        .Add(BSpaceLayoutItem::CreateVerticalStrut(B_USE_DEFAULT_SPACING * 2), 0, 23, 1, 1)
+        .Add(memoryTitle, 0, 24, 2, 1)
+        .Add(fTotalRAMValue, 0, 25, 1, 1)
+        .Add(BSpaceLayoutItem::CreateVerticalStrut(B_USE_DEFAULT_SPACING * 2), 0, 26, 1, 1)
+        .Add(diskTitle, 0, 27, 2, 1)
+        .Add(fDiskInfoTextView, 0, 28, 1, 1)
+        .AddGlue(0, 29);
 
-    // Create scroll view with vertical scrollbar on the right
-    BScrollView* scrollView = new BScrollView("sysInfoScroller", groupView, 
+    BView* gridView = new BView("grid_view", 0, gridLayout);
+    BScrollView* scrollView = new BScrollView("sysInfoScroller", gridView,
         B_FOLLOW_ALL, 0, false, true);
-    scrollView->SetViewColor(255, 255, 255, 255);
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
         .SetInsets(0)
         .Add(scrollView)
     .End();
 }
+
 
 void SysInfoView::AttachedToWindow()
 {
@@ -391,26 +348,21 @@ void SysInfoView::GetCPUInfo(system_info* sysInfo)
 }
 
 void SysInfoView::LoadData() {
-    printf("SysInfoView::LoadData() - entry\n");
     system_info sysInfo;
     if (get_system_info(&sysInfo) != B_OK) {
         const char* errorMsg = "Error fetching system info";
         if (fKernelNameValue) fKernelNameValue->SetText(BString("Kernel Name: ") << errorMsg);
         return;
     }
-    printf("SysInfoView::LoadData() - got system info\n");
 
     // --- OS Info ---
-    printf("SysInfoView::LoadData() - setting kernel name\n");
     if (fKernelNameValue) fKernelNameValue->SetText(BString("Kernel Name: ") << sysInfo.kernel_name);
 
-    printf("SysInfoView::LoadData() - setting kernel version\n");
     BString kernelVer;
     kernelVer.SetToFormat("%" B_PRId64 " (API %" B_PRIu32 ")",
                           sysInfo.kernel_version, sysInfo.abi);
     if (fKernelVersionValue) fKernelVersionValue->SetText(BString("Kernel Version: ") << kernelVer);
 
-    printf("SysInfoView::LoadData() - setting build date/time\n");
     char dateTimeStr[64];
     snprintf(dateTimeStr, sizeof(dateTimeStr), "%s %s",
              sysInfo.kernel_build_date, sysInfo.kernel_build_time);
@@ -422,7 +374,6 @@ void SysInfoView::LoadData() {
     } else {
         if (fKernelBuildValue) fKernelBuildValue->SetText(BString("Build Date/Time: ") << dateTimeStr);
     }
-    printf("SysInfoView::LoadData() - finished OS info\n");
 
     BString archStr;
 #if defined(__x86_64__)
@@ -448,11 +399,9 @@ void SysInfoView::LoadData() {
     if (fUptimeValue) fUptimeValue->SetText(BString("System Uptime: ") << FormatUptime(sysInfo.boot_time));
 
     // --- CPU Info ---
-    printf("SysInfoView::LoadData() - getting CPU info\n");
     BString cpuBrand = GetCPUBrandString();
     if (fCPUModelValue) fCPUModelValue->SetText(BString("Model: ") << (cpuBrand.IsEmpty() ? "Unknown CPU" : cpuBrand));
 
-    printf("SysInfoView::LoadData() - getting microcode info\n");
     // Microcode
     BEntry microcodeEntry("/dev/microcode_info");
     if (fMicrocodeValue) {
@@ -479,18 +428,13 @@ void SysInfoView::LoadData() {
         }
     }
 
-    printf("SysInfoView::LoadData() - setting cpu cores\n");
     if (fCPUCoresValue) fCPUCoresValue->SetText(BString("Cores: ") << sysInfo.cpu_count);
-    printf("SysInfoView::LoadData() - finished setting cpu cores\n");
 
-    printf("SysInfoView::LoadData() - getting cpu topology info\n");
     cpu_topology_node_info* topology = NULL;
     uint32_t topologyNodeCount = 0;
     if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
-        printf("SysInfoView::LoadData() - topologyNodeCount: %u\n", topologyNodeCount);
         topology = new cpu_topology_node_info[topologyNodeCount];
         if (topology == NULL) {
-            printf("SysInfoView::LoadData() - failed to allocate memory for cpu_topology_node_info\n");
             return;
         }
         uint32_t actualNodeCount = topologyNodeCount;
@@ -511,48 +455,37 @@ void SysInfoView::LoadData() {
     }
 
     this->GetCPUInfo(&sysInfo);
-    printf("SysInfoView::LoadData() - finished cpu topology info\n");
-    printf("SysInfoView::LoadData() - finished CPU info\n");
 
     // --- RAM Info ---
     if (fTotalRAMValue) fTotalRAMValue->SetText(BString("Total RAM: ") << FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE));
 
     // --- Graphics Info ---
-    printf("SysInfoView::LoadData() - getting graphics info\n");
     BScreen screen(B_MAIN_SCREEN_ID);
-    printf("SysInfoView::LoadData() - created BScreen object\n");
     if (screen.IsValid()) {
-        printf("SysInfoView::LoadData() - BScreen is valid\n");
         accelerant_device_info deviceInfo;
         if (screen.GetDeviceInfo(&deviceInfo) == B_OK) {
-            printf("SysInfoView::LoadData() - got device info\n");
             if (fGPUTypeValue) fGPUTypeValue->SetText(BString("GPU Type: ") << deviceInfo.name);
             if (fGPUDriverValue) fGPUDriverValue->SetText(BString("Driver: ") << deviceInfo.version);
             if (fGPUVRAMValue) fGPUVRAMValue->SetText(BString("VRAM: ") << FormatBytes(deviceInfo.memory));
         } else {
-            printf("SysInfoView::LoadData() - failed to get device info\n");
             if (fGPUTypeValue) fGPUTypeValue->SetText("GPU Type: Error getting GPU info");
             if (fGPUDriverValue) fGPUDriverValue->SetText("Driver: N/A");
             if (fGPUVRAMValue) fGPUVRAMValue->SetText("VRAM: N/A");
         }
         display_mode mode;
         if (screen.GetMode(&mode) == B_OK) {
-            printf("SysInfoView::LoadData() - got display mode\n");
             BString resStr;
             resStr.SetToFormat("%dx%d", mode.virtual_width, mode.virtual_height);
             if (fScreenResolutionValue) fScreenResolutionValue->SetText(BString("Resolution: ") << resStr);
         } else {
-            printf("SysInfoView::LoadData() - failed to get display mode\n");
             if (fScreenResolutionValue) fScreenResolutionValue->SetText("Resolution: N/A");
         }
     } else {
-        printf("SysInfoView::LoadData() - BScreen is invalid\n");
         if (fGPUTypeValue) fGPUTypeValue->SetText("GPU Type: Error: Invalid screen object");
         if (fGPUDriverValue) fGPUDriverValue->SetText("Driver: N/A");
         if (fGPUVRAMValue) fGPUVRAMValue->SetText("VRAM: N/A");
         if (fScreenResolutionValue) fScreenResolutionValue->SetText("Resolution: N/A");
     }
-    printf("SysInfoView::LoadData() - finished graphics info\n");
 
     // --- Disk Info ---
     BString diskTextData;
