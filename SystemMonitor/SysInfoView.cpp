@@ -360,13 +360,17 @@ void SysInfoView::GetCPUInfo(system_info* sysInfo)
 #endif
 }
 
+#include <stdio.h>
+
 void SysInfoView::LoadData() {
+    printf("SysInfoView::LoadData() - entry\n");
     system_info sysInfo;
     if (get_system_info(&sysInfo) != B_OK) {
         const char* errorMsg = "Error fetching system info";
         if (fKernelNameValue) fKernelNameValue->SetText(errorMsg);
         return;
     }
+    printf("SysInfoView::LoadData() - got system info\n");
 
     // --- OS Info ---
     if (fKernelNameValue) fKernelNameValue->SetText(sysInfo.kernel_name);
@@ -464,32 +468,41 @@ void SysInfoView::LoadData() {
     if (fTotalRAMValue) fTotalRAMValue->SetText(FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE).String());
 
     // --- Graphics Info ---
+    printf("SysInfoView::LoadData() - getting graphics info\n");
     BScreen screen(B_MAIN_SCREEN_ID);
+    printf("SysInfoView::LoadData() - created BScreen object\n");
     if (screen.IsValid()) {
+        printf("SysInfoView::LoadData() - BScreen is valid\n");
         accelerant_device_info deviceInfo;
         if (screen.GetDeviceInfo(&deviceInfo) == B_OK) {
+            printf("SysInfoView::LoadData() - got device info\n");
             if (fGPUTypeValue) fGPUTypeValue->SetText(deviceInfo.name);
             if (fGPUDriverValue) fGPUDriverValue->SetText(BString() << deviceInfo.version);
             if (fGPUVRAMValue) fGPUVRAMValue->SetText(FormatBytes(deviceInfo.memory).String());
         } else {
+            printf("SysInfoView::LoadData() - failed to get device info\n");
             if (fGPUTypeValue) fGPUTypeValue->SetText("Error getting GPU info");
             if (fGPUDriverValue) fGPUDriverValue->SetText("N/A");
             if (fGPUVRAMValue) fGPUVRAMValue->SetText("N/A");
         }
         display_mode mode;
         if (screen.GetMode(&mode) == B_OK) {
+            printf("SysInfoView::LoadData() - got display mode\n");
             BString resStr;
             resStr.SetToFormat("%dx%d", mode.virtual_width, mode.virtual_height);
             if (fScreenResolutionValue) fScreenResolutionValue->SetText(resStr);
         } else {
+            printf("SysInfoView::LoadData() - failed to get display mode\n");
             if (fScreenResolutionValue) fScreenResolutionValue->SetText("N/A");
         }
     } else {
+        printf("SysInfoView::LoadData() - BScreen is invalid\n");
         if (fGPUTypeValue) fGPUTypeValue->SetText("Error: Invalid screen object");
         if (fGPUDriverValue) fGPUDriverValue->SetText("N/A");
         if (fGPUVRAMValue) fGPUVRAMValue->SetText("N/A");
         if (fScreenResolutionValue) fScreenResolutionValue->SetText("N/A");
     }
+    printf("SysInfoView::LoadData() - finished graphics info\n");
 
     // --- Disk Info ---
     BString diskTextData;
