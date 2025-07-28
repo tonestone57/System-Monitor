@@ -76,27 +76,7 @@ bool hasAES() {
 
 SysInfoView::SysInfoView(BRect frame)
     : BView(frame, "SysInfoView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW),
-      fKernelNameValue(NULL),
-      fKernelVersionValue(NULL),
-      fKernelBuildValue(NULL),
-      fCPUArchValue(NULL),
-      fUptimeValue(NULL),
-      fCPUModelValue(NULL),
-      fMicrocodeValue(NULL),
-      fCPUCoresValue(NULL),
-      fCPUClockSpeedValue(NULL),
-      fL1CacheValue(NULL),
-      fL2CacheValue(NULL),
-      fL3CacheValue(NULL),
-      fCPUFeaturesValue(NULL),
-      fGPUTypeValue(NULL),
-      fGPUDriverValue(NULL),
-      fGPUVRAMValue(NULL),
-      fScreenResolutionValue(NULL),
-      fTotalRAMValue(NULL),
-      fDiskInfoTextView(NULL),
-      fDiskInfoScrollView(NULL),
-      fMainSectionsBox(NULL)
+      fInfoTextView(NULL)
 {
     SetViewColor(B_TRANSPARENT_COLOR);
     CreateLayout();
@@ -109,97 +89,12 @@ SysInfoView::~SysInfoView()
 
 void SysInfoView::CreateLayout()
 {
-    SetViewColor(255, 255, 255, 255);
-    SetLowColor(255, 255, 255, 255);
-    SetHighColor(0, 0, 0, 255);
+    fInfoTextView = new BTextView("info_text_view");
+    fInfoTextView->SetViewColor(255, 255, 255, 255);
+    fInfoTextView->SetStylable(true);
+    fInfoTextView->MakeEditable(false);
 
-    BFont titleFont(be_bold_font);
-    titleFont.SetSize(titleFont.Size() * 1.2);
-
-    // --- OS Section ---
-    BStringView* osTitle = new BStringView("os_title", "OPERATING SYSTEM");
-    osTitle->SetFont(&titleFont);
-
-    fKernelNameValue = new BStringView("kernel_name", "Kernel Name: N/A");
-    fKernelVersionValue = new BStringView("kernel_version", "Kernel Version: N/A");
-    fKernelBuildValue = new BStringView("kernel_build", "Build Date/Time: N/A");
-    fCPUArchValue = new BStringView("cpu_arch", "CPU Architecture: N/A");
-    fUptimeValue = new BStringView("uptime", "System Uptime: N/A");
-
-    // --- CPU Section ---
-    BStringView* cpuTitle = new BStringView("cpu_title", "PROCESSOR");
-    cpuTitle->SetFont(&titleFont);
-
-    fCPUModelValue = new BStringView("cpu_model", "Model: N/A");
-    fMicrocodeValue = new BStringView("cpu_microcode", "Microcode: N/A");
-    fCPUCoresValue = new BStringView("cpu_cores", "Cores: N/A");
-    fCPUClockSpeedValue = new BStringView("cpu_clock", "Clock Speed: N/A");
-    fL1CacheValue = new BStringView("cpu_l1", "L1 Cache (I/D): N/A");
-    fL2CacheValue = new BStringView("cpu_l2", "L2 Cache: N/A");
-    fL3CacheValue = new BStringView("cpu_l3", "L3 Cache: N/A");
-    fCPUSteppingValue = new BStringView("cpu_stepping", "Stepping: N/A");
-    fCPUFeaturesValue = new BStringView("cpu_features", "Features: N/A");
-    fCPUFeaturesValue->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
-
-    // --- Graphics Section ---
-    BStringView* graphicsTitle = new BStringView("graphics_title", "GRAPHICS");
-    graphicsTitle->SetFont(&titleFont);
-
-    fGPUTypeValue = new BStringView("gpu_type", "GPU Type: N/A");
-    fGPUDriverValue = new BStringView("gpu_driver", "Driver: N/A");
-    fGPUVRAMValue = new BStringView("gpu_vram", "VRAM: N/A");
-    fScreenResolutionValue = new BStringView("screen_resolution", "Resolution: N/A");
-
-    // --- Memory Section ---
-    BStringView* memoryTitle = new BStringView("memory_title", "MEMORY");
-    memoryTitle->SetFont(&titleFont);
-
-    fTotalRAMValue = new BStringView("total_ram", "Total RAM: N/A");
-
-    // --- Disk Section ---
-    BStringView* diskTitle = new BStringView("disk_title", "DISK VOLUMES");
-    diskTitle->SetFont(&titleFont);
-
-    fDiskInfoTextView = new BTextView("diskInfoTextView");
-    fDiskInfoTextView->SetWordWrap(false);
-    fDiskInfoTextView->MakeEditable(false);
-
-    BGridLayout* gridLayout = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    BLayoutBuilder::Grid<>(gridLayout)
-        .SetInsets(B_USE_DEFAULT_SPACING)
-        .Add(osTitle, 0, 0, 2, 1)
-        .Add(fKernelNameValue, 0, 1, 1, 1)
-        .Add(fKernelVersionValue, 0, 2, 1, 1)
-        .Add(fKernelBuildValue, 0, 3, 1, 1)
-        .Add(fCPUArchValue, 0, 4, 1, 1)
-        .Add(fUptimeValue, 0, 5, 1, 1)
-        .Add(BSpaceLayoutItem::CreateVerticalStrut(B_USE_DEFAULT_SPACING * 2), 0, 6, 1, 1)
-        .Add(cpuTitle, 0, 7, 2, 1)
-        .Add(fCPUModelValue, 0, 8, 1, 1)
-        .Add(fMicrocodeValue, 0, 9, 1, 1)
-        .Add(fCPUCoresValue, 0, 10, 1, 1)
-        .Add(fCPUClockSpeedValue, 0, 11, 1, 1)
-        .Add(fL1CacheValue, 0, 12, 1, 1)
-        .Add(fL2CacheValue, 0, 13, 1, 1)
-        .Add(fL3CacheValue, 0, 14, 1, 1)
-        .Add(fCPUSteppingValue, 0, 15, 1, 1)
-        .Add(fCPUFeaturesValue, 0, 16, 1, 1)
-        .Add(BSpaceLayoutItem::CreateVerticalStrut(B_USE_DEFAULT_SPACING * 2), 0, 17, 1, 1)
-        .Add(graphicsTitle, 0, 18, 2, 1)
-        .Add(fGPUTypeValue, 0, 19, 1, 1)
-        .Add(fGPUDriverValue, 0, 20, 1, 1)
-        .Add(fGPUVRAMValue, 0, 21, 1, 1)
-        .Add(fScreenResolutionValue, 0, 22, 1, 1)
-        .Add(BSpaceLayoutItem::CreateVerticalStrut(B_USE_DEFAULT_SPACING * 2), 0, 23, 1, 1)
-        .Add(memoryTitle, 0, 24, 2, 1)
-        .Add(fTotalRAMValue, 0, 25, 1, 1)
-        .Add(BSpaceLayoutItem::CreateVerticalStrut(B_USE_DEFAULT_SPACING * 2), 0, 26, 1, 1)
-        .Add(diskTitle, 0, 27, 2, 1)
-        .Add(fDiskInfoTextView, 0, 28, 1, 1)
-        .AddGlue(0, 29);
-
-    BView* gridView = new BView("grid_view", 0, gridLayout);
-    BScrollView* scrollView = new BScrollView("sysInfoScroller", gridView,
+    BScrollView* scrollView = new BScrollView("sysInfoScroller", fInfoTextView,
         B_FOLLOW_ALL, 0, false, true);
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
@@ -291,79 +186,27 @@ BString SysInfoView::GetCPUBrandString()
 
 void SysInfoView::GetCPUInfo(system_info* sysInfo)
 {
-#if defined(__x86_64__) || defined(__i386__)
-    unsigned int eax, ebx, ecx, edx;
-    if (__get_cpuid(1, &eax, &ebx, &ecx, &edx)) {
-        int family = (eax >> 8) & 0xf;
-        int model = (eax >> 4) & 0xf;
-        int stepping = eax & 0xf;
-        if (family == 0xf) {
-            family += (eax >> 20) & 0xff;
-        }
-        if (family == 6 || family == 15) {
-            model += ((eax >> 16) & 0xf) << 4;
-        }
-        // Note: fCPUFamilyValue not in header, using model for now
-        fCPUSteppingValue->SetText(BString("Stepping: ") << stepping);
-    }
-
-    BString features;
-    if (hasSSE())     features += "SSE ";
-    if (hasSSE2())    features += "SSE2 ";
-    if (hasSSE3())    features += "SSE3 ";
-    if (hasSSSE3())   features += "SSSE3 ";
-    if (hasSSE41())   features += "SSE4.1 ";
-    if (hasSSE42())   features += "SSE4.2 ";
-    if (hasAVX())     features += "AVX ";
-    if (hasAVX2())    features += "AVX2 ";
-    if (hasAVX512())  features += "AVX-512 ";
-    if (hasAES())     features += "AES-NI ";
-    fCPUFeaturesValue->SetText(BString("Features: ") << (features.IsEmpty() ? "None detected" : features));
-
-    for (int i = 0; i < 16; ++i) {
-        if (!__get_cpuid_count(4, i, &eax, &ebx, &ecx, &edx)) break;
-        if ((eax & 0x1F) == 0) break;
-
-        int level = (eax >> 5) & 0x7;
-        int lineSize = (ebx & 0xFFF) + 1;
-        int partitions = ((ebx >> 12) & 0x3FF) + 1;
-        int ways = ((ebx >> 22) & 0x3FF) + 1;
-        int sets = ecx + 1;
-        int sizeKB = (ways * partitions * lineSize * sets) / 1024;
-
-        switch (level) {
-        case 1:
-            fL1CacheValue->SetText(BString("L1 Cache (I/D): ") << sizeKB << " KB");
-            break;
-        case 2:
-            fL2CacheValue->SetText(BString("L2 Cache: ") << sizeKB << " KB");
-            break;
-        case 3:
-            fL3CacheValue->SetText(BString("L3 Cache: ") << sizeKB << " KB");
-            break;
-        }
-    }
-#else
-    fCPUFeaturesValue->SetText("Features: Feature detection not supported on this architecture.");
-#endif
 }
 
 void SysInfoView::LoadData() {
+    BString infoText;
+    BFont boldFont(be_bold_font);
+    rgb_color black = {0, 0, 0, 255};
+
     system_info sysInfo;
     if (get_system_info(&sysInfo) != B_OK) {
-        const char* errorMsg = "Error fetching system info";
-        if (fKernelNameValue) fKernelNameValue->SetText(BString("Kernel Name: ") << errorMsg);
+        infoText << "Error fetching system info";
+        fInfoTextView->SetText(infoText.String());
         return;
     }
 
-    // --- OS Info ---
-    if (fKernelNameValue) fKernelNameValue->SetText(BString("Kernel Name: ") << sysInfo.kernel_name);
-
+    // OS Info
+    infoText << "OPERATING SYSTEM\n";
+    infoText << "Kernel Name: " << sysInfo.kernel_name << "\n";
     BString kernelVer;
     kernelVer.SetToFormat("%" B_PRId64 " (API %" B_PRIu32 ")",
                           sysInfo.kernel_version, sysInfo.abi);
-    if (fKernelVersionValue) fKernelVersionValue->SetText(BString("Kernel Version: ") << kernelVer);
-
+    infoText << "Kernel Version: " << kernelVer << "\n";
     char dateTimeStr[64];
     snprintf(dateTimeStr, sizeof(dateTimeStr), "%s %s",
              sysInfo.kernel_build_date, sysInfo.kernel_build_time);
@@ -371,11 +214,10 @@ void SysInfoView::LoadData() {
     if (strptime(dateTimeStr, "%b %d %Y %H:%M:%S", &build_tm)) {
         char isoStr[32];
         strftime(isoStr, sizeof(isoStr), "%Y-%m-%d %H:%M:%S", &build_tm);
-        if (fKernelBuildValue) fKernelBuildValue->SetText(BString("Build Date/Time: ") << isoStr);
+        infoText << "Build Date/Time: " << isoStr << "\n";
     } else {
-        if (fKernelBuildValue) fKernelBuildValue->SetText(BString("Build Date/Time: ") << dateTimeStr);
+        infoText << "Build Date/Time: " << dateTimeStr << "\n";
     }
-
     BString archStr;
 #if defined(__x86_64__)
     archStr = "x86_64";
@@ -396,51 +238,21 @@ void SysInfoView::LoadData() {
 #else
     archStr = "Unknown";
 #endif
-    if (fCPUArchValue) fCPUArchValue->SetText(BString("CPU Architecture: ") << archStr);
-    if (fUptimeValue) fUptimeValue->SetText(BString("System Uptime: ") << FormatUptime(sysInfo.boot_time));
+    infoText << "CPU Architecture: " << archStr << "\n";
+    infoText << "System Uptime: " << FormatUptime(sysInfo.boot_time) << "\n\n";
 
-    // --- CPU Info ---
+    // CPU Info
+    infoText << "PROCESSOR\n";
     BString cpuBrand = GetCPUBrandString();
-    if (fCPUModelValue) fCPUModelValue->SetText(BString("Model: ") << (cpuBrand.IsEmpty() ? "Unknown CPU" : cpuBrand));
-
-    // Microcode
-    BEntry microcodeEntry("/dev/microcode_info");
-    if (fMicrocodeValue) {
-        if (microcodeEntry.Exists()) {
-            int fd = open("/dev/microcode_info", O_RDONLY);
-            if (fd >= 0) {
-                char buffer[32] = {};
-                ssize_t len = read(fd, buffer, sizeof(buffer) - 1);
-                close(fd);
-                if (len > 0) {
-                    buffer[len] = '\0';
-                    BString microcodeStr = BString(buffer).Trim();
-                    fMicrocodeValue->SetText(BString("Microcode: ") << microcodeStr);
-                    if (fMicrocodeValue->Parent())
-                        fMicrocodeValue->Parent()->Show();
-                } else if (fMicrocodeValue->Parent()) {
-                    fMicrocodeValue->Parent()->Hide();
-                }
-            } else if (fMicrocodeValue->Parent()) {
-                fMicrocodeValue->Parent()->Hide();
-            }
-        } else if (fMicrocodeValue->Parent()) {
-            fMicrocodeValue->Parent()->Hide();
-        }
-    }
-
-    if (fCPUCoresValue) fCPUCoresValue->SetText(BString("Cores: ") << sysInfo.cpu_count);
-
+    infoText << "Model: " << (cpuBrand.IsEmpty() ? "Unknown CPU" : cpuBrand) << "\n";
+    infoText << "Cores: " << sysInfo.cpu_count << "\n";
     cpu_topology_node_info* topology = NULL;
     uint32_t topologyNodeCount = 0;
     if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
         topology = new cpu_topology_node_info[topologyNodeCount];
-        if (topology == NULL) {
-            return;
-        }
-        uint32_t actualNodeCount = topologyNodeCount;
-        if (get_cpu_topology_info(topology, &actualNodeCount) == B_OK) {
-            if (topology != nullptr) {
+        if (topology != NULL) {
+            uint32_t actualNodeCount = topologyNodeCount;
+            if (get_cpu_topology_info(topology, &actualNodeCount) == B_OK) {
                 uint64_t max_freq = 0;
                 for (uint32_t i = 0; i < actualNodeCount; i++) {
                     if (topology[i].type == B_TOPOLOGY_CORE) {
@@ -449,47 +261,44 @@ void SysInfoView::LoadData() {
                     }
                 }
                 if (max_freq > 0)
-                    fCPUClockSpeedValue->SetText(BString("Clock Speed: ") << FormatHertz(max_freq));
+                    infoText << "Clock Speed: " << FormatHertz(max_freq) << "\n";
             }
             delete[] topology;
         }
     }
+    infoText << "\n";
 
-    this->GetCPUInfo(&sysInfo);
-
-    // --- RAM Info ---
-    if (fTotalRAMValue) fTotalRAMValue->SetText(BString("Total RAM: ") << FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE));
-
-    // --- Graphics Info ---
+    // Graphics Info
+    infoText << "GRAPHICS\n";
     BScreen screen(B_MAIN_SCREEN_ID);
     if (screen.IsValid()) {
         accelerant_device_info deviceInfo;
         if (screen.GetDeviceInfo(&deviceInfo) == B_OK) {
-            if (fGPUTypeValue) fGPUTypeValue->SetText(BString("GPU Type: ") << deviceInfo.name);
-            if (fGPUDriverValue) fGPUDriverValue->SetText(BString("Driver: ") << deviceInfo.version);
-            if (fGPUVRAMValue) fGPUVRAMValue->SetText(BString("VRAM: ") << FormatBytes(deviceInfo.memory));
+            infoText << "GPU Type: " << deviceInfo.name << "\n";
+            infoText << "Driver: " << deviceInfo.version << "\n";
+            infoText << "VRAM: " << FormatBytes(deviceInfo.memory) << "\n";
         } else {
-            if (fGPUTypeValue) fGPUTypeValue->SetText("GPU Type: Error getting GPU info");
-            if (fGPUDriverValue) fGPUDriverValue->SetText("Driver: N/A");
-            if (fGPUVRAMValue) fGPUVRAMValue->SetText("VRAM: N/A");
+            infoText << "GPU Type: Error getting GPU info\n";
         }
         display_mode mode;
         if (screen.GetMode(&mode) == B_OK) {
             BString resStr;
             resStr.SetToFormat("%dx%d", mode.virtual_width, mode.virtual_height);
-            if (fScreenResolutionValue) fScreenResolutionValue->SetText(BString("Resolution: ") << resStr);
+            infoText << "Resolution: " << resStr << "\n";
         } else {
-            if (fScreenResolutionValue) fScreenResolutionValue->SetText("Resolution: N/A");
+            infoText << "Resolution: N/A\n";
         }
     } else {
-        if (fGPUTypeValue) fGPUTypeValue->SetText("GPU Type: Error: Invalid screen object");
-        if (fGPUDriverValue) fGPUDriverValue->SetText("Driver: N/A");
-        if (fGPUVRAMValue) fGPUVRAMValue->SetText("VRAM: N/A");
-        if (fScreenResolutionValue) fScreenResolutionValue->SetText("Resolution: N/A");
+        infoText << "GPU Type: Error: Invalid screen object\n";
     }
+    infoText << "\n";
 
-    // --- Disk Info ---
-    BString diskTextData;
+    // Memory Info
+    infoText << "MEMORY\n";
+    infoText << "Total RAM: " << FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n\n";
+
+    // Disk Info
+    infoText << "DISK VOLUMES\n";
     BVolume volume;
     BVolumeRoster volRoster;
     volRoster.Rewind();
@@ -500,39 +309,37 @@ void SysInfoView::LoadData() {
 
         fs_info fsInfo;
         if (fs_stat_dev(volume.Device(), &fsInfo) == B_OK) {
-            if (diskTextData.Length() > 0)
-                diskTextData << "\n---\n";
-            diskTextData << "Volume Name: " << fsInfo.volume_name << "\n";
+            if (diskCount > 1)
+                infoText << "\n---\n";
+            infoText << "Volume Name: " << fsInfo.volume_name << "\n";
 
             BDirectory rootDir;
-            if (volume.GetRootDirectory(&rootDir) != B_OK) {
-                diskTextData << "Error getting root directory\n";
-                continue;
+            if (volume.GetRootDirectory(&rootDir) == B_OK) {
+                BEntry entry;
+                if (rootDir.GetEntry(&entry) == B_OK) {
+                    BPath path;
+                    if (entry.GetPath(&path) == B_OK) {
+                        infoText << "Mount Point: " << path.Path() << "\n";
+                    }
+                }
             }
-            BEntry entry;
-            if (rootDir.GetEntry(&entry) != B_OK) {
-                diskTextData << "Error getting root entry\n";
-                continue;
-            }
-            BPath path;
-            if (entry.GetPath(&path) != B_OK) {
-                diskTextData << "Error getting path\n";
-                continue;
-            }
-            diskTextData << "Mount Point: " << path.Path() << "\n";
-
-            diskTextData << "File System: " << fsInfo.fsh_name << "\n";
-            diskTextData << "Total Size: " << FormatBytes(fsInfo.total_blocks * fsInfo.block_size).String() << "\n";
-            diskTextData << "Free Size: " << FormatBytes(fsInfo.free_blocks * fsInfo.block_size).String();
-        } else {
-            if (diskTextData.Length() > 0)
-                diskTextData << "\n---\n";
-            diskTextData << "Error getting filesystem info for a volume.\n";
+            infoText << "File System: " << fsInfo.fsh_name << "\n";
+            infoText << "Total Size: " << FormatBytes(fsInfo.total_blocks * fsInfo.block_size).String() << "\n";
+            infoText << "Free Size: " << FormatBytes(fsInfo.free_blocks * fsInfo.block_size).String() << "\n";
         }
     }
 
     if (diskCount == 0) {
-        diskTextData = "No disk volumes found or accessible.";
+        infoText << "No disk volumes found or accessible.";
     }
-    if (fDiskInfoTextView) fDiskInfoTextView->SetText(diskTextData.String());
+
+    fInfoTextView->SetText(infoText.String());
+
+    BFont font;
+    fInfoTextView->GetFont(&font);
+    fInfoTextView->SetFontAndColor(0, infoText.FindFirst("OPERATING SYSTEM") + 18, &boldFont, 0, &black);
+    fInfoTextView->SetFontAndColor(infoText.FindFirst("PROCESSOR"), infoText.FindFirst("PROCESSOR") + 9, &boldFont, 0, &black);
+    fInfoTextView->SetFontAndColor(infoText.FindFirst("GRAPHICS"), infoText.FindFirst("GRAPHICS") + 8, &boldFont, 0, &black);
+    fInfoTextView->SetFontAndColor(infoText.FindFirst("MEMORY"), infoText.FindFirst("MEMORY") + 6, &boldFont, 0, &black);
+    fInfoTextView->SetFontAndColor(infoText.FindFirst("DISK VOLUMES"), infoText.FindFirst("DISK VOLUMES") + 12, &boldFont, 0, &black);
 }

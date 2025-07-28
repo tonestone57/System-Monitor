@@ -27,39 +27,7 @@ private:
     BString GetCPUBrandString();
     void GetCPUInfo(system_info* sysInfo);
     
-    // OS Info
-    BStringView* fKernelNameValue;
-    BStringView* fKernelVersionValue;
-    BStringView* fKernelBuildValue;
-    BStringView* fCPUArchValue;
-    BStringView* fUptimeValue;
-    
-    // CPU Info
-    BStringView* fCPUModelValue;
-    BStringView* fMicrocodeValue;
-    BStringView* fCPUCoresValue;
-    BStringView* fCPUClockSpeedValue;
-    BStringView* fL1CacheValue;
-    BStringView* fL2CacheValue;
-    BStringView* fL3CacheValue;
-    BStringView* fCPUFeaturesValue;
-    BStringView* fCPUFamilyValue;
-    BStringView* fCPUSteppingValue;
-    
-    // GPU Info
-    BStringView* fGPUTypeValue;
-    BStringView* fGPUDriverValue;
-    BStringView* fGPUVRAMValue;
-    BStringView* fScreenResolutionValue;
-    
-    // Memory Info
-    BStringView* fTotalRAMValue;
-    
-    // Disk Info
-    BTextView* fDiskInfoTextView;
-    BScrollView* fDiskInfoScrollView;
-    
-    BBox* fMainSectionsBox;
+    BTextView* fInfoTextView;
 };
 
 #endif // SYSINFOVIEW_H
