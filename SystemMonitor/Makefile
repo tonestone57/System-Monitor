@@ -40,7 +40,7 @@ EXTRA_INCLUDES =
 LDFLAGS =
 
 # Specify the level of optimization
-OPTIMIZE := FULL
+OPTIMIZE := NONE
 
 # Specify the level of localization
 LOCALES =
@@ -58,9 +58,9 @@ SYMBOLS :=
 DEBUGGER := FALSE
 
 # Target-specific flags
-TARGET_CFLAGS =-O2 -march=pentium -mtune=generic
-TARGET_CPPFLAGS =-O2 -march=pentium -mtune=generic
-TARGET_LDFLAGS =-s
+TARGET_CFLAGS =-Og -g
+TARGET_CPPFLAGS =-Og -g
+TARGET_LDFLAGS =
 
 ## Include the Haiku makefile system rules
 include $(BUILDHOME)/etc/makefile-engine
