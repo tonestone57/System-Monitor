@@ -78,7 +78,7 @@ SysInfoView::SysInfoView(BRect frame)
     : BView(frame, "SysInfoView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW),
       fInfoTextView(NULL)
 {
-    SetViewColor(B_TRANSPARENT_COLOR);
+    SetViewColor(255, 255, 255, 255);
     CreateLayout();
 }
 
@@ -90,7 +90,8 @@ SysInfoView::~SysInfoView()
 void SysInfoView::CreateLayout()
 {
     fInfoTextView = new BTextView("info_text_view");
-    fInfoTextView->SetViewColor(255, 255, 255, 255);
+    fInfoTextView->SetViewColor(B_TRANSPARENT_COLOR);
+    fInfoTextView->SetLowColor(255, 255, 255, 255);
     fInfoTextView->SetStylable(true);
     fInfoTextView->MakeEditable(false);
 
@@ -190,8 +191,6 @@ void SysInfoView::GetCPUInfo(system_info* sysInfo)
 
 void SysInfoView::LoadData() {
     BString infoText;
-    BFont boldFont(be_bold_font);
-    rgb_color black = {0, 0, 0, 255};
 
     system_info sysInfo;
     if (get_system_info(&sysInfo) != B_OK) {
@@ -201,7 +200,7 @@ void SysInfoView::LoadData() {
     }
 
     // OS Info
-    infoText << "OPERATING SYSTEM\n";
+    infoText << "OPERATING SYSTEM\n\n";
     infoText << "Kernel Name: " << sysInfo.kernel_name << "\n";
     BString kernelVer;
     kernelVer.SetToFormat("%" B_PRId64 " (API %" B_PRIu32 ")",
@@ -239,10 +238,10 @@ void SysInfoView::LoadData() {
     archStr = "Unknown";
 #endif
     infoText << "CPU Architecture: " << archStr << "\n";
-    infoText << "System Uptime: " << FormatUptime(sysInfo.boot_time) << "\n\n";
+    infoText << "System Uptime: " << FormatUptime(sysInfo.boot_time) << "\n\n\n";
 
     // CPU Info
-    infoText << "PROCESSOR\n";
+    infoText << "PROCESSOR\n\n";
     BString cpuBrand = GetCPUBrandString();
     infoText << "Model: " << (cpuBrand.IsEmpty() ? "Unknown CPU" : cpuBrand) << "\n";
     infoText << "Cores: " << sysInfo.cpu_count << "\n";
@@ -266,10 +265,10 @@ void SysInfoView::LoadData() {
             delete[] topology;
         }
     }
-    infoText << "\n";
+    infoText << "\n\n";
 
     // Graphics Info
-    infoText << "GRAPHICS\n";
+    infoText << "GRAPHICS\n\n";
     BScreen screen(B_MAIN_SCREEN_ID);
     if (screen.IsValid()) {
         accelerant_device_info deviceInfo;
@@ -291,14 +290,14 @@ void SysInfoView::LoadData() {
     } else {
         infoText << "GPU Type: Error: Invalid screen object\n";
     }
-    infoText << "\n";
+    infoText << "\n\n";
 
     // Memory Info
-    infoText << "MEMORY\n";
-    infoText << "Total RAM: " << FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n\n";
+    infoText << "MEMORY\n\n";
+    infoText << "Total RAM: " << FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n\n\n";
 
     // Disk Info
-    infoText << "DISK VOLUMES\n";
+    infoText << "DISK VOLUMES\n\n";
     BVolume volume;
     BVolumeRoster volRoster;
     volRoster.Rewind();
@@ -337,9 +336,11 @@ void SysInfoView::LoadData() {
 
     BFont font;
     fInfoTextView->GetFont(&font);
-    fInfoTextView->SetFontAndColor(0, infoText.FindFirst("OPERATING SYSTEM") + 18, &boldFont, 0, &black);
-    fInfoTextView->SetFontAndColor(infoText.FindFirst("PROCESSOR"), infoText.FindFirst("PROCESSOR") + 9, &boldFont, 0, &black);
-    fInfoTextView->SetFontAndColor(infoText.FindFirst("GRAPHICS"), infoText.FindFirst("GRAPHICS") + 8, &boldFont, 0, &black);
-    fInfoTextView->SetFontAndColor(infoText.FindFirst("MEMORY"), infoText.FindFirst("MEMORY") + 6, &boldFont, 0, &black);
-    fInfoTextView->SetFontAndColor(infoText.FindFirst("DISK VOLUMES"), infoText.FindFirst("DISK VOLUMES") + 12, &boldFont, 0, &black);
+    BFont boldFont(be_bold_font);
+
+    fInfoTextView->SetFontAndColor(0, infoText.FindFirst("OPERATING SYSTEM") + 18, &boldFont);
+    fInfoTextView->SetFontAndColor(infoText.FindFirst("PROCESSOR"), infoText.FindFirst("PROCESSOR") + 9, &boldFont);
+    fInfoTextView->SetFontAndColor(infoText.FindFirst("GRAPHICS"), infoText.FindFirst("GRAPHICS") + 8, &boldFont);
+    fInfoTextView->SetFontAndColor(infoText.FindFirst("MEMORY"), infoText.FindFirst("MEMORY") + 6, &boldFont);
+    fInfoTextView->SetFontAndColor(infoText.FindFirst("DISK VOLUMES"), infoText.FindFirst("DISK VOLUMES") + 12, &boldFont);
 }
