@@ -90,18 +90,17 @@ SysInfoView::~SysInfoView()
 void SysInfoView::CreateLayout()
 {
     fInfoTextView = new BTextView("info_text_view");
-    fInfoTextView->SetViewColor(B_TRANSPARENT_COLOR);
-    fInfoTextView->SetLowColor(255, 255, 255, 255);
+    fInfoTextView->SetViewColor(255, 255, 255, 255);
     fInfoTextView->SetStylable(true);
     fInfoTextView->MakeEditable(false);
+	fInfoTextView->SetWordWrap(false);
 
     BScrollView* scrollView = new BScrollView("sysInfoScroller", fInfoTextView,
         B_FOLLOW_ALL, 0, false, true);
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
         .SetInsets(0)
-        .Add(scrollView)
-    .End();
+        .Add(scrollView);
 }
 
 
