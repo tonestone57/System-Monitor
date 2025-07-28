@@ -20,7 +20,7 @@ public:
     void AddSample(float percent) {
         if (fHistory.size() >= fMaxSamples)
             fHistory.pop_front();
-        fHistory.push_back(std::clamp(percent, 0.0f, 100.0f));
+        fHistory.push_back(std::max(0.0f, std::min(percent, 100.0f)));
         Invalidate();
     }
 
