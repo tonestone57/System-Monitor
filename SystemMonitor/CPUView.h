@@ -21,7 +21,7 @@ public:
 private:
     void CreateLayout();
     void UpdateData();
-    void GetCPUUsage(float& overallUsage, std::vector<float>& perCoreUsage);
+    void GetCPUUsage(float& overallUsage);
     
     BStringView* fOverallUsageValue;
     LiveGraphView* fGraphView;

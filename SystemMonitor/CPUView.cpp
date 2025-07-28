@@ -1,5 +1,5 @@
 #include "CPUView.h"
-#include <stdio.h>
+#include <cstdio>
 #include <String.h>
 #include <kernel/OS.h>
 #include <LayoutBuilder.h>
@@ -52,29 +52,35 @@ void CPUView::CreateLayout()
 
     // Initialize system info
     system_info sysInfo;
-    if (get_system_info(&sysInfo) == B_OK) {
-        fPreviousSysInfo = sysInfo;
-        fCpuCount = sysInfo.cpu_count;
+    if (get_system_info(&sysInfo) != B_OK) {
+        fOverallUsageValue->SetText("Error fetching CPU info");
+        return;
+    }
 
-        if (fCpuCount > 0) {
-            fPreviousIdleTime = new bigtime_t[fCpuCount];
-            for (uint32 i = 0; i < fCpuCount; ++i) {
-                cpu_info info;
-                if (get_cpu_info(i, 1, &info) == B_OK)
-                    fPreviousIdleTime[i] = info.active_time;
-                else
-                    fPreviousIdleTime[i] = 0;
-            }
-        } else {
-            fOverallUsageValue->SetText("No CPU data");
+    fPreviousSysInfo = sysInfo;
+    fCpuCount = sysInfo.cpu_count;
+
+    if (fCpuCount > 0) {
+        fPreviousIdleTime = new(std::nothrow) bigtime_t[fCpuCount];
+        if (!fPreviousIdleTime) {
+            fOverallUsageValue->SetText("Memory allocation failed");
+            return;
+        }
+        for (uint32 i = 0; i < fCpuCount; ++i) {
+            cpu_info info;
+            if (get_cpu_info(i, 1, &info) == B_OK)
+                fPreviousIdleTime[i] = info.active_time;
+            else
+                fPreviousIdleTime[i] = 0;
         }
     } else {
-        fOverallUsageValue->SetText("Error fetching CPU info");
+        fOverallUsageValue->SetText("No CPU data");
     }
 }
 
 CPUView::~CPUView() {
-    delete[] fPreviousIdleTime;
+    if (fPreviousIdleTime)
+        delete[] fPreviousIdleTime;
 }
 
 void CPUView::AttachedToWindow() {
@@ -89,7 +95,7 @@ void CPUView::Pulse() {
     UpdateData();
 }
 
-void CPUView::GetCPUUsage(float& overallUsage, std::vector<float>& perCoreUsage)
+void CPUView::GetCPUUsage(float& overallUsage)
 {
     if (fCpuCount == 0 || fPreviousIdleTime == NULL) {
         overallUsage = -1.0f;
@@ -129,8 +135,7 @@ void CPUView::UpdateData()
     fLocker.Lock();
 
     float overallUsage;
-    fPerCoreUsage.resize(fCpuCount);
-    GetCPUUsage(overallUsage, fPerCoreUsage);
+    GetCPUUsage(overallUsage);
 
     if (overallUsage >= 0) {
         char buffer[32];
