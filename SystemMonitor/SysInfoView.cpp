@@ -475,7 +475,7 @@ void SysInfoView::LoadData() {
             if (max_freq > 0)
                 fCPUClockSpeedValue->SetText(FormatHertz(max_freq));
         }
-        delete[] topology;
+        // delete[] topology;
     }
 
     this->GetCPUInfo(&sysInfo);
