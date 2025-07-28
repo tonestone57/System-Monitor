@@ -5,7 +5,6 @@
 #include <VolumeRoster.h>
 #include <Volume.h>
 #include <fs_info.h>
-#include <stdio.h>
 #include <time.h>
 #include <TextView.h>
 #include <String.h>
@@ -358,29 +357,21 @@ void SysInfoView::GetCPUInfo(system_info* sysInfo)
 #endif
 }
 
-#include <stdio.h>
-
 void SysInfoView::LoadData() {
-    printf("SysInfoView::LoadData() - entry\n");
     system_info sysInfo;
     if (get_system_info(&sysInfo) != B_OK) {
-        const char* errorMsg = "Error fetching system info";
-        if (fKernelNameValue) fKernelNameValue->SetText(errorMsg);
+        fKernelNameValue->SetText("Error fetching system info");
         return;
     }
-    printf("SysInfoView::LoadData() - got system info\n");
 
     // --- OS Info ---
-    printf("SysInfoView::LoadData() - setting kernel name\n");
-    if (fKernelNameValue) fKernelNameValue->SetText(sysInfo.kernel_name);
+    fKernelNameValue->SetText(sysInfo.kernel_name);
 
-    printf("SysInfoView::LoadData() - setting kernel version\n");
     BString kernelVer;
     kernelVer.SetToFormat("%" B_PRId64 " (API %" B_PRIu32 ")",
                           sysInfo.kernel_version, sysInfo.abi);
-    if (fKernelVersionValue) fKernelVersionValue->SetText(kernelVer);
+    fKernelVersionValue->SetText(kernelVer);
 
-    printf("SysInfoView::LoadData() - setting build date/time\n");
     char dateTimeStr[64];
     snprintf(dateTimeStr, sizeof(dateTimeStr), "%s %s",
              sysInfo.kernel_build_date, sysInfo.kernel_build_time);
@@ -388,11 +379,10 @@ void SysInfoView::LoadData() {
     if (strptime(dateTimeStr, "%b %d %Y %H:%M:%S", &build_tm)) {
         char isoStr[32];
         strftime(isoStr, sizeof(isoStr), "%Y-%m-%d %H:%M:%S", &build_tm);
-        if (fKernelBuildValue) fKernelBuildValue->SetText(isoStr);
+        fKernelBuildValue->SetText(isoStr);
     } else {
-        if (fKernelBuildValue) fKernelBuildValue->SetText(dateTimeStr);
+        fKernelBuildValue->SetText(dateTimeStr);
     }
-    printf("SysInfoView::LoadData() - finished OS info\n");
 
     BString archStr;
 #if defined(__x86_64__)
@@ -414,58 +404,49 @@ void SysInfoView::LoadData() {
 #else
     archStr = "Unknown";
 #endif
-    if (fCPUArchValue) fCPUArchValue->SetText(archStr);
-    if (fUptimeValue) fUptimeValue->SetText(FormatUptime(sysInfo.boot_time).String());
+    fCPUArchValue->SetText(archStr);
+    fUptimeValue->SetText(FormatUptime(sysInfo.boot_time).String());
 
     // --- CPU Info ---
-    printf("SysInfoView::LoadData() - getting CPU info\n");
     BString cpuBrand = GetCPUBrandString();
-    if (fCPUModelValue) fCPUModelValue->SetText(cpuBrand.IsEmpty() ? "Unknown CPU" : cpuBrand);
+    fCPUModelValue->SetText(cpuBrand.IsEmpty() ? "Unknown CPU" : cpuBrand);
 
-    printf("SysInfoView::LoadData() - getting microcode info\n");
     // Microcode
-    BEntry microcodeEntry("/dev/microcode_info");
-    if (fMicrocodeValue) {
-        if (microcodeEntry.Exists()) {
-            int fd = open("/dev/microcode_info", O_RDONLY);
-            if (fd >= 0) {
-                char buffer[32] = {};
-                ssize_t len = read(fd, buffer, sizeof(buffer) - 1);
-                close(fd);
-                if (len > 0) {
-                    buffer[len] = '\0';
-                    BString microcodeStr = BString(buffer).Trim();
-                    fMicrocodeValue->SetText(microcodeStr);
-                    if (fMicrocodeValue->Parent())
-                        fMicrocodeValue->Parent()->Show();
-                } else if (fMicrocodeValue->Parent()) {
-                    fMicrocodeValue->Parent()->Hide();
-                }
-            } else if (fMicrocodeValue->Parent()) {
-                fMicrocodeValue->Parent()->Hide();
-            }
+    int fd = open("/dev/microcode_info", O_RDONLY);
+    if (fd >= 0) {
+        char buffer[32] = {};
+        ssize_t len = read(fd, buffer, sizeof(buffer) - 1);
+        close(fd);
+        if (len > 0) {
+            buffer[len] = '\0';
+            BString microcodeStr = BString(buffer).Trim();
+            fMicrocodeValue->SetText(microcodeStr);
+            if (fMicrocodeValue->Parent())
+                fMicrocodeValue->Parent()->Show();
         } else if (fMicrocodeValue->Parent()) {
             fMicrocodeValue->Parent()->Hide();
         }
+    } else if (fMicrocodeValue->Parent()) {
+        fMicrocodeValue->Parent()->Hide();
     }
 
-    printf("SysInfoView::LoadData() - setting cpu cores\n");
-    if (fCPUCoresValue) fCPUCoresValue->SetText(BString() << sysInfo.cpu_count);
-    printf("SysInfoView::LoadData() - finished setting cpu cores\n");
+    fCPUCoresValue->SetText(BString() << sysInfo.cpu_count);
 
-    printf("SysInfoView::LoadData() - getting cpu topology info\n");
     cpu_topology_node_info* topology = NULL;
     uint32_t topologyNodeCount = 0;
     if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
-        printf("SysInfoView::LoadData() - topologyNodeCount: %u\n", topologyNodeCount);
-        topology = new cpu_topology_node_info[topologyNodeCount];
+        topology = new(std::nothrow) cpu_topology_node_info[topologyNodeCount];
         if (topology == NULL) {
-            printf("SysInfoView::LoadData() - failed to allocate memory for cpu_topology_node_info\n");
-            return;
-        }
-        uint32_t actualNodeCount = topologyNodeCount;
-        if (get_cpu_topology_info(topology, &actualNodeCount) == B_OK) {
-            if (topology != nullptr) {
+            // Handle memory allocation failure if necessary
+        } else {
+            struct TopologyGuard {
+                cpu_topology_node_info*& fTopology;
+                TopologyGuard(cpu_topology_node_info*& topology) : fTopology(topology) {}
+                ~TopologyGuard() { delete[] fTopology; }
+            } topologyGuard(topology);
+
+            uint32_t actualNodeCount = topologyNodeCount;
+            if (get_cpu_topology_info(topology, &actualNodeCount) == B_OK && topology != nullptr) {
                 uint64_t max_freq = 0;
                 for (uint32_t i = 0; i < actualNodeCount; i++) {
                     if (topology[i].type == B_TOPOLOGY_CORE) {
@@ -476,53 +457,41 @@ void SysInfoView::LoadData() {
                 if (max_freq > 0)
                     fCPUClockSpeedValue->SetText(FormatHertz(max_freq));
             }
-            delete[] topology;
         }
     }
 
     this->GetCPUInfo(&sysInfo);
-    printf("SysInfoView::LoadData() - finished cpu topology info\n");
-    printf("SysInfoView::LoadData() - finished CPU info\n");
 
     // --- RAM Info ---
-    if (fTotalRAMValue) fTotalRAMValue->SetText(FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE).String());
+    fTotalRAMValue->SetText(FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE).String());
 
     // --- Graphics Info ---
-    printf("SysInfoView::LoadData() - getting graphics info\n");
     BScreen screen(B_MAIN_SCREEN_ID);
-    printf("SysInfoView::LoadData() - created BScreen object\n");
     if (screen.IsValid()) {
-        printf("SysInfoView::LoadData() - BScreen is valid\n");
         accelerant_device_info deviceInfo;
         if (screen.GetDeviceInfo(&deviceInfo) == B_OK) {
-            printf("SysInfoView::LoadData() - got device info\n");
-            if (fGPUTypeValue) fGPUTypeValue->SetText(deviceInfo.name);
-            if (fGPUDriverValue) fGPUDriverValue->SetText(BString() << deviceInfo.version);
-            if (fGPUVRAMValue) fGPUVRAMValue->SetText(FormatBytes(deviceInfo.memory).String());
+            fGPUTypeValue->SetText(deviceInfo.name);
+            fGPUDriverValue->SetText(BString() << deviceInfo.version);
+            fGPUVRAMValue->SetText(FormatBytes(deviceInfo.memory).String());
         } else {
-            printf("SysInfoView::LoadData() - failed to get device info\n");
-            if (fGPUTypeValue) fGPUTypeValue->SetText("Error getting GPU info");
-            if (fGPUDriverValue) fGPUDriverValue->SetText("N/A");
-            if (fGPUVRAMValue) fGPUVRAMValue->SetText("N/A");
+            fGPUTypeValue->SetText("Error getting GPU info");
+            fGPUDriverValue->SetText("N/A");
+            fGPUVRAMValue->SetText("N/A");
         }
         display_mode mode;
         if (screen.GetMode(&mode) == B_OK) {
-            printf("SysInfoView::LoadData() - got display mode\n");
             BString resStr;
             resStr.SetToFormat("%dx%d", mode.virtual_width, mode.virtual_height);
-            if (fScreenResolutionValue) fScreenResolutionValue->SetText(resStr);
+            fScreenResolutionValue->SetText(resStr);
         } else {
-            printf("SysInfoView::LoadData() - failed to get display mode\n");
-            if (fScreenResolutionValue) fScreenResolutionValue->SetText("N/A");
+            fScreenResolutionValue->SetText("N/A");
         }
     } else {
-        printf("SysInfoView::LoadData() - BScreen is invalid\n");
-        if (fGPUTypeValue) fGPUTypeValue->SetText("Error: Invalid screen object");
-        if (fGPUDriverValue) fGPUDriverValue->SetText("N/A");
-        if (fGPUVRAMValue) fGPUVRAMValue->SetText("N/A");
-        if (fScreenResolutionValue) fScreenResolutionValue->SetText("N/A");
+        fGPUTypeValue->SetText("Error: Invalid screen object");
+        fGPUDriverValue->SetText("N/A");
+        fGPUVRAMValue->SetText("N/A");
+        fScreenResolutionValue->SetText("N/A");
     }
-    printf("SysInfoView::LoadData() - finished graphics info\n");
 
     // --- Disk Info ---
     BString diskTextData;
@@ -535,40 +504,31 @@ void SysInfoView::LoadData() {
         diskCount++;
 
         fs_info fsInfo;
-        if (fs_stat_dev(volume.Device(), &fsInfo) == B_OK) {
-            if (diskTextData.Length() > 0)
-                diskTextData << "\n---\n";
-            diskTextData << "Volume Name: " << fsInfo.volume_name << "\n";
-
-            BDirectory rootDir;
-            if (volume.GetRootDirectory(&rootDir) != B_OK) {
-                diskTextData << "Error getting root directory\n";
-                continue;
-            }
-            BEntry entry;
-            if (rootDir.GetEntry(&entry) != B_OK) {
-                diskTextData << "Error getting root entry\n";
-                continue;
-            }
-            BPath path;
-            if (entry.GetPath(&path) != B_OK) {
-                diskTextData << "Error getting path\n";
-                continue;
-            }
-            diskTextData << "Mount Point: " << path.Path() << "\n";
-
-            diskTextData << "File System: " << fsInfo.fsh_name << "\n";
-            diskTextData << "Total Size: " << FormatBytes(fsInfo.total_blocks * fsInfo.block_size).String() << "\n";
-            diskTextData << "Free Size: " << FormatBytes(fsInfo.free_blocks * fsInfo.block_size).String();
-        } else {
-            if (diskTextData.Length() > 0)
-                diskTextData << "\n---\n";
-            diskTextData << "Error getting filesystem info for a volume.\n";
+        if (fs_stat_dev(volume.Device(), &fsInfo) != B_OK) {
+            if (diskTextData.Length() > 0) diskTextData << "\n---\n";
+            diskTextData << "Error: Unable to retrieve filesystem information for a volume.";
+            continue;
         }
+
+        if (diskTextData.Length() > 0)
+            diskTextData << "\n---\n";
+        diskTextData << "Volume Name: " << fsInfo.volume_name << "\n";
+
+        BPath path;
+        BDirectory rootDir;
+        if (volume.GetRootDirectory(&rootDir) == B_OK && BEntry(&rootDir).GetPath(&path) == B_OK) {
+             diskTextData << "Mount Point: " << path.Path() << "\n";
+        } else {
+             diskTextData << "Mount Point: (Unavailable)\n";
+        }
+
+        diskTextData << "File System: " << fsInfo.fsh_name << "\n";
+        diskTextData << "Total Size: " << FormatBytes(fsInfo.total_blocks * fsInfo.block_size).String() << "\n";
+        diskTextData << "Free Size: " << FormatBytes(fsInfo.free_blocks * fsInfo.block_size).String();
     }
 
     if (diskCount == 0) {
-        diskTextData = "No disk volumes found or accessible.";
+        diskTextData = "No disk volumes found.";
     }
-    if (fDiskInfoTextView) fDiskInfoTextView->SetText(diskTextData.String());
+    fDiskInfoTextView->SetText(diskTextData.String());
 }
