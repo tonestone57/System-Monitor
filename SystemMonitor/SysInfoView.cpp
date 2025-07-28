@@ -448,7 +448,9 @@ void SysInfoView::LoadData() {
         fMicrocodeValue->Parent()->Hide();
     }
 
+    printf("SysInfoView::LoadData() - setting cpu cores\n");
     if (fCPUCoresValue) fCPUCoresValue->SetText(BString() << sysInfo.cpu_count);
+    printf("SysInfoView::LoadData() - finished setting cpu cores\n");
 
     printf("SysInfoView::LoadData() - getting cpu topology info\n");
     cpu_topology_node_info* topology = NULL;
