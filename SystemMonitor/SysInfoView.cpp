@@ -120,6 +120,8 @@ SysInfoView::~SysInfoView()
 
 void SysInfoView::CreateLayout()
 {
+    SetViewColor(255, 255, 255, 255);
+
     // --- OS Section ---
     BBox* osBox = new BBox("OSInfo");
     osBox->SetLabel("Operating System");
@@ -190,27 +192,14 @@ void SysInfoView::CreateLayout()
         .SetInsets(B_USE_DEFAULT_SPACING)
         .Add(fDiskInfoScrollView);
 
-    // --- Main Layout ---
-    BGroupLayout* mainGroupLayout = new BGroupLayout(B_VERTICAL, B_USE_DEFAULT_SPACING);
-    mainGroupLayout->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING,
-                               B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    mainGroupLayout->AddView(osBox);
-    mainGroupLayout->AddView(cpuBox);
-    mainGroupLayout->AddView(graphicsBox);
-    mainGroupLayout->AddView(memoryBox);
-    mainGroupLayout->AddView(diskBox);
-    mainGroupLayout->AddItem(BSpaceLayoutItem::CreateGlue());
-
-    BGroupView* groupView = new BGroupView(B_VERTICAL);
-    groupView->SetLayout(mainGroupLayout);
-
-    BScrollView* viewScroller = new BScrollView("sysInfoScroller", groupView,
-        0, false, true, B_NO_BORDER);
-
-    BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
-        .SetInsets(0)
-        .Add(viewScroller)
-    .End();
+    BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
+        .SetInsets(B_USE_DEFAULT_SPACING)
+        .Add(osBox)
+        .Add(cpuBox)
+        .Add(graphicsBox)
+        .Add(memoryBox)
+        .Add(diskBox)
+        .AddGlue();
 }
 
 void SysInfoView::AttachedToWindow()
