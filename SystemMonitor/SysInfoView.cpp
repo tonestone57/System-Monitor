@@ -100,6 +100,8 @@ SysInfoView::SysInfoView(BRect frame)
       fL2CacheValue(NULL),
       fL3CacheValue(NULL),
       fCPUFeaturesValue(NULL),
+      fCPUFamilyValue(NULL),
+      fCPUSteppingValue(NULL),
       fGPUTypeValue(NULL),
       fGPUDriverValue(NULL),
       fGPUVRAMValue(NULL),
