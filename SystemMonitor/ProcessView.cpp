@@ -232,6 +232,7 @@ void ProcessView::UpdateData()
     if (totalPossibleCoreTime <= 0) totalPossibleCoreTime = 1.0f;
 
     std::set<team_id> activePIDsThisPulse;
+    std::map<team_id, float> teamCPUUsage;
 
     int32 cookie = 0;
     team_info teamInfo;
@@ -259,19 +260,24 @@ void ProcessView::UpdateData()
         currentProc.userName = GetUserName(currentProc.userID);
         
         // Calculate CPU time
-        uint64_t procTotalUserTime = 0;
-        uint64_t procTotalKernelTime = 0;
         int32 threadCookie = 0;
         thread_info tInfo;
-
         while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
-            procTotalUserTime += tInfo.user_time;
-            procTotalKernelTime += tInfo.kernel_time;
+            if (strcmp(tInfo.name, "idle thread") == 0)
+                continue;
+
+            bigtime_t threadTime = tInfo.user_time + tInfo.kernel_time;
+            if (fThreadTimeMap.count(tInfo.thread)) {
+                bigtime_t threadTimeDelta = threadTime - fThreadTimeMap[tInfo.thread];
+                if (threadTimeDelta < 0) threadTimeDelta = 0;
+                float cpuPercent = (float)threadTimeDelta / totalPossibleCoreTime * 100.0f;
+                if (cpuPercent < 0.0f) cpuPercent = 0.0f;
+                if (cpuPercent > 100.0f) cpuPercent = 100.0f;
+                teamCPUUsage[teamInfo.team] += cpuPercent;
+            }
+            fThreadTimeMap[tInfo.thread] = threadTime;
         }
 
-        currentProc.totalUserTime = procTotalUserTime;
-        currentProc.totalKernelTime = procTotalKernelTime;
-        
         // Calculate Memory Usage
         currentProc.memoryUsageBytes = 0;
         area_info areaInfo;
@@ -280,29 +286,7 @@ void ProcessView::UpdateData()
             currentProc.memoryUsageBytes += areaInfo.ram_size;
         }
 
-        // Calculate CPU Usage
-        float cpuPercent = 0.0f;
-        if (fProcessTimeMap.count(currentProc.id)) {
-            ProcessInfo& prevProc = fProcessTimeMap[currentProc.id];
-            bigtime_t procKernelDelta = currentProc.totalKernelTime - prevProc.totalKernelTime;
-            bigtime_t procUserDelta = currentProc.totalUserTime - prevProc.totalUserTime;
-            bigtime_t procTotalTimeDelta = procKernelDelta + procUserDelta;
-
-            if (procTotalTimeDelta < 0) procTotalTimeDelta = 0;
-
-            cpuPercent = (float)procTotalTimeDelta / totalPossibleCoreTime * 100.0f;
-            if (cpuPercent < 0.0f) cpuPercent = 0.0f;
-            if (cpuPercent > 100.0f) cpuPercent = 100.0f;
-
-            // Don't include idle time in kernel usage
-            if (currentProc.id == 2 && currentProc.name.FindFirst("kernel") != B_ERROR) {
-                cpuPercent = 0;
-            }
-        }
-        currentProc.cpuUsage = cpuPercent;
-
-        // Store current times for next calculation
-        fProcessTimeMap[currentProc.id] = currentProc;
+        currentProc.cpuUsage = teamCPUUsage[teamInfo.team];
 
         // Find or Create Row in BColumnListView
         BRow* row = NULL;
