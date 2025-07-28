@@ -233,6 +233,7 @@ void ProcessView::UpdateData()
 
     std::set<team_id> activePIDsThisPulse;
     std::map<team_id, float> teamCPUUsage;
+    bigtime_t totalActiveTime = 0;
 
     int32 cookie = 0;
     team_info teamInfo;
@@ -263,13 +264,15 @@ void ProcessView::UpdateData()
         int32 threadCookie = 0;
         thread_info tInfo;
         while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
-            if (strstr(tInfo.name, "idle thread") != NULL)
-                continue;
-
             bigtime_t threadTime = tInfo.user_time + tInfo.kernel_time;
             if (fThreadTimeMap.count(tInfo.thread)) {
                 bigtime_t threadTimeDelta = threadTime - fThreadTimeMap[tInfo.thread];
                 if (threadTimeDelta < 0) threadTimeDelta = 0;
+
+                if (strstr(tInfo.name, "idle thread") == NULL) {
+                    totalActiveTime += threadTimeDelta;
+                }
+
                 float cpuPercent = (float)threadTimeDelta / totalPossibleCoreTime * 100.0f;
                 if (cpuPercent < 0.0f) cpuPercent = 0.0f;
                 if (cpuPercent > 100.0f) cpuPercent = 100.0f;
@@ -321,6 +324,26 @@ void ProcessView::UpdateData()
             ((BIntegerField*)row->GetField(kThreadCountColumn))->SetValue(currentProc.threadCount);
             ((BStringField*)row->GetField(kUserNameColumn))->SetString(currentProc.userName.String());
             fProcessListView->UpdateRow(row);
+        }
+    }
+
+    // Correct kernel CPU usage
+    if (teamCPUUsage.count(2)) {
+        float kernelUsage = (float)totalActiveTime / totalPossibleCoreTime * 100.0f;
+        if (kernelUsage < 0.0f) kernelUsage = 0.0f;
+        if (kernelUsage > 100.0f) kernelUsage = 100.0f;
+        teamCPUUsage[2] = kernelUsage;
+
+        BRow* row = NULL;
+        for (int32 i = 0; (row = fProcessListView->RowAt(i)) != NULL; i++) {
+            BIntegerField* pidField = dynamic_cast<BIntegerField*>(row->GetField(kPIDColumn));
+            if (pidField && pidField->Value() == 2) {
+                char cpuStr[16];
+                snprintf(cpuStr, sizeof(cpuStr), "%.1f", kernelUsage);
+                ((BStringField*)row->GetField(kCPUUsageColumn))->SetString(cpuStr);
+                fProcessListView->UpdateRow(row);
+                break;
+            }
         }
     }
 
