@@ -457,6 +457,10 @@ void SysInfoView::LoadData() {
     uint32_t topologyNodeCount = 0;
     if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK) {
         topology = new cpu_topology_node_info[topologyNodeCount];
+        if (topology == NULL) {
+            printf("SysInfoView::LoadData() - failed to allocate memory for cpu_topology_node_info\n");
+            return;
+        }
         if (get_cpu_topology_info(topology, &topologyNodeCount) == B_OK) {
             uint64_t max_freq = 0;
             for (uint32_t i = 0; i < topologyNodeCount; i++) {
