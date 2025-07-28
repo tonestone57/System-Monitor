@@ -1,4 +1,5 @@
 #include "SysInfoView.h"
+#include <cstdio>
 #include <kernel/OS.h>
 #include <Screen.h>
 #include <GraphicsDefs.h>
@@ -516,7 +517,7 @@ void SysInfoView::LoadData() {
 
         BPath path;
         BDirectory rootDir;
-        if (volume.GetRootDirectory(&rootDir) == B_OK && BEntry(&rootDir).GetPath(&path) == B_OK) {
+        if (volume.GetRootDirectory(&rootDir) == B_OK && BEntry(&rootDir, ".").GetPath(&path) == B_OK) {
              diskTextData << "Mount Point: " << path.Path() << "\n";
         } else {
              diskTextData << "Mount Point: (Unavailable)\n";

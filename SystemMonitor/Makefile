@@ -34,7 +34,7 @@ LIBS = be tracker columnlistview network bnetapi localestub $(STDCPPLIBS)
 EXTRA_OBJS =
 
 # Additional directories with source files
-EXTRA_INCLUDES =
+EXTRA_INCLUDES = /boot/system/develop/headers/os
 
 # Additional linker flags
 LDFLAGS =
