@@ -329,20 +329,22 @@ void ProcessView::UpdateData()
 
     // Correct kernel CPU usage
     if (teamCPUUsage.count(2)) {
-        float kernelUsage = (float)totalActiveTime / totalPossibleCoreTime * 100.0f;
-        if (kernelUsage < 0.0f) kernelUsage = 0.0f;
-        if (kernelUsage > 100.0f) kernelUsage = 100.0f;
-        teamCPUUsage[2] = kernelUsage;
+        if (totalPossibleCoreTime > 0.0f) {
+            float kernelUsage = (float)totalActiveTime / totalPossibleCoreTime * 100.0f;
+            if (kernelUsage < 0.0f) kernelUsage = 0.0f;
+            if (kernelUsage > 100.0f) kernelUsage = 100.0f;
+            teamCPUUsage[2] = kernelUsage;
 
-        BRow* row = NULL;
-        for (int32 i = 0; (row = fProcessListView->RowAt(i)) != NULL; i++) {
-            BIntegerField* pidField = dynamic_cast<BIntegerField*>(row->GetField(kPIDColumn));
-            if (pidField && pidField->Value() == 2) {
-                char cpuStr[16];
-                snprintf(cpuStr, sizeof(cpuStr), "%.1f", kernelUsage);
-                ((BStringField*)row->GetField(kCPUUsageColumn))->SetString(cpuStr);
-                fProcessListView->UpdateRow(row);
-                break;
+            BRow* row = NULL;
+            for (int32 i = 0; (row = fProcessListView->RowAt(i)) != NULL; i++) {
+                BIntegerField* pidField = dynamic_cast<BIntegerField*>(row->GetField(kPIDColumn));
+                if (pidField && pidField->Value() == 2) {
+                    char cpuStr[16];
+                    snprintf(cpuStr, sizeof(cpuStr), "%.1f", kernelUsage);
+                    ((BStringField*)row->GetField(kCPUUsageColumn))->SetString(cpuStr);
+                    fProcessListView->UpdateRow(row);
+                    break;
+                }
             }
         }
     }
