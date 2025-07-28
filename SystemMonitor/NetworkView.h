@@ -5,6 +5,7 @@
 #include <Locker.h>
 #include <String.h>
 #include <map>
+#include <string>
 
 class BColumnListView;
 
