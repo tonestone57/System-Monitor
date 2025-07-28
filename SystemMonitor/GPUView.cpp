@@ -1,5 +1,5 @@
 #include "GPUView.h"
-#include <stdio.h>
+#include <cstdio>
 #include <LayoutBuilder.h>
 #include <Box.h>
 #include <GridLayout.h>
@@ -95,7 +95,7 @@ void GPUView::UpdateData()
     if (screen.GetDeviceInfo(&deviceInfo) == B_OK) {
         fCardNameValue->SetText(deviceInfo.name);
         fChipsetValue->SetText(deviceInfo.chipset);
-        fMemorySizeValue->SetText(FormatBytes(deviceInfo.memory).String());
+        fMemorySizeValue->SetText(FormatBytes(deviceInfo.memory));
 
         char dacSpeedStr[32];
         snprintf(dacSpeedStr, sizeof(dacSpeedStr), "%u MHz", 
