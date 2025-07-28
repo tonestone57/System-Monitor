@@ -427,25 +427,28 @@ void SysInfoView::LoadData() {
     printf("SysInfoView::LoadData() - getting microcode info\n");
     // Microcode
     BEntry microcodeEntry("/dev/microcode_info");
-    if (microcodeEntry.Exists()) {
-        int fd = open("/dev/microcode_info", O_RDONLY);
-        if (fd >= 0) {
-            char buffer[32] = {};
-            ssize_t len = read(fd, buffer, sizeof(buffer) - 1);
-            close(fd);
-            if (len > 0 && fMicrocodeValue) {
-                buffer[len] = '\0';
-                BString microcodeStr = BString(buffer).Trim();
-                fMicrocodeValue->SetText(microcodeStr);
-                fMicrocodeValue->Parent()->Show();
-            } else if (fMicrocodeValue) {
+    if (fMicrocodeValue) {
+        if (microcodeEntry.Exists()) {
+            int fd = open("/dev/microcode_info", O_RDONLY);
+            if (fd >= 0) {
+                char buffer[32] = {};
+                ssize_t len = read(fd, buffer, sizeof(buffer) - 1);
+                close(fd);
+                if (len > 0) {
+                    buffer[len] = '\0';
+                    BString microcodeStr = BString(buffer).Trim();
+                    fMicrocodeValue->SetText(microcodeStr);
+                    if (fMicrocodeValue->Parent())
+                        fMicrocodeValue->Parent()->Show();
+                } else if (fMicrocodeValue->Parent()) {
+                    fMicrocodeValue->Parent()->Hide();
+                }
+            } else if (fMicrocodeValue->Parent()) {
                 fMicrocodeValue->Parent()->Hide();
             }
-        } else if (fMicrocodeValue) {
+        } else if (fMicrocodeValue->Parent()) {
             fMicrocodeValue->Parent()->Hide();
         }
-    } else if (fMicrocodeValue) {
-        fMicrocodeValue->Parent()->Hide();
     }
 
     printf("SysInfoView::LoadData() - setting cpu cores\n");
