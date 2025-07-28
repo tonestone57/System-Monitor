@@ -17,5 +17,3 @@ resource app_flags B_MULTIPLE_LAUNCH | B_ARGV_ONLY;
 resource file_types message {
 	"types" = "application/x-vnd.HaikuSysMonTask"
 };
-
-resource vector_icon read_pos_formatted("SysMonTask.icon");
