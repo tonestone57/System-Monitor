@@ -2,7 +2,6 @@
 #include <Window.h>
 #include <View.h>
 #include <Alert.h>
-#include <stdio.h>
 #include <LayoutBuilder.h>
 #include <GroupView.h>
 #include <SplitView.h>
@@ -44,31 +43,14 @@ public:
         fNetworkView = new NetworkView(BRect(0, 0, 400, 200));
         fGPUView = new GPUView(BRect(0, 0, 400, 200));
         
-        // Create split view for better organization
-        BSplitView* mainSplit = new BSplitView(B_HORIZONTAL, 5.0f);
-        
-        // Left side - CPU and Memory
-        BGroupView* leftGroup = new BGroupView(B_VERTICAL, 5.0f);
-        leftGroup->AddChild(fCPUView);
-        leftGroup->AddChild(fMemView);
-        
-        // Right side - Disk, Network, GPU
-        BGroupView* rightGroup = new BGroupView(B_VERTICAL, 5.0f);
-        rightGroup->AddChild(fDiskView);
-        rightGroup->AddChild(fNetworkView);
-        rightGroup->AddChild(fGPUView);
-        
-        // Add groups to split view
-        mainSplit->AddChild(leftGroup);
-        mainSplit->AddChild(rightGroup);
-        
-        BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
-            .SetInsets(5)
-            .Add(mainSplit);
-
-        // Set split weights (left side slightly larger)
-        mainSplit->SetItemWeight(0, 0.6f, true);
-        mainSplit->SetItemWeight(1, 0.4f, true);
+        BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
+            .SetInsets(B_USE_DEFAULT_SPACING)
+            .Add(fCPUView)
+            .Add(fMemView)
+            .Add(fDiskView)
+            .Add(fNetworkView)
+            .Add(fGPUView)
+            .AddGlue();
     }
     
     virtual void AttachedToWindow() {
@@ -78,10 +60,6 @@ public:
         BView::AttachedToWindow();
     }
     
-    virtual void Pulse() {
-        // Pulse is handled by individual child views
-        BView::Pulse();
-    }
 
 private:
     CPUView* fCPUView;
@@ -132,10 +110,6 @@ MainWindow::MainWindow(BRect frame)
     fProcessesButton->SetValue(B_CONTROL_OFF);
     fSystemButton->SetValue(B_CONTROL_OFF);
     
-    // Make buttons behave like radio buttons
-//    fPerformanceButton->SetBehavior(B_RADIO_BUTTON);
-//    fProcessesButton->SetBehavior(B_RADIO_BUTTON);
-//    fSystemButton->SetBehavior(B_RADIO_BUTTON);
 
     // Create the main content area with card layout
     BView* contentView = new BView("content", 0);
