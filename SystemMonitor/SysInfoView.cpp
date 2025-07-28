@@ -199,7 +199,7 @@ void SysInfoView::CreateLayout()
     mainGroupLayout->AddView(graphicsBox);
     mainGroupLayout->AddView(memoryBox);
     mainGroupLayout->AddView(diskBox);
-    mainGroupLayout->AddGlue();
+    mainGroupLayout->AddItem(BSpaceLayoutItem::CreateGlue());
 
     BGroupView* groupView = new BGroupView(B_VERTICAL);
     groupView->SetLayout(mainGroupLayout);
