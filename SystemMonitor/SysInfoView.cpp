@@ -420,9 +420,11 @@ void SysInfoView::LoadData() {
     if (fUptimeValue) fUptimeValue->SetText(FormatUptime(sysInfo.boot_time).String());
 
     // --- CPU Info ---
+    printf("SysInfoView::LoadData() - getting CPU info\n");
     BString cpuBrand = GetCPUBrandString();
     if (fCPUModelValue) fCPUModelValue->SetText(cpuBrand.IsEmpty() ? "Unknown CPU" : cpuBrand);
 
+    printf("SysInfoView::LoadData() - getting microcode info\n");
     // Microcode
     BEntry microcodeEntry("/dev/microcode_info");
     if (microcodeEntry.Exists()) {
@@ -467,6 +469,7 @@ void SysInfoView::LoadData() {
     }
 
     this->GetCPUInfo(&sysInfo);
+    printf("SysInfoView::LoadData() - finished CPU info\n");
 
     // --- RAM Info ---
     if (fTotalRAMValue) fTotalRAMValue->SetText(FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE).String());
