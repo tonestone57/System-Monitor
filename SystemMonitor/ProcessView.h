@@ -44,8 +44,7 @@ private:
     BColumnListView* fProcessListView;
     BPopUpMenu* fContextMenu;
     
-    std::map<team_id, ProcessInfo> fProcessTimeMap;
-    std::map<thread_id, bigtime_t> fThreadTimeMap;
+    std::map<team_id, bigtime_t> fTeamTimeMap;
     bigtime_t fLastPulseSystemTime;
     
     BLocker fLocker;

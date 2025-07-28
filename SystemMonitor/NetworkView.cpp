@@ -2,15 +2,11 @@
 #include <LayoutBuilder.h>
 #include <private/interface/ColumnListView.h>
 #include <private/interface/ColumnTypes.h>
-#include <Box.h>
-#include <Font.h>
 #include <NetworkRoster.h>
 #include <NetworkInterface.h>
 #include <Alert.h>
 #include <map>
 #include <string>
-#include <sys/socket.h>
-#include <net/if.h>
 
 // Column identifiers
 enum {
@@ -23,18 +19,8 @@ enum {
     kRecvSpeedColumn
 };
 
-// Struct to hold per-interface stats for speed calculations
-struct InterfaceStatsRecord {
-    uint64 bytesSent = 0;
-    uint64 bytesReceived = 0;
-    bigtime_t lastUpdateTime = 0;
-};
-
-static std::map<std::string, InterfaceStatsRecord> gPreviousStatsMap;
-
 NetworkView::NetworkView(BRect frame)
-    : BView(frame, "NetworkView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW | B_PULSE_NEEDED),
-      fSocket(socket(AF_INET, SOCK_DGRAM, 0))
+    : BView(frame, "NetworkView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW | B_PULSE_NEEDED)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -77,7 +63,6 @@ NetworkView::NetworkView(BRect frame)
 
 NetworkView::~NetworkView()
 {
-    if (fSocket >= 0) close(fSocket);
 }
 
 void NetworkView::AttachedToWindow()
@@ -161,7 +146,7 @@ void NetworkView::UpdateData()
         uint64 dummyRx = rand() % 10000000;
         BString sendSpeed = "N/A", recvSpeed = "N/A";
 
-        InterfaceStatsRecord& rec = gPreviousStatsMap[name.String()];
+        InterfaceStatsRecord& rec = fPreviousStatsMap[name.String()];
         if (rec.lastUpdateTime > 0) {
             bigtime_t dt = currentTime - rec.lastUpdateTime;
             if (dt > 0) {

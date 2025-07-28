@@ -4,8 +4,15 @@
 #include <View.h>
 #include <Locker.h>
 #include <String.h>
+#include <map>
 
 class BColumnListView;
+
+struct InterfaceStatsRecord {
+    uint64 bytesSent = 0;
+    uint64 bytesReceived = 0;
+    bigtime_t lastUpdateTime = 0;
+};
 
 class NetworkView : public BView {
 public:
@@ -21,9 +28,9 @@ private:
     BString FormatSpeed(uint64 bytesDelta, bigtime_t microSecondsDelta);
     
     BColumnListView* fInterfaceListView;
-    int fSocket;
     
     BLocker fLocker;
+    std::map<std::string, InterfaceStatsRecord> fPreviousStatsMap;
 };
 
 #endif // NETWORKVIEW_H
