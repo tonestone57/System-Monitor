@@ -120,9 +120,6 @@ SysInfoView::~SysInfoView()
 
 void SysInfoView::CreateLayout()
 {
-    fMainSectionsBox = new BBox("mainSysInfoBox");
-    fMainSectionsBox->SetLabel("System Information");
-
     // --- OS Section ---
     BBox* osBox = new BBox("OSInfo");
     osBox->SetLabel("Operating System");
@@ -195,20 +192,19 @@ void SysInfoView::CreateLayout()
 
     // --- Main Layout ---
     BGroupLayout* mainGroupLayout = new BGroupLayout(B_VERTICAL, B_USE_DEFAULT_SPACING);
-    fMainSectionsBox->SetLayout(mainGroupLayout);
-    font_height fh;
-    fMainSectionsBox->GetFontHeight(&fh);
-    mainGroupLayout->SetInsets(B_USE_DEFAULT_SPACING,
-                               fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING,
+    mainGroupLayout->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING,
                                B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     mainGroupLayout->AddView(osBox);
     mainGroupLayout->AddView(cpuBox);
     mainGroupLayout->AddView(graphicsBox);
     mainGroupLayout->AddView(memoryBox);
     mainGroupLayout->AddView(diskBox);
-    BLayoutBuilder::Group<>(mainGroupLayout).AddGlue();
+    mainGroupLayout->AddGlue();
 
-    BScrollView* viewScroller = new BScrollView("sysInfoScroller", fMainSectionsBox,
+    BGroupView* groupView = new BGroupView(B_VERTICAL);
+    groupView->SetLayout(mainGroupLayout);
+
+    BScrollView* viewScroller = new BScrollView("sysInfoScroller", groupView,
         0, false, true, B_NO_BORDER);
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
