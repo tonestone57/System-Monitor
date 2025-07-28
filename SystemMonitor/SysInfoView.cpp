@@ -450,6 +450,7 @@ void SysInfoView::LoadData() {
 
     if (fCPUCoresValue) fCPUCoresValue->SetText(BString() << sysInfo.cpu_count);
 
+    printf("SysInfoView::LoadData() - getting cpu topology info\n");
     cpu_topology_node_info* topology = NULL;
     uint32_t topologyNodeCount = 0;
     if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK) {
@@ -469,6 +470,7 @@ void SysInfoView::LoadData() {
     }
 
     this->GetCPUInfo(&sysInfo);
+    printf("SysInfoView::LoadData() - finished cpu topology info\n");
     printf("SysInfoView::LoadData() - finished CPU info\n");
 
     // --- RAM Info ---
