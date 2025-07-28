@@ -120,6 +120,10 @@ SysInfoView::~SysInfoView()
 
 void SysInfoView::CreateLayout()
 {
+    fMainSectionsBox = new BBox(Bounds(), "mainSysInfoBox", B_FOLLOW_ALL_SIDES,
+                                 B_WILL_DRAW | B_FRAME_EVENTS, B_PLAIN_BORDER);
+    fMainSectionsBox->SetLabel("System Information");
+
     // --- OS Section ---
     BBox* osBox = new BBox("OSInfo");
     osBox->SetLabel("Operating System");
@@ -148,7 +152,6 @@ void SysInfoView::CreateLayout()
     AddInfoRow(cpuGrid, row, "L1 Cache (I/D):", fL1CacheValue);
     AddInfoRow(cpuGrid, row, "L2 Cache:", fL2CacheValue);
     AddInfoRow(cpuGrid, row, "L3 Cache:", fL3CacheValue);
-    AddInfoRow(cpuGrid, row, "Family:", fCPUFamilyValue);
     AddInfoRow(cpuGrid, row, "Stepping:", fCPUSteppingValue);
     AddInfoRow(cpuGrid, row, "Features:", fCPUFeaturesValue);
     fCPUFeaturesValue->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
@@ -192,19 +195,21 @@ void SysInfoView::CreateLayout()
         .Add(fDiskInfoScrollView);
 
     // --- Main Layout ---
-    BGroupView* mainGroup = new BGroupView(B_VERTICAL, B_USE_DEFAULT_SPACING);
-    mainGroup->SetLayout(new BGroupLayout(B_VERTICAL, B_USE_DEFAULT_SPACING));
-    mainGroup->GroupLayout()->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING,
-                                     B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    mainGroup->AddChild(osBox);
-    mainGroup->AddChild(cpuBox);
-    mainGroup->AddChild(graphicsBox);
-    mainGroup->AddChild(memoryBox);
-    mainGroup->AddChild(diskBox);
-    mainGroup->AddChild(BSpaceLayoutItem::CreateVerticalStrut(B_USE_DEFAULT_SPACING));
+    BGroupLayout* mainGroupLayout = new BGroupLayout(B_VERTICAL, B_USE_DEFAULT_SPACING);
+    fMainSectionsBox->SetLayout(mainGroupLayout);
+    font_height fh;
+    fMainSectionsBox->GetFontHeight(&fh);
+    mainGroupLayout->SetInsets(B_USE_DEFAULT_SPACING,
+                               fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING,
+                               B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+    mainGroupLayout->AddView(osBox);
+    mainGroupLayout->AddView(cpuBox);
+    mainGroupLayout->AddView(graphicsBox);
+    mainGroupLayout->AddView(memoryBox);
+    mainGroupLayout->AddView(diskBox);
+    BLayoutBuilder::Group<>(mainGroupLayout).AddGlue();
 
-
-    BScrollView* viewScroller = new BScrollView("sysInfoScroller", mainGroup,
+    BScrollView* viewScroller = new BScrollView("sysInfoScroller", fMainSectionsBox,
         B_FOLLOW_ALL_SIDES, 0, false, true, B_NO_BORDER);
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
