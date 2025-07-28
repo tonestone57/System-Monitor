@@ -155,6 +155,7 @@ void SysInfoView::CreateLayout()
     AddInfoRow(cpuGrid, row, "L1 Cache (I/D):", fL1CacheValue);
     AddInfoRow(cpuGrid, row, "L2 Cache:", fL2CacheValue);
     AddInfoRow(cpuGrid, row, "L3 Cache:", fL3CacheValue);
+    AddInfoRow(cpuGrid, row, "Family:", fCPUFamilyValue);
     AddInfoRow(cpuGrid, row, "Stepping:", fCPUSteppingValue);
     AddInfoRow(cpuGrid, row, "Features:", fCPUFeaturesValue);
     fCPUFeaturesValue->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
