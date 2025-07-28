@@ -2,6 +2,8 @@
 #include <LayoutBuilder.h>
 #include <private/interface/ColumnListView.h>
 #include <private/interface/ColumnTypes.h>
+#include <Box.h>
+#include <Font.h>
 #include <NetworkRoster.h>
 #include <NetworkInterface.h>
 #include <Alert.h>

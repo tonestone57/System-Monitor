@@ -197,7 +197,7 @@ void ProcessView::KillSelectedProcess() {
         } else {
             fProcessListView->RemoveRow(selectedRow);
             delete selectedRow;
-            fTeamTimeMap.erase(team);
+            fProcessTimeMap.erase(team);
         }
     }
 }
@@ -245,16 +245,29 @@ void ProcessView::UpdateData()
         currentProc.userName = GetUserName(currentProc.userID);
         
         // Calculate CPU time
-        bigtime_t teamTime = teamInfo.user_time + teamInfo.kernel_time;
-        if (fTeamTimeMap.count(teamInfo.team)) {
-            bigtime_t teamTimeDelta = teamTime - fTeamTimeMap[teamInfo.team];
-            if (teamTimeDelta < 0) teamTimeDelta = 0;
-            float teamCpuPercent = (float)teamTimeDelta / totalPossibleCoreTime * 100.0f;
-            if (teamCpuPercent < 0.0f) teamCpuPercent = 0.0f;
-            if (teamCpuPercent > 100.0f) teamCpuPercent = 100.0f;
-            teamCPUUsage[teamInfo.team] = teamCpuPercent;
+        int32 threadCookie = 0;
+        thread_info tInfo;
+        bigtime_t teamActiveTimeDelta = 0;
+
+        while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
+            bigtime_t threadTime = tInfo.user_time + tInfo.kernel_time;
+            if (fThreadTimeMap.count(tInfo.thread)) {
+                bigtime_t threadTimeDelta = threadTime - fThreadTimeMap[tInfo.thread];
+                if (threadTimeDelta < 0) threadTimeDelta = 0;
+
+                // Exclude idle threads
+                if (strstr(tInfo.name, "idle thread") == NULL) {
+                    teamActiveTimeDelta += threadTimeDelta;
+                }
+            }
+            fThreadTimeMap[tInfo.thread] = threadTime;
         }
-        fTeamTimeMap[teamInfo.team] = teamTime;
+
+        // Calculate team CPU usage as a percentage
+        float teamCpuPercent = (float)teamActiveTimeDelta / totalPossibleCoreTime * 100.0f;
+        if (teamCpuPercent < 0.0f) teamCpuPercent = 0.0f;
+        if (teamCpuPercent > 100.0f) teamCpuPercent = 100.0f;
+        teamCPUUsage[teamInfo.team] = teamCpuPercent;
 
         // Calculate Memory Usage
         currentProc.memoryUsageBytes = 0;
