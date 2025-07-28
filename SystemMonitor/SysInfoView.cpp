@@ -456,7 +456,8 @@ void SysInfoView::LoadData() {
     printf("SysInfoView::LoadData() - getting cpu topology info\n");
     cpu_topology_node_info* topology = NULL;
     uint32_t topologyNodeCount = 0;
-    if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK) {
+    if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
+        printf("SysInfoView::LoadData() - topologyNodeCount: %u\n", topologyNodeCount);
         topology = new cpu_topology_node_info[topologyNodeCount];
         if (topology == NULL) {
             printf("SysInfoView::LoadData() - failed to allocate memory for cpu_topology_node_info\n");
