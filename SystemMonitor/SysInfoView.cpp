@@ -120,8 +120,7 @@ SysInfoView::~SysInfoView()
 
 void SysInfoView::CreateLayout()
 {
-    fMainSectionsBox = new BBox(Bounds(), "mainSysInfoBox", B_FOLLOW_ALL_SIDES,
-                                 B_WILL_DRAW | B_FRAME_EVENTS, B_PLAIN_BORDER);
+    fMainSectionsBox = new BBox("mainSysInfoBox");
     fMainSectionsBox->SetLabel("System Information");
 
     // --- OS Section ---
@@ -188,7 +187,7 @@ void SysInfoView::CreateLayout()
     fDiskInfoTextView->MakeEditable(false);
     fDiskInfoTextView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     fDiskInfoScrollView = new BScrollView("diskInfoScroller", fDiskInfoTextView,
-        B_FOLLOW_LEFT_RIGHT | B_FOLLOW_TOP_BOTTOM, 0, false, true, B_PLAIN_BORDER);
+        0, false, true, B_PLAIN_BORDER);
     fDiskInfoScrollView->SetExplicitMinSize(BSize(0, 80));
     BLayoutBuilder::Group<>(diskBox, B_VERTICAL, 0)
         .SetInsets(B_USE_DEFAULT_SPACING)
@@ -210,7 +209,7 @@ void SysInfoView::CreateLayout()
     BLayoutBuilder::Group<>(mainGroupLayout).AddGlue();
 
     BScrollView* viewScroller = new BScrollView("sysInfoScroller", fMainSectionsBox,
-        B_FOLLOW_ALL_SIDES, 0, false, true, B_NO_BORDER);
+        0, false, true, B_NO_BORDER);
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
         .SetInsets(0)
