@@ -122,26 +122,24 @@ void SysInfoView::CreateLayout()
 {
     SetViewColor(255, 255, 255, 255);
 
+    BFont titleFont(be_bold_font);
+    titleFont.SetSize(titleFont.Size() * 1.2);
+
     // --- OS Section ---
-    BBox* osBox = new BBox("OSInfo");
-    osBox->SetLabel("Operating System");
+    BStringView* osTitle = new BStringView("os_title", "OPERATING SYSTEM");
+    osTitle->SetFont(&titleFont);
     BGridLayout* osGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    osGrid->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING,
-                      B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     int32 row = 0;
     AddInfoRow(osGrid, row, "Kernel Name:", fKernelNameValue);
     AddInfoRow(osGrid, row, "Kernel Version:", fKernelVersionValue);
     AddInfoRow(osGrid, row, "Build Date/Time:", fKernelBuildValue);
     AddInfoRow(osGrid, row, "CPU Architecture:", fCPUArchValue);
     AddInfoRow(osGrid, row, "System Uptime:", fUptimeValue);
-    osBox->SetLayout(osGrid);
 
     // --- CPU Section ---
-    BBox* cpuBox = new BBox("CPUInfo");
-    cpuBox->SetLabel("Processor");
+    BStringView* cpuTitle = new BStringView("cpu_title", "PROCESSOR");
+    cpuTitle->SetFont(&titleFont);
     BGridLayout* cpuGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    cpuGrid->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING,
-                       B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     row = 0;
     AddInfoRow(cpuGrid, row, "Model:", fCPUModelValue);
     AddInfoRow(cpuGrid, row, "Microcode:", fMicrocodeValue);
@@ -153,52 +151,54 @@ void SysInfoView::CreateLayout()
     AddInfoRow(cpuGrid, row, "Stepping:", fCPUSteppingValue);
     AddInfoRow(cpuGrid, row, "Features:", fCPUFeaturesValue);
     fCPUFeaturesValue->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
-    cpuBox->SetLayout(cpuGrid);
 
     // --- Graphics Section ---
-    BBox* graphicsBox = new BBox("GraphicsInfo");
-    graphicsBox->SetLabel("Graphics");
+    BStringView* graphicsTitle = new BStringView("graphics_title", "GRAPHICS");
+    graphicsTitle->SetFont(&titleFont);
     BGridLayout* graphicsGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    graphicsGrid->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING,
-                            B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     row = 0;
     AddInfoRow(graphicsGrid, row, "GPU Type:", fGPUTypeValue);
     AddInfoRow(graphicsGrid, row, "Driver:", fGPUDriverValue);
     AddInfoRow(graphicsGrid, row, "VRAM:", fGPUVRAMValue);
     AddInfoRow(graphicsGrid, row, "Resolution:", fScreenResolutionValue);
-    graphicsBox->SetLayout(graphicsGrid);
 
     // --- Memory Section ---
-    BBox* memoryBox = new BBox("MemoryInfo");
-    memoryBox->SetLabel("Memory");
+    BStringView* memoryTitle = new BStringView("memory_title", "MEMORY");
+    memoryTitle->SetFont(&titleFont);
     BGridLayout* memoryGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    memoryGrid->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING,
-                          B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     row = 0;
     AddInfoRow(memoryGrid, row, "Total RAM:", fTotalRAMValue);
-    memoryBox->SetLayout(memoryGrid);
 
     // --- Disk Section ---
-    BBox* diskBox = new BBox("DiskInfo");
-    diskBox->SetLabel("Disk Volumes");
+    BStringView* diskTitle = new BStringView("disk_title", "DISK VOLUMES");
+    diskTitle->SetFont(&titleFont);
     fDiskInfoTextView = new BTextView("diskInfoTextView");
     fDiskInfoTextView->SetWordWrap(false);
     fDiskInfoTextView->MakeEditable(false);
-    fDiskInfoTextView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+    fDiskInfoTextView->SetViewColor(255, 255, 255, 255);
     fDiskInfoScrollView = new BScrollView("diskInfoScroller", fDiskInfoTextView,
-        0, false, true, B_PLAIN_BORDER);
+        0, false, true, B_NO_BORDER);
     fDiskInfoScrollView->SetExplicitMinSize(BSize(0, 80));
-    BLayoutBuilder::Group<>(diskBox, B_VERTICAL, 0)
-        .SetInsets(B_USE_DEFAULT_SPACING)
-        .Add(fDiskInfoScrollView);
 
-    BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
-        .SetInsets(B_USE_DEFAULT_SPACING)
-        .Add(osBox)
-        .Add(cpuBox)
-        .Add(graphicsBox)
-        .Add(memoryBox)
-        .Add(diskBox)
+    BGroupLayout* rootLayout = new BGroupLayout(B_VERTICAL);
+    rootLayout->SetInsets(B_USE_DEFAULT_SPACING);
+    this->SetLayout(rootLayout);
+
+    BLayoutBuilder::Group<>(rootLayout)
+        .Add(osTitle)
+        .Add(osGrid)
+        .AddStrut(B_USE_DEFAULT_SPACING)
+        .Add(cpuTitle)
+        .Add(cpuGrid)
+        .AddStrut(B_USE_DEFAULT_SPACING)
+        .Add(graphicsTitle)
+        .Add(graphicsGrid)
+        .AddStrut(B_USE_DEFAULT_SPACING)
+        .Add(memoryTitle)
+        .Add(memoryGrid)
+        .AddStrut(B_USE_DEFAULT_SPACING)
+        .Add(diskTitle)
+        .Add(fDiskInfoScrollView)
         .AddGlue();
 }
 
