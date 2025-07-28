@@ -465,17 +465,19 @@ void SysInfoView::LoadData() {
         }
         uint32_t actualNodeCount = topologyNodeCount;
         if (get_cpu_topology_info(topology, &actualNodeCount) == B_OK) {
-            // uint64_t max_freq = 0;
-            // for (uint32_t i = 0; i < actualNodeCount; i++) {
-            //     if (topology[i].type == B_TOPOLOGY_CORE) {
-            //         if (topology[i].data.core.default_frequency > max_freq)
-            //             max_freq = topology[i].data.core.default_frequency;
-            //     }
-            // }
-            // if (max_freq > 0)
-            //     fCPUClockSpeedValue->SetText(FormatHertz(max_freq));
+            if (topology != nullptr) {
+                uint64_t max_freq = 0;
+                for (uint32_t i = 0; i < actualNodeCount; i++) {
+                    if (topology[i].type == B_TOPOLOGY_CORE) {
+                        if (topology[i].data.core.default_frequency > max_freq)
+                            max_freq = topology[i].data.core.default_frequency;
+                    }
+                }
+                if (max_freq > 0)
+                    fCPUClockSpeedValue->SetText(FormatHertz(max_freq));
+            }
+            delete[] topology;
         }
-        // delete[] topology;
     }
 
     this->GetCPUInfo(&sysInfo);
