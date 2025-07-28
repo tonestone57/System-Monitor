@@ -330,7 +330,7 @@ void SysInfoView::GetCPUInfo(system_info* sysInfo)
     if (hasAES())     features += "AES-NI ";
     fCPUFeaturesValue->SetText(features.IsEmpty() ? "None detected" : features);
 
-    for (int i = 0; ; ++i) {
+    for (int i = 0; i < 16; ++i) {
         if (!__get_cpuid_count(4, i, &eax, &ebx, &ecx, &edx)) break;
         if ((eax & 0x1F) == 0) break;
 
@@ -465,15 +465,15 @@ void SysInfoView::LoadData() {
         }
         uint32_t actualNodeCount = topologyNodeCount;
         if (get_cpu_topology_info(topology, &actualNodeCount) == B_OK) {
-            uint64_t max_freq = 0;
-            for (uint32_t i = 0; i < actualNodeCount; i++) {
-                if (topology[i].type == B_TOPOLOGY_CORE) {
-                    if (topology[i].data.core.default_frequency > max_freq)
-                        max_freq = topology[i].data.core.default_frequency;
-                }
-            }
-            if (max_freq > 0)
-                fCPUClockSpeedValue->SetText(FormatHertz(max_freq));
+            // uint64_t max_freq = 0;
+            // for (uint32_t i = 0; i < actualNodeCount; i++) {
+            //     if (topology[i].type == B_TOPOLOGY_CORE) {
+            //         if (topology[i].data.core.default_frequency > max_freq)
+            //             max_freq = topology[i].data.core.default_frequency;
+            //     }
+            // }
+            // if (max_freq > 0)
+            //     fCPUClockSpeedValue->SetText(FormatHertz(max_freq));
         }
         // delete[] topology;
     }
