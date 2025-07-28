@@ -476,10 +476,14 @@ void SysInfoView::LoadData() {
             if (fGPUDriverValue) fGPUDriverValue->SetText("N/A");
             if (fGPUVRAMValue) fGPUVRAMValue->SetText("N/A");
         }
-        BRect frame = screen.Frame();
-        BString resStr;
-        resStr.SetToFormat("%.0fx%.0f", frame.Width() + 1, frame.Height() + 1);
-        if (fScreenResolutionValue) fScreenResolutionValue->SetText(resStr);
+        display_mode mode;
+        if (screen.GetMode(&mode) == B_OK) {
+            BString resStr;
+            resStr.SetToFormat("%dx%d", mode.virtual_width, mode.virtual_height);
+            if (fScreenResolutionValue) fScreenResolutionValue->SetText(resStr);
+        } else {
+            if (fScreenResolutionValue) fScreenResolutionValue->SetText("N/A");
+        }
     } else {
         if (fGPUTypeValue) fGPUTypeValue->SetText("Error: Invalid screen object");
         if (fGPUDriverValue) fGPUDriverValue->SetText("N/A");
