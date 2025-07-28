@@ -91,7 +91,7 @@ ProcessView::ProcessView(BRect frame)
 
     fProcessListView->AddColumn(new BIntegerColumn("PID", 60, 30, 100), kPIDColumn);
     fProcessListView->AddColumn(new BStringColumn("Name", 180, 50, 500, B_TRUNCATE_END), kProcessNameColumn);
-    fProcessListView->AddColumn(new BCPUColumn("CPU %", 70, 40, 100, B_TRUNCATE_END, B_ALIGN_RIGHT), kCPUUsageColumn);
+    fProcessListView->AddColumn(new BCPUColumn("CPU %", 90, 50, 120, B_TRUNCATE_END, B_ALIGN_RIGHT), kCPUUsageColumn);
     fProcessListView->AddColumn(new BMemoryColumn("Memory", 100, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kMemoryUsageColumn);
     fProcessListView->AddColumn(new BIntegerColumn("Threads", 80, 40, 120, B_ALIGN_RIGHT), kThreadCountColumn);
     fProcessListView->AddColumn(new BStringColumn("User", 80, 40, 150, B_TRUNCATE_END), kUserNameColumn);
