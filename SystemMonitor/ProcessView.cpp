@@ -271,12 +271,12 @@ void ProcessView::UpdateData()
 
                 if (strstr(tInfo.name, "idle thread") == NULL) {
                     totalActiveTime += threadTimeDelta;
-                }
 
-                float cpuPercent = (float)threadTimeDelta / totalPossibleCoreTime * 100.0f;
-                if (cpuPercent < 0.0f) cpuPercent = 0.0f;
-                if (cpuPercent > 100.0f) cpuPercent = 100.0f;
-                teamCPUUsage[teamInfo.team] += cpuPercent;
+                    float cpuPercent = (float)threadTimeDelta / totalPossibleCoreTime * 100.0f;
+                    if (cpuPercent < 0.0f) cpuPercent = 0.0f;
+                    if (cpuPercent > 100.0f) cpuPercent = 100.0f;
+                    teamCPUUsage[teamInfo.team] += cpuPercent;
+                }
             }
             fThreadTimeMap[tInfo.thread] = threadTime;
         }
