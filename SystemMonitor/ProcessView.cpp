@@ -263,7 +263,7 @@ void ProcessView::UpdateData()
         int32 threadCookie = 0;
         thread_info tInfo;
         while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
-            if (strcmp(tInfo.name, "idle thread") == 0)
+            if (strstr(tInfo.name, "idle thread") != NULL)
                 continue;
 
             bigtime_t threadTime = tInfo.user_time + tInfo.kernel_time;
