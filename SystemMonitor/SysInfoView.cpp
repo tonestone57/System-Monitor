@@ -98,7 +98,7 @@ SysInfoView::SysInfoView(BRect frame)
       fDiskInfoScrollView(NULL),
       fMainSectionsBox(NULL)
 {
-    SetViewColor(255, 255, 255, 255);
+    SetViewColor(B_TRANSPARENT_COLOR);
     CreateLayout();
 }
 
@@ -109,7 +109,9 @@ SysInfoView::~SysInfoView()
 
 void SysInfoView::CreateLayout()
 {
-    SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+    SetViewColor(255, 255, 255, 255);
+    SetLowColor(255, 255, 255, 255);
+    SetHighColor(0, 0, 0, 255);
 
     BFont titleFont(be_bold_font);
     titleFont.SetSize(titleFont.Size() * 1.2);
@@ -117,75 +119,50 @@ void SysInfoView::CreateLayout()
     // --- OS Section ---
     BStringView* osTitle = new BStringView("os_title", "OPERATING SYSTEM");
     osTitle->SetFont(&titleFont);
-    osTitle->SetViewColor(B_TRANSPARENT_COLOR);
 
     fKernelNameValue = new BStringView("kernel_name", "Kernel Name: N/A");
-    fKernelNameValue->SetViewColor(B_TRANSPARENT_COLOR);
     fKernelVersionValue = new BStringView("kernel_version", "Kernel Version: N/A");
-    fKernelVersionValue->SetViewColor(B_TRANSPARENT_COLOR);
     fKernelBuildValue = new BStringView("kernel_build", "Build Date/Time: N/A");
-    fKernelBuildValue->SetViewColor(B_TRANSPARENT_COLOR);
     fCPUArchValue = new BStringView("cpu_arch", "CPU Architecture: N/A");
-    fCPUArchValue->SetViewColor(B_TRANSPARENT_COLOR);
     fUptimeValue = new BStringView("uptime", "System Uptime: N/A");
-    fUptimeValue->SetViewColor(B_TRANSPARENT_COLOR);
 
     // --- CPU Section ---
     BStringView* cpuTitle = new BStringView("cpu_title", "PROCESSOR");
     cpuTitle->SetFont(&titleFont);
-    cpuTitle->SetViewColor(B_TRANSPARENT_COLOR);
 
     fCPUModelValue = new BStringView("cpu_model", "Model: N/A");
-    fCPUModelValue->SetViewColor(B_TRANSPARENT_COLOR);
     fMicrocodeValue = new BStringView("cpu_microcode", "Microcode: N/A");
-    fMicrocodeValue->SetViewColor(B_TRANSPARENT_COLOR);
     fCPUCoresValue = new BStringView("cpu_cores", "Cores: N/A");
-    fCPUCoresValue->SetViewColor(B_TRANSPARENT_COLOR);
     fCPUClockSpeedValue = new BStringView("cpu_clock", "Clock Speed: N/A");
-    fCPUClockSpeedValue->SetViewColor(B_TRANSPARENT_COLOR);
     fL1CacheValue = new BStringView("cpu_l1", "L1 Cache (I/D): N/A");
-    fL1CacheValue->SetViewColor(B_TRANSPARENT_COLOR);
     fL2CacheValue = new BStringView("cpu_l2", "L2 Cache: N/A");
-    fL2CacheValue->SetViewColor(B_TRANSPARENT_COLOR);
     fL3CacheValue = new BStringView("cpu_l3", "L3 Cache: N/A");
-    fL3CacheValue->SetViewColor(B_TRANSPARENT_COLOR);
     fCPUSteppingValue = new BStringView("cpu_stepping", "Stepping: N/A");
-    fCPUSteppingValue->SetViewColor(B_TRANSPARENT_COLOR);
     fCPUFeaturesValue = new BStringView("cpu_features", "Features: N/A");
-    fCPUFeaturesValue->SetViewColor(B_TRANSPARENT_COLOR);
     fCPUFeaturesValue->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 
     // --- Graphics Section ---
     BStringView* graphicsTitle = new BStringView("graphics_title", "GRAPHICS");
     graphicsTitle->SetFont(&titleFont);
-    graphicsTitle->SetViewColor(B_TRANSPARENT_COLOR);
 
     fGPUTypeValue = new BStringView("gpu_type", "GPU Type: N/A");
-    fGPUTypeValue->SetViewColor(B_TRANSPARENT_COLOR);
     fGPUDriverValue = new BStringView("gpu_driver", "Driver: N/A");
-    fGPUDriverValue->SetViewColor(B_TRANSPARENT_COLOR);
     fGPUVRAMValue = new BStringView("gpu_vram", "VRAM: N/A");
-    fGPUVRAMValue->SetViewColor(B_TRANSPARENT_COLOR);
     fScreenResolutionValue = new BStringView("screen_resolution", "Resolution: N/A");
-    fScreenResolutionValue->SetViewColor(B_TRANSPARENT_COLOR);
 
     // --- Memory Section ---
     BStringView* memoryTitle = new BStringView("memory_title", "MEMORY");
     memoryTitle->SetFont(&titleFont);
-    memoryTitle->SetViewColor(B_TRANSPARENT_COLOR);
 
     fTotalRAMValue = new BStringView("total_ram", "Total RAM: N/A");
-    fTotalRAMValue->SetViewColor(B_TRANSPARENT_COLOR);
 
     // --- Disk Section ---
     BStringView* diskTitle = new BStringView("disk_title", "DISK VOLUMES");
     diskTitle->SetFont(&titleFont);
-    diskTitle->SetViewColor(B_TRANSPARENT_COLOR);
 
     fDiskInfoTextView = new BTextView("diskInfoTextView");
     fDiskInfoTextView->SetWordWrap(false);
     fDiskInfoTextView->MakeEditable(false);
-    fDiskInfoTextView->SetViewColor(B_TRANSPARENT_COLOR);
 
     BGridLayout* gridLayout = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     BLayoutBuilder::Grid<>(gridLayout)
