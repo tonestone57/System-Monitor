@@ -373,13 +373,16 @@ void SysInfoView::LoadData() {
     printf("SysInfoView::LoadData() - got system info\n");
 
     // --- OS Info ---
+    printf("SysInfoView::LoadData() - setting kernel name\n");
     if (fKernelNameValue) fKernelNameValue->SetText(sysInfo.kernel_name);
 
+    printf("SysInfoView::LoadData() - setting kernel version\n");
     BString kernelVer;
     kernelVer.SetToFormat("%" B_PRId64 " (API %" B_PRIu32 ")",
                           sysInfo.kernel_version, sysInfo.abi);
     if (fKernelVersionValue) fKernelVersionValue->SetText(kernelVer);
 
+    printf("SysInfoView::LoadData() - setting build date/time\n");
     char dateTimeStr[64];
     snprintf(dateTimeStr, sizeof(dateTimeStr), "%s %s",
              sysInfo.kernel_build_date, sysInfo.kernel_build_time);
@@ -391,6 +394,7 @@ void SysInfoView::LoadData() {
     } else {
         if (fKernelBuildValue) fKernelBuildValue->SetText(dateTimeStr);
     }
+    printf("SysInfoView::LoadData() - finished OS info\n");
 
     BString archStr;
 #if defined(__x86_64__)
