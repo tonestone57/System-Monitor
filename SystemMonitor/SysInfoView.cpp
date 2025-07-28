@@ -100,8 +100,6 @@ SysInfoView::SysInfoView(BRect frame)
       fL2CacheValue(NULL),
       fL3CacheValue(NULL),
       fCPUFeaturesValue(NULL),
-      fCPUFamilyValue(NULL),
-      fCPUSteppingValue(NULL),
       fGPUTypeValue(NULL),
       fGPUDriverValue(NULL),
       fGPUVRAMValue(NULL),
@@ -314,9 +312,9 @@ void SysInfoView::GetCPUInfo(system_info* sysInfo)
         if (family == 6 || family == 15) {
             model += ((eax >> 16) & 0xf) << 4;
         }
-        fCPUFamilyValue->SetText(BString() << family);
-        fCPUModelValue->SetText(BString() << model);
-        fCPUSteppingValue->SetText(BString() << stepping);
+        if (fCPUFamilyValue) fCPUFamilyValue->SetText(BString() << family);
+        if (fCPUModelValue) fCPUModelValue->SetText(BString() << model);
+        if (fCPUSteppingValue) fCPUSteppingValue->SetText(BString() << stepping);
     }
 
     BString features;
@@ -330,7 +328,7 @@ void SysInfoView::GetCPUInfo(system_info* sysInfo)
     if (hasAVX2())    features += "AVX2 ";
     if (hasAVX512())  features += "AVX-512 ";
     if (hasAES())     features += "AES-NI ";
-    fCPUFeaturesValue->SetText(features.IsEmpty() ? "None detected" : features);
+    if (fCPUFeaturesValue) fCPUFeaturesValue->SetText(features.IsEmpty() ? "None detected" : features);
 
     for (int i = 0; i < 16; ++i) {
         if (!__get_cpuid_count(4, i, &eax, &ebx, &ecx, &edx)) break;
@@ -345,18 +343,18 @@ void SysInfoView::GetCPUInfo(system_info* sysInfo)
 
         switch (level) {
         case 1:
-            fL1CacheValue->SetText(BString() << sizeKB << " KB");
+            if (fL1CacheValue) fL1CacheValue->SetText(BString() << sizeKB << " KB");
             break;
         case 2:
-            fL2CacheValue->SetText(BString() << sizeKB << " KB");
+            if (fL2CacheValue) fL2CacheValue->SetText(BString() << sizeKB << " KB");
             break;
         case 3:
-            fL3CacheValue->SetText(BString() << sizeKB << " KB");
+            if (fL3CacheValue) fL3CacheValue->SetText(BString() << sizeKB << " KB");
             break;
         }
     }
 #else
-    fCPUFeaturesValue->SetText("Feature detection not supported on this architecture.");
+    if (fCPUFeaturesValue) fCPUFeaturesValue->SetText("Feature detection not supported on this architecture.");
 #endif
 }
 
