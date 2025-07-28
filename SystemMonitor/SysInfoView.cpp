@@ -78,9 +78,13 @@ bool hasAES() {
 static void AddInfoRow(BGridLayout* grid, int32& row, const char* labelText, BStringView*& valueView) {
     BStringView* labelView = new BStringView(NULL, labelText);
     labelView->SetAlignment(B_ALIGN_RIGHT);
+    labelView->SetViewColor(255, 255, 255, 255); // White background for label
     grid->AddView(labelView, 0, row);
+    
     valueView = new BStringView(NULL, "N/A");
+    valueView->SetViewColor(255, 255, 255, 255); // White background for value
     grid->AddView(valueView, 1, row);
+    
     grid->AddItem(BSpaceLayoutItem::CreateHorizontalStrut(5), 2, row);
     row++;
 }
@@ -120,6 +124,7 @@ SysInfoView::~SysInfoView()
 
 void SysInfoView::CreateLayout()
 {
+    // Set white background for the main view
     SetViewColor(255, 255, 255, 255);
 
     BFont titleFont(be_bold_font);
@@ -128,10 +133,11 @@ void SysInfoView::CreateLayout()
     // --- OS Section ---
     BStringView* osTitle = new BStringView("os_title", "OPERATING SYSTEM");
     osTitle->SetFont(&titleFont);
+    osTitle->SetViewColor(255, 255, 255, 255); // White background for title
     BGridLayout* osGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     int32 row = 0;
     AddInfoRow(osGrid, row, "Kernel Name:", fKernelNameValue);
-    AddInfoRow(osGrid, row, "Kernel Version:", fKernelVersionValue);
+    AddInfoRow(osGrid, row, "Kernel Version:", fKernelVersionValue);  
     AddInfoRow(osGrid, row, "Build Date/Time:", fKernelBuildValue);
     AddInfoRow(osGrid, row, "CPU Architecture:", fCPUArchValue);
     AddInfoRow(osGrid, row, "System Uptime:", fUptimeValue);
@@ -139,6 +145,7 @@ void SysInfoView::CreateLayout()
     // --- CPU Section ---
     BStringView* cpuTitle = new BStringView("cpu_title", "PROCESSOR");
     cpuTitle->SetFont(&titleFont);
+    cpuTitle->SetViewColor(255, 255, 255, 255); // White background for title
     BGridLayout* cpuGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     row = 0;
     AddInfoRow(cpuGrid, row, "Model:", fCPUModelValue);
@@ -155,6 +162,7 @@ void SysInfoView::CreateLayout()
     // --- Graphics Section ---
     BStringView* graphicsTitle = new BStringView("graphics_title", "GRAPHICS");
     graphicsTitle->SetFont(&titleFont);
+    graphicsTitle->SetViewColor(255, 255, 255, 255); // White background for title
     BGridLayout* graphicsGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     row = 0;
     AddInfoRow(graphicsGrid, row, "GPU Type:", fGPUTypeValue);
@@ -165,6 +173,7 @@ void SysInfoView::CreateLayout()
     // --- Memory Section ---
     BStringView* memoryTitle = new BStringView("memory_title", "MEMORY");
     memoryTitle->SetFont(&titleFont);
+    memoryTitle->SetViewColor(255, 255, 255, 255); // White background for title
     BGridLayout* memoryGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     row = 0;
     AddInfoRow(memoryGrid, row, "Total RAM:", fTotalRAMValue);
@@ -172,34 +181,38 @@ void SysInfoView::CreateLayout()
     // --- Disk Section ---
     BStringView* diskTitle = new BStringView("disk_title", "DISK VOLUMES");
     diskTitle->SetFont(&titleFont);
+    diskTitle->SetViewColor(255, 255, 255, 255); // White background for title
     fDiskInfoTextView = new BTextView("diskInfoTextView");
     fDiskInfoTextView->SetWordWrap(false);
     fDiskInfoTextView->MakeEditable(false);
-    fDiskInfoTextView->SetViewColor(255, 255, 255, 255);
+    fDiskInfoTextView->SetViewColor(255, 255, 255, 255); // White background for text view
 
-    BGroupLayout* rootLayout = new BGroupLayout(B_VERTICAL);
-    rootLayout->SetInsets(B_USE_DEFAULT_SPACING);
-
+    // Create the main content view with white background
     BGroupView* groupView = new BGroupView(B_VERTICAL);
+    groupView->SetViewColor(255, 255, 255, 255); // White background for group view
+    
     BLayoutBuilder::Group<>(groupView)
         .SetInsets(B_USE_DEFAULT_SPACING)
         .Add(osTitle)
         .Add(osGrid)
-        .AddStrut(B_USE_DEFAULT_SPACING)
+        .AddStrut(B_USE_DEFAULT_SPACING * 2) // Two line spacing between sections
         .Add(cpuTitle)
         .Add(cpuGrid)
-        .AddStrut(B_USE_DEFAULT_SPACING)
+        .AddStrut(B_USE_DEFAULT_SPACING * 2) // Two line spacing between sections
         .Add(graphicsTitle)
         .Add(graphicsGrid)
-        .AddStrut(B_USE_DEFAULT_SPACING)
+        .AddStrut(B_USE_DEFAULT_SPACING * 2) // Two line spacing between sections
         .Add(memoryTitle)
         .Add(memoryGrid)
-        .AddStrut(B_USE_DEFAULT_SPACING)
+        .AddStrut(B_USE_DEFAULT_SPACING * 2) // Two line spacing between sections
         .Add(diskTitle)
         .Add(fDiskInfoTextView)
         .AddGlue();
 
-    BScrollView* scrollView = new BScrollView("sysInfoScroller", groupView, B_FOLLOW_ALL, 0, false, true);
+    // Create scroll view with vertical scrollbar on the right
+    BScrollView* scrollView = new BScrollView("sysInfoScroller", groupView, 
+        B_FOLLOW_ALL, 0, false, true); // horizontal=false, vertical=true
+    scrollView->SetViewColor(255, 255, 255, 255); // White background for scroll view
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
         .SetInsets(0)
