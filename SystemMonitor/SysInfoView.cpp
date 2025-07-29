@@ -90,12 +90,30 @@ SysInfoView::~SysInfoView()
 void SysInfoView::CreateLayout()
 {
     fInfoTextView = new BTextView("info_text_view");
-    fInfoTextView->SetViewColor(255, 255, 255, 255);            // White text background
+
+    // Resize the text view to match its preferred size
+fInfoTextView->ResizeToPreferred();
+    fInfoTextView->SetExplicitMinSize(BSize(800, 600));  // Or whatever fits your layout
+
+// Set proper margins inside the text area
+BRect textBounds = fInfoTextView->Bounds();
+textBounds.InsetBy(10, 10);  // Adds padding so text isn’t flush with edges
+fInfoTextView->SetTextRect(textBounds);
+
+// Optional: increase the font size to make the one-line rendering more obvious
+BFont font(be_plain_font);
+font.SetSize(12);
+fInfoTextView->SetFontAndColor(&font);
+
+
+    fInfoTextView->SetViewColor(200, 230, 255, 255);  // Light blue
+
+//    fInfoTextView->SetViewColor(255, 255, 255, 255);            // White text background
     fInfoTextView->SetLowColor(255, 255, 255, 255);             // Match background color
     fInfoTextView->SetStylable(true);                           // Allow styled text
     fInfoTextView->MakeEditable(false);
     fInfoTextView->SetWordWrap(false);                          // Horizontal scrollable if needed
-    fInfoTextView->SetExplicitMinSize(BSize(800, 600));  // Or whatever fits your layout
+
 
 
     // Enable right scrollbar (vertical scrolling)
