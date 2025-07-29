@@ -95,6 +95,8 @@ void SysInfoView::CreateLayout()
     fInfoTextView->SetStylable(true);                           // Allow styled text
     fInfoTextView->MakeEditable(false);
     fInfoTextView->SetWordWrap(false);                          // Horizontal scrollable if needed
+    fInfoTextView->SetExplicitMinSize(BSize(800, 600));  // Or whatever fits your layout
+
 
     // Enable right scrollbar (vertical scrolling)
     BScrollView* scrollView = new BScrollView("sysInfoScroller", fInfoTextView,
@@ -102,11 +104,12 @@ void SysInfoView::CreateLayout()
 
     // Attach scrollView to white background
     SetViewColor(255, 255, 255, 255);                           // Ensure parent view is also white
-    BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
-        .SetInsets(10, 10, 10, 10)                               // Optional padding
-        .Add(scrollView);
-}
 
+
+    BLayoutBuilder::Group<>(this, B_VERTICAL)
+        .Add(scrollView)  // scrollView contains fInfoTextView
+        .SetInsets(10, 10, 10, 10);
+    }
 
 
 void SysInfoView::AttachedToWindow()
