@@ -125,7 +125,7 @@ BLayoutBuilder::Group<>(this, B_VERTICAL)
 
 void SysInfoView::AttachedToWindow()
 {
-    BTextView::AttachedToWindow();
+    BView::AttachedToWindow();
     LoadData();
 }
 
