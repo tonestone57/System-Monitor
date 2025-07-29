@@ -87,18 +87,15 @@ SysInfoView::~SysInfoView()
     // Child views are automatically deleted
 }
 
+
 void SysInfoView::CreateLayout()
 {
-    fInfoTextView = new BTextView("info_text_view");
+// Create the text view with a name and drawing flag
+BTextView* fInfoTextView = new BTextView("info_text_view", B_WILL_DRAW);
 
-    // Resize the text view to match its preferred size
-fInfoTextView->ResizeToPreferred();
-    fInfoTextView->SetExplicitMinSize(BSize(800, 600));  // Or whatever fits your layout
+// Add insets for padding (this sets the internal text rectangle)
+fInfoTextView->SetInsets(10, 10, 10, 10);
 
-// Set proper margins inside the text area
-BRect textBounds = fInfoTextView->Bounds();
-textBounds.InsetBy(10, 10);  // Adds padding so text isn’t flush with edges
-fInfoTextView->SetTextRect(textBounds);
 
 // Optional: increase the font size to make the one-line rendering more obvious
 BFont font(be_plain_font);
@@ -113,20 +110,16 @@ fInfoTextView->SetFontAndColor(&font);
     fInfoTextView->SetStylable(true);                           // Allow styled text
     fInfoTextView->MakeEditable(false);
     fInfoTextView->SetWordWrap(false);                          // Horizontal scrollable if needed
+    
 
+// Wrap the text view in a scroll view with vertical scrollbar
+BScrollView* scrollView = new BScrollView("sysInfoScroller", fInfoTextView,
+    B_WILL_DRAW, false, true, B_FANCY_BORDER);
 
-
-    // Enable right scrollbar (vertical scrolling)
-    BScrollView* scrollView = new BScrollView("sysInfoScroller", fInfoTextView,
-        B_FOLLOW_ALL_SIDES, 0, false, true);                    // Right side: vertical scroll only
-
-    // Attach scrollView to white background
-    SetViewColor(255, 255, 255, 255);                           // Ensure parent view is also white
-
-
-    BLayoutBuilder::Group<>(this, B_VERTICAL)
-        .Add(scrollView)  // scrollView contains fInfoTextView
-        .SetInsets(10, 10, 10, 10);
+// Use BLayoutBuilder to add the scroll view to your window
+BLayoutBuilder::Group<>(this, B_VERTICAL)
+    .SetInsets(10)
+    .Add(scrollView);
     }
 
 
