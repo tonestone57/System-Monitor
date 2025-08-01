@@ -87,40 +87,22 @@ SysInfoView::~SysInfoView()
     // Child views are automatically deleted
 }
 
-
 void SysInfoView::CreateLayout()
 {
-// Create the text view with a name and drawing flag
-BTextView* fInfoTextView = new BTextView("info_text_view", B_WILL_DRAW);
-
-// Add insets for padding (this sets the internal text rectangle)
-fInfoTextView->SetInsets(10, 10, 10, 10);
-
-
-// Optional: increase the font size to make the one-line rendering more obvious
-BFont font(be_plain_font);
-font.SetSize(12);
-fInfoTextView->SetFontAndColor(&font);
-
-
-    fInfoTextView->SetViewColor(200, 230, 255, 255);  // Light blue
-
-//    fInfoTextView->SetViewColor(255, 255, 255, 255);            // White text background
-    fInfoTextView->SetLowColor(255, 255, 255, 255);             // Match background color
-    fInfoTextView->SetStylable(true);                           // Allow styled text
+    fInfoTextView = new BTextView("info_text_view");
+    fInfoTextView->SetViewColor(255, 255, 255, 255);
+    fInfoTextView->SetStylable(true);
     fInfoTextView->MakeEditable(false);
-    fInfoTextView->SetWordWrap(false);                          // Horizontal scrollable if needed
-    
+	fInfoTextView->SetWordWrap(false);
 
-// Wrap the text view in a scroll view with vertical scrollbar
-BScrollView* scrollView = new BScrollView("sysInfoScroller", fInfoTextView,
-    B_WILL_DRAW, false, true, B_FANCY_BORDER);
+    BScrollView* scrollView = new BScrollView("sysInfoScroller", fInfoTextView,
+        B_FOLLOW_ALL, 0, false, true);
+    scrollView->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH, B_ALIGN_USE_FULL_HEIGHT));
 
-// Use BLayoutBuilder to add the scroll view to your window
-BLayoutBuilder::Group<>(this, B_VERTICAL)
-    .SetInsets(10)
-    .Add(scrollView);
-    }
+    BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
+        .Add(scrollView)
+    .End();
+}
 
 
 void SysInfoView::AttachedToWindow()
@@ -212,23 +194,21 @@ void SysInfoView::LoadData() {
 
     system_info sysInfo;
     if (get_system_info(&sysInfo) != B_OK) {
-        infoText << "ERROR FETCHING SYSTEM INFO\n\n\n";
+        infoText << "Error fetching system info";
         fInfoTextView->SetText(infoText.String());
         return;
     }
 
-    // OPERATING SYSTEM
+    // OS Info
     infoText << "OPERATING SYSTEM\n\n";
     infoText << "Kernel Name: " << sysInfo.kernel_name << "\n";
     BString kernelVer;
     kernelVer.SetToFormat("%" B_PRId64 " (API %" B_PRIu32 ")",
                           sysInfo.kernel_version, sysInfo.abi);
     infoText << "Kernel Version: " << kernelVer << "\n";
-    
     char dateTimeStr[64];
     snprintf(dateTimeStr, sizeof(dateTimeStr), "%s %s",
              sysInfo.kernel_build_date, sysInfo.kernel_build_time);
-
     struct tm build_tm = {};
     if (strptime(dateTimeStr, "%b %d %Y %H:%M:%S", &build_tm)) {
         char isoStr[32];
@@ -237,7 +217,6 @@ void SysInfoView::LoadData() {
     } else {
         infoText << "Build Date/Time: " << dateTimeStr << "\n";
     }
-
     BString archStr;
 #if defined(__x86_64__)
     archStr = "x86_64";
@@ -258,16 +237,14 @@ void SysInfoView::LoadData() {
 #else
     archStr = "Unknown";
 #endif
-
     infoText << "CPU Architecture: " << archStr << "\n";
     infoText << "System Uptime: " << FormatUptime(sysInfo.boot_time) << "\n\n\n";
 
-    // PROCESSOR
+    // CPU Info
     infoText << "PROCESSOR\n\n";
     BString cpuBrand = GetCPUBrandString();
     infoText << "Model: " << (cpuBrand.IsEmpty() ? "Unknown CPU" : cpuBrand) << "\n";
     infoText << "Cores: " << sysInfo.cpu_count << "\n";
-
     cpu_topology_node_info* topology = NULL;
     uint32_t topologyNodeCount = 0;
     if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
@@ -290,7 +267,7 @@ void SysInfoView::LoadData() {
     }
     infoText << "\n\n";
 
-    // GRAPHICS
+    // Graphics Info
     infoText << "GRAPHICS\n\n";
     BScreen screen(B_MAIN_SCREEN_ID);
     if (screen.IsValid()) {
@@ -302,7 +279,6 @@ void SysInfoView::LoadData() {
         } else {
             infoText << "GPU Type: Error getting GPU info\n";
         }
-
         display_mode mode;
         if (screen.GetMode(&mode) == B_OK) {
             BString resStr;
@@ -316,11 +292,11 @@ void SysInfoView::LoadData() {
     }
     infoText << "\n\n";
 
-    // MEMORY
+    // Memory Info
     infoText << "MEMORY\n\n";
     infoText << "Total RAM: " << FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n\n\n";
 
-    // DISK VOLUMES
+    // Disk Info
     infoText << "DISK VOLUMES\n\n";
     BVolume volume;
     BVolumeRoster volRoster;
@@ -353,21 +329,18 @@ void SysInfoView::LoadData() {
     }
 
     if (diskCount == 0) {
-        infoText << "No disk volumes found or accessible.\n";
+        infoText << "No disk volumes found or accessible.";
     }
 
-    // Apply final text
     fInfoTextView->SetText(infoText.String());
 
-    // 🔠 Apply bold style to section titles
+    BFont font;
+    fInfoTextView->GetFont(&font);
     BFont boldFont(be_bold_font);
-    const char* titles[] = {
-        "OPERATING SYSTEM", "PROCESSOR", "GRAPHICS", "MEMORY", "DISK VOLUMES", "ERROR FETCHING SYSTEM INFO"
-    };
-    for (int i = 0; i < sizeof(titles) / sizeof(titles[0]); i++) {
-        int32 index = infoText.FindFirst(titles[i]);
-        if (index >= 0) {
-            fInfoTextView->SetFontAndColor(index, index + strlen(titles[i]), &boldFont);
-        }
-    }
+
+    fInfoTextView->SetFontAndColor(0, infoText.FindFirst("OPERATING SYSTEM") + 18, &boldFont);
+    fInfoTextView->SetFontAndColor(infoText.FindFirst("PROCESSOR"), infoText.FindFirst("PROCESSOR") + 9, &boldFont);
+    fInfoTextView->SetFontAndColor(infoText.FindFirst("GRAPHICS"), infoText.FindFirst("GRAPHICS") + 8, &boldFont);
+    fInfoTextView->SetFontAndColor(infoText.FindFirst("MEMORY"), infoText.FindFirst("MEMORY") + 6, &boldFont);
+    fInfoTextView->SetFontAndColor(infoText.FindFirst("DISK VOLUMES"), infoText.FindFirst("DISK VOLUMES") + 12, &boldFont);
 }

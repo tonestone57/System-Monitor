@@ -250,23 +250,16 @@ void ProcessView::UpdateData()
         bigtime_t teamActiveTimeDelta = 0;
 
         while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
-            // Skip idle threads
-            if (strncmp(tInfo.name, "idle thread", 11) == 0) {
-                continue;
-            }    
-
-            // Sum CPU time
             bigtime_t threadTime = tInfo.user_time + tInfo.kernel_time;
-
-            // Calculate time delta only for threads we've seen before
             if (fThreadTimeMap.count(tInfo.thread)) {
                 bigtime_t threadTimeDelta = threadTime - fThreadTimeMap[tInfo.thread];
                 if (threadTimeDelta < 0) threadTimeDelta = 0;
-        
-            teamActiveTimeDelta += threadTimeDelta;
-            totalActiveTime += threadTimeDelta;
+
+                // Exclude idle threads
+                if (strstr(tInfo.name, "idle thread") == NULL) {
+                    teamActiveTimeDelta += threadTimeDelta;
+                }
             }
-            // Update last-seen time
             fThreadTimeMap[tInfo.thread] = threadTime;
         }
 
