@@ -23,6 +23,8 @@ struct ProcessInfo {
     float cpuUsage;
     bigtime_t totalUserTime;
     bigtime_t totalKernelTime;
+    uint64 totalNetSent;
+    uint64 totalNetRecv;
 };
 
 class ProcessView : public BView {
