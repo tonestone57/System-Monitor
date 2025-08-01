@@ -73,7 +73,9 @@ enum {
     kThreadCountColumn,
     kUserNameColumn,
     kTotalNetSentColumn,
-    kTotalNetRecvColumn
+    kTotalNetRecvColumn,
+    kTotalDiskReadColumn,
+    kTotalDiskWriteColumn
 };
 
 // Context Menu Messages
@@ -99,6 +101,8 @@ ProcessView::ProcessView(BRect frame)
     fProcessListView->AddColumn(new BStringColumn("User", 80, 40, 150, B_TRUNCATE_END), kUserNameColumn);
     fProcessListView->AddColumn(new BMemoryColumn("Net Sent", 100, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kTotalNetSentColumn);
     fProcessListView->AddColumn(new BMemoryColumn("Net Recv", 100, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kTotalNetRecvColumn);
+    fProcessListView->AddColumn(new BMemoryColumn("Disk Read", 100, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kTotalDiskReadColumn);
+    fProcessListView->AddColumn(new BMemoryColumn("Disk Write", 100, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kTotalDiskWriteColumn);
 
     fProcessListView->SetSortColumn(fProcessListView->ColumnAt(kCPUUsageColumn), false, false);
 
@@ -286,9 +290,13 @@ void ProcessView::UpdateData()
         if (get_team_usage_info(teamInfo.team, B_TEAM_USAGE_SELF, &usageInfo) == B_OK) {
             currentProc.totalNetSent = usageInfo.ru_msgsnd;
             currentProc.totalNetRecv = usageInfo.ru_msgrcv;
+            currentProc.totalDiskRead = usageInfo.ru_inblock;
+            currentProc.totalDiskWrite = usageInfo.ru_oublock;
         } else {
             currentProc.totalNetSent = 0;
             currentProc.totalNetRecv = 0;
+            currentProc.totalDiskRead = 0;
+            currentProc.totalDiskWrite = 0;
         }
 
         currentProc.cpuUsage = teamCPUUsage[teamInfo.team];
@@ -316,6 +324,8 @@ void ProcessView::UpdateData()
             row->SetField(new BStringField(currentProc.userName), kUserNameColumn);
             row->SetField(new BStringField(FormatBytes(currentProc.totalNetSent)), kTotalNetSentColumn);
             row->SetField(new BStringField(FormatBytes(currentProc.totalNetRecv)), kTotalNetRecvColumn);
+            row->SetField(new BStringField(FormatBytes(currentProc.totalDiskRead)), kTotalDiskReadColumn);
+            row->SetField(new BStringField(FormatBytes(currentProc.totalDiskWrite)), kTotalDiskWriteColumn);
             fProcessListView->AddRow(row);
         } else { // Existing process, update fields
             ((BStringField*)row->GetField(kProcessNameColumn))->SetString(currentProc.name);
@@ -329,6 +339,8 @@ void ProcessView::UpdateData()
             ((BStringField*)row->GetField(kUserNameColumn))->SetString(currentProc.userName);
             ((BStringField*)row->GetField(kTotalNetSentColumn))->SetString(FormatBytes(currentProc.totalNetSent));
             ((BStringField*)row->GetField(kTotalNetRecvColumn))->SetString(FormatBytes(currentProc.totalNetRecv));
+            ((BStringField*)row->GetField(kTotalDiskReadColumn))->SetString(FormatBytes(currentProc.totalDiskRead));
+            ((BStringField*)row->GetField(kTotalDiskWriteColumn))->SetString(FormatBytes(currentProc.totalDiskWrite));
             fProcessListView->UpdateRow(row);
         }
     }
