@@ -287,11 +287,11 @@ void ProcessView::UpdateData()
 
         // Get network and disk I/O stats
         team_usage_info usageInfo;
-        if (get_team_usage_info(teamInfo.team, B_TEAM_USAGE_IO, &usageInfo) == B_OK) {
-            currentProc.totalNetSent = usageInfo.net_sent;
-            currentProc.totalNetRecv = usageInfo.net_received;
-            currentProc.totalDiskRead = usageInfo.disk_read;
-            currentProc.totalDiskWrite = usageInfo.disk_written;
+        if (get_team_usage_info(teamInfo.team, B_TEAM_USAGE_SELF, &usageInfo) == B_OK) {
+            currentProc.totalNetSent = usageInfo.ru_msgsnd;
+            currentProc.totalNetRecv = usageInfo.ru_msgrcv;
+            currentProc.totalDiskRead = usageInfo.ru_inblock;
+            currentProc.totalDiskWrite = usageInfo.ru_oublock;
         } else {
             currentProc.totalNetSent = 0;
             currentProc.totalNetRecv = 0;
