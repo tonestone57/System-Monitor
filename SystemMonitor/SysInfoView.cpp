@@ -1,3 +1,4 @@
+#include <sys/utsname.h>
 #include "SysInfoView.h"
 #include "Utils.h"
 #include <kernel/OS.h>
@@ -254,8 +255,8 @@ void SysInfoView::LoadData() {
 
     // Memory Info
     infoText << "MEMORY\n\n";
-    infoText << "Physical RAM: " << FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n";
-    infoText << "Virtual RAM: " << FormatBytes((uint64)sysInfo.max_swap_space) << "\n\n\n";
+    infoText << "Physical RAM: " << ::FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n";
+    infoText << "Virtual RAM: " << ::FormatBytes((uint64)sysInfo.max_swap_pages * B_PAGE_SIZE) << "\n\n\n";
 
     // Disk Info
     infoText << "DISK VOLUMES\n\n";
@@ -284,8 +285,8 @@ void SysInfoView::LoadData() {
                 }
             }
             infoText << "File System: " << fsInfo.fsh_name << "\n";
-            infoText << "Total Size: " << FormatBytes(fsInfo.total_blocks * fsInfo.block_size).String() << "\n";
-            infoText << "Free Size: " << FormatBytes(fsInfo.free_blocks * fsInfo.block_size).String() << "\n";
+            infoText << "Total Size: " << ::FormatBytes(fsInfo.total_blocks * fsInfo.block_size).String() << "\n";
+            infoText << "Free Size: " << ::FormatBytes(fsInfo.free_blocks * fsInfo.block_size).String() << "\n";
         }
     }
 
