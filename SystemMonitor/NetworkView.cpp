@@ -9,6 +9,7 @@
 #include <Alert.h>
 #include <map>
 #include <string>
+#include <net/if.h>
 #include "GraphView.h"
 
 // Column identifiers
@@ -123,8 +124,6 @@ void NetworkView::UpdateData()
     uint32 cookie = 0;
     BNetworkInterface interface;
     bigtime_t currentTime = system_time();
-    uint64 totalSent = 0;
-    uint64 totalReceived = 0;
     uint64 totalSentDelta = 0;
     uint64 totalReceivedDelta = 0;
 

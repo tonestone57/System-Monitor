@@ -9,6 +9,7 @@
 #include <PictureButton.h>
 #include <CardLayout.h>
 #include <CardView.h>
+#include <TabView.h>
 
 #include "ProcessView.h"
 #include "CPUView.h"
@@ -94,8 +95,12 @@ public:
         splitView->AddChild(leftPane);
         splitView->AddChild(tabView);
 
-        splitView->SetItemWeight(0, 0.25f);
-        splitView->SetItemWeight(1, 0.75f);
+        BLayoutItem* leftItem = splitView->ItemAt(0);
+        BLayoutItem* rightItem = splitView->ItemAt(1);
+        if (leftItem && rightItem) {
+            splitView->SetItemWeight(leftItem, 0.25f);
+            splitView->SetItemWeight(rightItem, 0.75f);
+        }
 
         BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
             .Add(splitView)
