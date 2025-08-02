@@ -182,21 +182,12 @@ void SysInfoView::LoadData() {
 
     // OS Info
     infoText << "OPERATING SYSTEM\n\n";
-    infoText << "Kernel Name: " << sysInfo.kernel_name << "\n";
     BString kernelVer;
-    kernelVer.SetToFormat("hrev%" B_PRId64, sysInfo.kernel_version);
-    infoText << "Kernel Version: " << kernelVer << "\n";
-    char dateTimeStr[64];
-    snprintf(dateTimeStr, sizeof(dateTimeStr), "%s %s",
-             sysInfo.kernel_build_date, sysInfo.kernel_build_time);
-    struct tm build_tm = {};
-    if (strptime(dateTimeStr, "%b %d %Y %H:%M:%S", &build_tm)) {
-        char isoStr[32];
-        strftime(isoStr, sizeof(isoStr), "%Y-%m-%d %H:%M:%S", &build_tm);
-        infoText << "Build Date/Time: " << isoStr << "\n";
-    } else {
-        infoText << "Build Date/Time: " << dateTimeStr << "\n";
-    }
+    kernelVer.SetToFormat("%s %s %" B_PRId64 " hrev%" B_PRId64 " %s %s %s %s Haiku",
+                          sysInfo.kernel_name, sysInfo.nodename, sysInfo.version,
+                          sysInfo.kernel_version, sysInfo.kernel_build_date,
+                          sysInfo.kernel_build_time, sysInfo.machine, sysInfo.platform);
+    infoText << "Kernel: " << kernelVer << "\n";
     BString archStr;
 #if defined(__x86_64__)
     archStr = "x86_64";
