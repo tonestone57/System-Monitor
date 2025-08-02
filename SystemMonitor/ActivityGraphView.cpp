@@ -62,7 +62,6 @@ ActivityGraphView::_UpdateOffscreenBitmap()
 
 	BView* view = new BView(Bounds(), NULL, B_FOLLOW_NONE, 0);
 	fOffscreen->AddChild(view);
-	view->SetLowColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 }
 
 
@@ -103,6 +102,7 @@ ActivityGraphView::_DrawHistory()
 	if (fOffscreen->Lock()) {
 		BView* view = _OffscreenView();
 		BRect frame = view->Bounds();
+		view->SetLowColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 		view->FillRect(frame, B_SOLID_LOW);
 
 		uint32 steps = frame.IntegerWidth();
