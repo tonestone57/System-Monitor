@@ -231,7 +231,7 @@ void SysInfoView::LoadData() {
     // Memory Info
     infoText << "MEMORY\n\n";
     infoText << "Physical RAM: " << FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n";
-    infoText << "Virtual RAM: " << FormatBytes((uint64)sysInfo.max_swap_space) << "\n\n\n";
+    infoText << "Virtual RAM: " << FormatBytes((uint64)sysInfo.max_swap_pages * B_PAGE_SIZE) << "\n\n\n";
 
     // Disk Info
     infoText << "DISK VOLUMES\n\n";
