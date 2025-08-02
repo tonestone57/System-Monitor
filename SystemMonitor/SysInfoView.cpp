@@ -98,7 +98,7 @@ void SysInfoView::CreateLayout()
 	fInfoTextView->SetWordWrap(true);
 
     BScrollView* scrollView = new BScrollView("sysInfoScroller", fInfoTextView,
-        B_FOLLOW_ALL, 0, false, true);
+        false, true, B_PLAIN_BORDER);
     scrollView->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH, B_ALIGN_USE_FULL_HEIGHT));
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
