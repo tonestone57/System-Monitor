@@ -154,7 +154,7 @@ void NetworkView::UpdateData()
         }
         row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
 
-		ifnet_stats stats;
+		ifreq_stats stats;
 		status_t status = interface.GetStats(stats);
 		uint64 currentSent = 0;
 		uint64 currentReceived = 0;

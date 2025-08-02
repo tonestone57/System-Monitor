@@ -72,6 +72,8 @@ public:
 
 private:
     BSplitView* fSplitView;
+    BView* fLeftPane;
+    BView* fRightPane;
 };
 
 PerformanceView::PerformanceView()
@@ -82,9 +84,10 @@ PerformanceView::PerformanceView()
         BSplitView* splitView = new BSplitView(B_HORIZONTAL, B_USE_DEFAULT_SPACING);
         splitView->SetInsets(B_USE_DEFAULT_SPACING);
 
-        BView* leftPane = new SummaryView();
+        fLeftPane = new SummaryView();
 
         BTabView* tabView = new BTabView("tab_view", B_WIDTH_FROM_WIDEST);
+        fRightPane = tabView;
 
         BView* cpuTab = new CPUView();
         BView* memTab = new MemView(Bounds());
@@ -107,8 +110,8 @@ PerformanceView::PerformanceView()
         tabView->AddTab(processTab);
         tabView->TabAt(5)->SetLabel("Processes");
 
-        splitView->AddChild(leftPane);
-        splitView->AddChild(tabView);
+        splitView->AddChild(fLeftPane);
+        splitView->AddChild(fRightPane);
 
         fSplitView = splitView;
 
@@ -120,8 +123,9 @@ PerformanceView::PerformanceView()
 void PerformanceView::AttachedToWindow()
 {
     BView::AttachedToWindow();
-    fSplitView->SetItemWeight(0, 0.25f);
-    fSplitView->SetItemWeight(1, 0.75f);
+    float leftWidth = fSplitView->Bounds().Width() * 0.25;
+    fLeftPane->SetExplicitMinSize(BSize(leftWidth, B_SIZE_UNSET));
+    fLeftPane->SetExplicitMaxSize(BSize(leftWidth, B_SIZE_UNSET));
 }
 
 // Message constants for button switching
