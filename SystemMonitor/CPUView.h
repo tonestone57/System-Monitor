@@ -5,7 +5,7 @@
 #include <StringView.h>
 #include <Locker.h>
 #include <vector>
-#include "LiveGraphView.h"
+#include "GraphView.h"
 
 class BBox;
 
@@ -24,7 +24,7 @@ private:
     void GetCPUUsage(float& overallUsage);
     
     BStringView* fOverallUsageValue;
-    LiveGraphView* fGraphView;
+    GraphView* fGraphView;
     
     bigtime_t* fPreviousIdleTime;
     uint32 fCpuCount;
@@ -33,6 +33,7 @@ private:
     std::vector<float> fPerCoreUsage;
     
     BLocker fLocker;
+    bigtime_t fPreviousTimeSnapshot;
 };
 
 #endif // CPUVIEW_H

@@ -12,7 +12,8 @@
 CPUView::CPUView()
     : BView("CPUView", B_WILL_DRAW | B_PULSE_NEEDED),
       fPreviousIdleTime(nullptr),
-      fCpuCount(0)
+      fCpuCount(0),
+      fPreviousTimeSnapshot(0)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     CreateLayout();
@@ -40,7 +41,7 @@ void CPUView::CreateLayout()
     overallBox->SetLayout(grid);
 
     // Create graph view
-    fGraphView = new LiveGraphView("cpu_graph", {0, 150, 0, 255});
+    fGraphView = new GraphView("cpu_graph", {0, 150, 0, 255});
     fGraphView->SetExplicitMinSize(BSize(200, 80));
 
     // Main layout
@@ -103,9 +104,10 @@ void CPUView::GetCPUUsage(float& overallUsage)
     }
 
     bigtime_t currentTimeSnapshot = system_time();
-    static bigtime_t previousTimeSnapshot = currentTimeSnapshot;
-    bigtime_t elapsedWallTime = currentTimeSnapshot - previousTimeSnapshot;
-    previousTimeSnapshot = currentTimeSnapshot;
+    if (fPreviousTimeSnapshot == 0)
+        fPreviousTimeSnapshot = currentTimeSnapshot;
+    bigtime_t elapsedWallTime = currentTimeSnapshot - fPreviousTimeSnapshot;
+    fPreviousTimeSnapshot = currentTimeSnapshot;
 
     if (elapsedWallTime <= 0) {
         overallUsage = 0.0f;
