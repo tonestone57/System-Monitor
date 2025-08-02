@@ -76,10 +76,10 @@ void GraphView::_Render()
     // Scroll left
     BRect bounds = fOffscreenView->Bounds();
     float dx = bounds.Width() / (fMaxSamples - 1);
-    fOffscreenView->CopyBits(BRect(dx, 0, bounds.right, bounds.bottom), BPoint(0, 0));
+    fOffscreenView->ScrollBy(-dx, 0);
 
     // Clear the newly exposed area
-    BRect exposedRect(bounds.right - dx + 1, 0, bounds.right, bounds.bottom);
+    BRect exposedRect(bounds.right - dx, 0, bounds.right, bounds.bottom);
     fOffscreenView->SetHighColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     fOffscreenView->FillRect(exposedRect);
 
