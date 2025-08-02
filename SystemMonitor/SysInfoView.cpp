@@ -136,8 +136,7 @@ void SysInfoView::LoadData() {
     infoText << "OPERATING SYSTEM\n\n";
     infoText << "Kernel Name: " << sysInfo.kernel_name << "\n";
     BString kernelVer;
-    kernelVer.SetToFormat("%" B_PRId64 " (API %" B_PRIu32 ")",
-                          sysInfo.kernel_version, sysInfo.abi);
+    kernelVer.SetToFormat("hrev%" B_PRId64, sysInfo.kernel_version);
     infoText << "Kernel Version: " << kernelVer << "\n";
     char dateTimeStr[64];
     snprintf(dateTimeStr, sizeof(dateTimeStr), "%s %s",

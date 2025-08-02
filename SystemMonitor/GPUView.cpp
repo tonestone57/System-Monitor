@@ -26,7 +26,7 @@ GPUView::GPUView()
     fMemorySizeValue = new BStringView("gpu_mem_value", "N/A");
     fDacSpeedLabel = new BStringView("gpu_dac_label", "DAC Speed:");
     fDacSpeedValue = new BStringView("gpu_dac_value", "N/A");
-    fDriverVersionLabel = new BStringView("gpu_driver_label", "Driver Version:");
+    fDriverVersionLabel = new BStringView("gpu_driver_label", "Driver API Version:");
     fDriverVersionValue = new BStringView("gpu_driver_value", "N/A");
 
     BLayoutBuilder::Grid<>(grid)
