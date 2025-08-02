@@ -2,7 +2,7 @@
 
 resource app_signature "application/x-vnd.HaikuSysMonTask";
 
-resource app_version {
+resource(1) version_info {
 	major  = 1,
 	middle = 0,
 	minor  = 0,
