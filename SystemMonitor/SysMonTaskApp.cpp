@@ -83,24 +83,26 @@ public:
         BView* diskTab = new DiskView(Bounds());
         BView* gpuTab = new GPUView(Bounds());
 
-        tabView->AddTab(cpuTab, new BTab("CPU"));
-        tabView->AddTab(memTab, new BTab("Memory"));
-        tabView->AddTab(netTab, new BTab("Network"));
-        tabView->AddTab(diskTab, new BTab("Disk"));
-        tabView->AddTab(gpuTab, new BTab("GPU"));
+        BTab* tab = tabView->AddTab(cpuTab);
+        tab->SetLabel("CPU");
+        tab = tabView->AddTab(memTab);
+        tab->SetLabel("Memory");
+        tab = tabView->AddTab(netTab);
+        tab->SetLabel("Network");
+        tab = tabView->AddTab(diskTab);
+        tab->SetLabel("Disk");
+        tab = tabView->AddTab(gpuTab);
+        tab->SetLabel("GPU");
 
         BView* processTab = new ProcessView(Bounds());
-        tabView->AddTab(processTab, new BTab("Processes"));
+        tab = tabView->AddTab(processTab);
+        tab->SetLabel("Processes");
 
         splitView->AddChild(leftPane);
         splitView->AddChild(tabView);
 
-        BLayoutItem* leftItem = splitView->ItemAt(0);
-        BLayoutItem* rightItem = splitView->ItemAt(1);
-        if (leftItem && rightItem) {
-            splitView->SetItemWeight(leftItem, 0.25f);
-            splitView->SetItemWeight(rightItem, 0.75f);
-        }
+        splitView->SetItemWeight(0, 0.25f);
+        splitView->SetItemWeight(1, 0.75f);
 
         BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
             .Add(splitView)
