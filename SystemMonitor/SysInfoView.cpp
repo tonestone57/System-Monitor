@@ -22,7 +22,6 @@
 #include <Entry.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <system_revision.h>
 
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
@@ -203,12 +202,9 @@ void SysInfoView::LoadData() {
     // OS Info
     infoText << "OPERATING SYSTEM\n\n";
     infoText << "Kernel Name: " << sysInfo.kernel_name << "\n";
-	BString kernelVer;
-	const char* hrev = __get_haiku_revision();
-	if (hrev != NULL)
-		kernelVer.SetToFormat("%s", hrev);
-	else
-		kernelVer.SetToFormat("%" B_PRId64, sysInfo.kernel_version);
+    BString kernelVer;
+    kernelVer.SetToFormat("%" B_PRId64 " (API %" B_PRIu32 ")",
+                          sysInfo.kernel_version, sysInfo.abi);
     infoText << "Kernel Version: " << kernelVer << "\n";
     char dateTimeStr[64];
     snprintf(dateTimeStr, sizeof(dateTimeStr), "%s %s",
