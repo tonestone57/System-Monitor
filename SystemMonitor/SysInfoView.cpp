@@ -279,7 +279,10 @@ void SysInfoView::LoadData() {
         if (screen.GetDeviceInfo(&deviceInfo) == B_OK) {
             infoText << "GPU Type: " << deviceInfo.name << "\n";
             infoText << "Driver: " << deviceInfo.version << "\n";
-            infoText << "VRAM: " << FormatBytes(deviceInfo.memory) << "\n";
+			if (deviceInfo.memory > 0)
+				infoText << "VRAM: " << FormatBytes(deviceInfo.memory) << "\n";
+			else
+				infoText << "VRAM: N/A\n";
         } else {
             infoText << "GPU Type: Error getting GPU info\n";
         }
@@ -298,7 +301,8 @@ void SysInfoView::LoadData() {
 
     // Memory Info
     infoText << "MEMORY\n\n";
-    infoText << "Total RAM: " << FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n\n\n";
+    infoText << "Physical RAM: " << FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n";
+    infoText << "Virtual RAM: " << FormatBytes((uint64)sysInfo.max_swap_space) << "\n\n\n";
 
     // Disk Info
     infoText << "DISK VOLUMES\n\n";
