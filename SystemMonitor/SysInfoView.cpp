@@ -1,4 +1,3 @@
-#include <sys/utsname.h>
 #include "SysInfoView.h"
 #include "Utils.h"
 #include <kernel/OS.h>
@@ -24,6 +23,7 @@
 #include <Entry.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/utsname.h>
 
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
@@ -234,7 +234,7 @@ void SysInfoView::LoadData() {
             infoText << "GPU Type: " << deviceInfo.name << "\n";
             infoText << "Driver: " << deviceInfo.version << "\n";
 			if (deviceInfo.memory > 0)
-				infoText << "VRAM: " << FormatBytes(deviceInfo.memory) << "\n";
+				infoText << "VRAM: " << ::FormatBytes(deviceInfo.memory) << "\n";
 			else
 				infoText << "VRAM: N/A\n";
         } else {
