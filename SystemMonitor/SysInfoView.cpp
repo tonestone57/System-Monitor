@@ -27,6 +27,7 @@
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
 #include <cstring>
+#include <private/shared/cpu_type.h>
 
 /* CPU Features */
 static const char *kFeatures[32] = {
