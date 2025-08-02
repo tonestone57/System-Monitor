@@ -92,10 +92,10 @@ SysInfoView::~SysInfoView()
 void SysInfoView::CreateLayout()
 {
     fInfoTextView = new BTextView("info_text_view");
-    fInfoTextView->SetViewColor(255, 255, 255, 255);
+    fInfoTextView->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
     fInfoTextView->SetStylable(true);
     fInfoTextView->MakeEditable(false);
-	fInfoTextView->SetWordWrap(false);
+	fInfoTextView->SetWordWrap(true);
 
     BScrollView* scrollView = new BScrollView("sysInfoScroller", fInfoTextView,
         B_FOLLOW_ALL, 0, false, true);
