@@ -39,7 +39,7 @@ public:
 
 private:
     static int32 UpdateThread(void* data);
-    void Update();
+    void Update(BMessage* message);
 
     void KillSelectedProcess();
     void ShowContextMenu(BPoint screenPoint);
