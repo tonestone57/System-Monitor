@@ -1,7 +1,7 @@
 ## Haiku Generic Makefile ##
 
 # The name of the binary
-NAME = SystemMonitor
+NAME = SysMonTask
 
 # The type of binary (APP, SHARED, STATIC, DRIVER)
 TYPE = APP
