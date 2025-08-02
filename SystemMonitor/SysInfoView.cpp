@@ -24,12 +24,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include <sys/utsname.h>
-
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
 #include <cstring>
-#include <cpu_type.h>
 
 /* CPU Features */
 static const char *kFeatures[32] = {
@@ -235,7 +232,7 @@ void SysInfoView::LoadData() {
             infoText << "GPU Type: " << deviceInfo.name << "\n";
             infoText << "Driver: " << deviceInfo.version << "\n";
 			if (deviceInfo.memory > 0)
-				infoText << "VRAM: " << ::FormatBytes(deviceInfo.memory) << "\n";
+				infoText << "VRAM: " << FormatBytes(deviceInfo.memory) << "\n";
 			else
 				infoText << "VRAM: N/A\n";
         } else {
@@ -256,8 +253,8 @@ void SysInfoView::LoadData() {
 
     // Memory Info
     infoText << "MEMORY\n\n";
-    infoText << "Physical RAM: " << ::FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n";
-    infoText << "Virtual RAM: " << ::FormatBytes((uint64)sysInfo.max_swap_pages * B_PAGE_SIZE) << "\n\n\n";
+    infoText << "Physical RAM: " << FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n";
+    infoText << "Virtual RAM: " << FormatBytes((uint64)sysInfo.max_swap_space) << "\n\n\n";
 
     // Disk Info
     infoText << "DISK VOLUMES\n\n";
@@ -286,8 +283,8 @@ void SysInfoView::LoadData() {
                 }
             }
             infoText << "File System: " << fsInfo.fsh_name << "\n";
-            infoText << "Total Size: " << ::FormatBytes(fsInfo.total_blocks * fsInfo.block_size).String() << "\n";
-            infoText << "Free Size: " << ::FormatBytes(fsInfo.free_blocks * fsInfo.block_size).String() << "\n";
+            infoText << "Total Size: " << FormatBytes(fsInfo.total_blocks * fsInfo.block_size).String() << "\n";
+            infoText << "Free Size: " << FormatBytes(fsInfo.free_blocks * fsInfo.block_size).String() << "\n";
         }
     }
 
