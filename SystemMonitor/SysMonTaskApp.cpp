@@ -106,10 +106,6 @@ PerformanceView::PerformanceView()
         tabView->AddTab(gpuTab);
         tabView->TabAt(4)->SetLabel("GPU");
 
-        BView* processTab = new ProcessView(Bounds());
-        tabView->AddTab(processTab);
-        tabView->TabAt(5)->SetLabel("Processes");
-
         splitView->AddChild(fLeftPane);
         splitView->AddChild(fRightPane);
 
@@ -124,8 +120,7 @@ void PerformanceView::AttachedToWindow()
 {
     BView::AttachedToWindow();
     float leftWidth = fSplitView->Bounds().Width() * 0.25;
-    fLeftPane->SetExplicitMinSize(BSize(leftWidth, B_SIZE_UNSET));
-    fLeftPane->SetExplicitMaxSize(BSize(leftWidth, B_SIZE_UNSET));
+    fLeftPane->SetExplicitPreferredSize(BSize(leftWidth, B_SIZE_UNSET));
 }
 
 // Message constants for button switching
