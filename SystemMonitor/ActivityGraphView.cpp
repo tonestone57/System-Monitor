@@ -33,9 +33,18 @@ ActivityGraphView::FrameResized(float /*width*/, float /*height*/)
 }
 
 
+#include <Window.h>
+
 void
 ActivityGraphView::_UpdateOffscreenBitmap()
 {
+	if (Window() == NULL)
+		return;
+
+	BAutolock locker(Window());
+	if (!locker.IsLocked())
+		return;
+
 	BRect frame = Bounds();
 
 	if (fOffscreen != NULL && frame == fOffscreen->Bounds())
