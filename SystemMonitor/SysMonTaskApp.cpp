@@ -271,7 +271,7 @@ SysMonTaskApp::SysMonTaskApp()
 }
 
 void SysMonTaskApp::ReadyToRun() {
-    BRect windowRect(100, 100, 1200, 800);
+    BRect windowRect(100, 100, 1420, 730);
     mainWindow = new MainWindow(windowRect);
     mainWindow->Show();
 }
