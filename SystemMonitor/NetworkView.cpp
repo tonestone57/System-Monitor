@@ -197,14 +197,16 @@ void NetworkView::UpdateData()
     
     // Update graphs
     if (fUploadGraph && fDownloadGraph) {
-        bigtime_t dt = 1000000; // 1 second, as Pulse is set to 1s
-        double maxSpeed = 12.5 * 1024 * 1024; // 100 Mbit/s
+        bigtime_t dt = currentTime - fPreviousStatsMap["__total__"].lastUpdateTime;
+		if (dt <= 0)
+			dt = 1000000;
 
-        fUploadSpeed = totalSentDelta / (dt / 1000000.0);
-        fDownloadSpeed = totalReceivedDelta / (dt / 1000000.0);
+        fUploadSpeed = totalSentDelta * 1000000.0 / dt;
+        fDownloadSpeed = totalReceivedDelta * 1000000.0 / dt;
 
-        fUploadGraph->AddValue(system_time(), fUploadSpeed);
-        fDownloadGraph->AddValue(system_time(), fDownloadSpeed);
+        fUploadGraph->AddValue(currentTime, fUploadSpeed);
+        fDownloadGraph->AddValue(currentTime, fDownloadSpeed);
+		fPreviousStatsMap["__total__"].lastUpdateTime = currentTime;
     }
 
     fLocker.Unlock();

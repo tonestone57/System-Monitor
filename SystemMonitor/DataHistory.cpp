@@ -19,13 +19,27 @@ DataHistory::~DataHistory()
 void
 DataHistory::AddValue(bigtime_t time, int64 value)
 {
-	if (fBuffer.IsEmpty() || fMaximumValue < value)
-		fMaximumValue = value;
-	if (fBuffer.IsEmpty() || fMinimumValue > value)
-		fMinimumValue = value;
+	bool wasEmpty = fBuffer.IsEmpty();
+	data_item* oldest = NULL;
+	if (fBuffer.IsFull())
+		oldest = fBuffer.ItemAt(0);
 
 	data_item item = {time, value};
 	fBuffer.AddItem(item);
+
+	if (wasEmpty) {
+		fMinimumValue = value;
+		fMaximumValue = value;
+		return;
+	}
+
+	if (value < fMinimumValue)
+		fMinimumValue = value;
+	if (value > fMaximumValue)
+		fMaximumValue = value;
+
+	if (oldest != NULL && (oldest->value == fMinimumValue || oldest->value == fMaximumValue))
+		_RecalculateMinMax();
 }
 
 
@@ -98,8 +112,26 @@ DataHistory::End() const
 }
 
 
+#include <limits.h>
+
+
 void
 DataHistory::SetRefreshInterval(bigtime_t interval)
 {
 	// TODO: adjust buffer size
+}
+
+
+void
+DataHistory::_RecalculateMinMax()
+{
+	fMinimumValue = LLONG_MAX;
+	fMaximumValue = LLONG_MIN;
+	for (int32 i = 0; i < fBuffer.CountItems(); i++) {
+		data_item* item = fBuffer.ItemAt(i);
+		if (item->value < fMinimumValue)
+			fMinimumValue = item->value;
+		if (item->value > fMaximumValue)
+			fMaximumValue = item->value;
+	}
 }

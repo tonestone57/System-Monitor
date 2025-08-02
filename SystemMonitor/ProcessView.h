@@ -12,11 +12,13 @@
 class BColumnListView;
 class BMenuItem;
 
+#include <kernel/OS.h>
+
 struct ProcessInfo {
     team_id id;
-    BString name;
-    BString path;
-    BString userName;
+    char name[B_OS_NAME_LENGTH];
+    char path[B_PATH_NAME_LENGTH];
+    char userName[B_OS_NAME_LENGTH];
     uint32 threadCount;
     uint32 areaCount;
     uid_t userID;

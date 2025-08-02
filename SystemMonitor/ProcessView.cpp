@@ -225,22 +225,22 @@ void ProcessView::Update(BMessage* message)
         if (row == NULL) { // New process
             row = new BRow();
             row->SetField(new BIntegerField(info->id), kPIDColumn);
-            row->SetField(new BStringField(info->name.String()), kProcessNameColumn);
+            row->SetField(new BStringField(info->name), kProcessNameColumn);
             char cpuStr[16];
             snprintf(cpuStr, sizeof(cpuStr), "%.1f", info->cpuUsage);
             row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
             row->SetField(new BStringField(FormatBytes(info->memoryUsageBytes)), kMemoryUsageColumn);
             row->SetField(new BIntegerField(info->threadCount), kThreadCountColumn);
-            row->SetField(new BStringField(info->userName.String()), kUserNameColumn);
+            row->SetField(new BStringField(info->userName), kUserNameColumn);
             fProcessListView->AddRow(row);
         } else { // Existing process
-            ((BStringField*)row->GetField(kProcessNameColumn))->SetString(info->name.String());
+            ((BStringField*)row->GetField(kProcessNameColumn))->SetString(info->name);
             char cpuStr[16];
             snprintf(cpuStr, sizeof(cpuStr), "%.1f", info->cpuUsage);
             ((BStringField*)row->GetField(kCPUUsageColumn))->SetString(cpuStr);
             ((BStringField*)row->GetField(kMemoryUsageColumn))->SetString(FormatBytes(info->memoryUsageBytes));
             ((BIntegerField*)row->GetField(kThreadCountColumn))->SetValue(info->threadCount);
-            ((BStringField*)row->GetField(kUserNameColumn))->SetString(info->userName.String());
+            ((BStringField*)row->GetField(kUserNameColumn))->SetString(info->userName);
             fProcessListView->UpdateRow(row);
         }
     }
@@ -287,18 +287,19 @@ int32 ProcessView::UpdateThread(void* data)
             int32 imgCookie = 0;
             if (get_next_image_info(teamInfo.team, &imgCookie, &imgInfo) == B_OK) {
                 BPath path(imgInfo.name);
-                currentProc.name = path.Leaf();
-                currentProc.path = imgInfo.name;
+				strncpy(currentProc.name, path.Leaf(), B_OS_NAME_LENGTH);
+				strncpy(currentProc.path, imgInfo.name, B_PATH_NAME_LENGTH);
             } else {
-                currentProc.name = teamInfo.args;
-                if (currentProc.name.Length() == 0)
-                    currentProc.name = "system_daemon";
+				strncpy(currentProc.name, teamInfo.args, B_OS_NAME_LENGTH);
+                if (strlen(currentProc.name) == 0)
+                    strncpy(currentProc.name, "system_daemon", B_OS_NAME_LENGTH);
             }
 
             currentProc.threadCount = teamInfo.thread_count;
             currentProc.areaCount = teamInfo.area_count;
             currentProc.userID = teamInfo.uid;
-            currentProc.userName = view->GetUserName(currentProc.userID);
+			BString userName = view->GetUserName(currentProc.userID);
+			strncpy(currentProc.userName, userName.String(), B_OS_NAME_LENGTH);
 
             int32 threadCookie = 0;
             thread_info tInfo;

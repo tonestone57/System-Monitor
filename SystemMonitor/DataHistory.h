@@ -25,6 +25,9 @@ public:
 			void		SetRefreshInterval(bigtime_t interval);
 
 private:
+			void		_RecalculateMinMax();
+
+private:
 	CircularBuffer<data_item> fBuffer;
 	int64				fMinimumValue;
 	int64				fMaximumValue;
