@@ -67,8 +67,17 @@ private:
 // Performance Tab - combines CPU, Memory, Disk, Network, GPU monitoring
 class PerformanceView : public BView {
 public:
-    PerformanceView() : BView("PerformanceView", B_WILL_DRAW) {
-        SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+    PerformanceView();
+    virtual void AttachedToWindow();
+
+private:
+    BSplitView* fSplitView;
+};
+
+PerformanceView::PerformanceView()
+    : BView("PerformanceView", B_WILL_DRAW)
+{
+    SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
         BSplitView* splitView = new BSplitView(B_HORIZONTAL, B_USE_DEFAULT_SPACING);
         splitView->SetInsets(B_USE_DEFAULT_SPACING);
@@ -83,32 +92,37 @@ public:
         BView* diskTab = new DiskView(Bounds());
         BView* gpuTab = new GPUView(Bounds());
 
-        BTab* tab = tabView->AddTab(cpuTab);
-        tab->SetLabel("CPU");
-        tab = tabView->AddTab(memTab);
-        tab->SetLabel("Memory");
-        tab = tabView->AddTab(netTab);
-        tab->SetLabel("Network");
-        tab = tabView->AddTab(diskTab);
-        tab->SetLabel("Disk");
-        tab = tabView->AddTab(gpuTab);
-        tab->SetLabel("GPU");
+        tabView->AddTab(cpuTab);
+        tabView->TabAt(0)->SetLabel("CPU");
+        tabView->AddTab(memTab);
+        tabView->TabAt(1)->SetLabel("Memory");
+        tabView->AddTab(netTab);
+        tabView->TabAt(2)->SetLabel("Network");
+        tabView->AddTab(diskTab);
+        tabView->TabAt(3)->SetLabel("Disk");
+        tabView->AddTab(gpuTab);
+        tabView->TabAt(4)->SetLabel("GPU");
 
         BView* processTab = new ProcessView(Bounds());
-        tab = tabView->AddTab(processTab);
-        tab->SetLabel("Processes");
+        tabView->AddTab(processTab);
+        tabView->TabAt(5)->SetLabel("Processes");
 
         splitView->AddChild(leftPane);
         splitView->AddChild(tabView);
 
-        splitView->SetItemWeight(0, 0.25f);
-        splitView->SetItemWeight(1, 0.75f);
+        fSplitView = splitView;
 
         BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
             .Add(splitView)
             .End();
-    }
-};
+}
+
+void PerformanceView::AttachedToWindow()
+{
+    BView::AttachedToWindow();
+    fSplitView->SetItemWeight(0, 0.25f);
+    fSplitView->SetItemWeight(1, 0.75f);
+}
 
 // Message constants for button switching
 const uint32 MSG_SWITCH_TO_PERFORMANCE = 'perf';
