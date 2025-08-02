@@ -74,11 +74,13 @@ bool hasAES() {
 
 #endif // __x86_64__ || __i386__
 
+#include <InterfaceDefs.h>
+
 SysInfoView::SysInfoView(BRect frame)
     : BView(frame, "SysInfoView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW),
       fInfoTextView(NULL)
 {
-    SetViewColor(255, 255, 255, 255);
+    SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
     CreateLayout();
 }
 
