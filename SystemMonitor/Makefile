@@ -19,7 +19,8 @@ SRCS = \
 	ProcessView.cpp \
 	GPUView.cpp \
 	SysInfoView.cpp \
-	GraphView.cpp
+	DataHistory.cpp \
+	ActivityGraphView.cpp
 
 # Resource definition files
 # RDEFS = SysMonTask.rdef
