@@ -13,7 +13,8 @@ CPUView::CPUView()
     : BView("CPUView", B_WILL_DRAW | B_PULSE_NEEDED),
       fPreviousIdleTime(nullptr),
       fCpuCount(0),
-      fPreviousTimeSnapshot(0)
+      fPreviousTimeSnapshot(0),
+      fCurrentUsage(0.0f)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     CreateLayout();
@@ -150,7 +151,13 @@ void CPUView::UpdateData()
     if (fGraphView && overallUsage >= 0)
         fGraphView->AddSample(overallUsage);
 
+    fCurrentUsage = overallUsage;
     fLocker.Unlock();
+}
+
+float CPUView::GetCurrentUsage()
+{
+    return fCurrentUsage;
 }
 
 void CPUView::Draw(BRect updateRect) {

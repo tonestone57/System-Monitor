@@ -24,6 +24,9 @@ public:
     virtual void AttachedToWindow();
     virtual void Pulse();
 
+    float GetUploadSpeed();
+    float GetDownloadSpeed();
+
 private:
     void UpdateData();
     BString FormatBytes(uint64 bytes);
@@ -35,6 +38,8 @@ private:
     
     BLocker fLocker;
     std::map<std::string, InterfaceStatsRecord> fPreviousStatsMap;
+    float fUploadSpeed;
+    float fDownloadSpeed;
 };
 
 #endif // NETWORKVIEW_H

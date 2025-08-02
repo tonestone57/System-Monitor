@@ -18,6 +18,8 @@ public:
     virtual void Pulse();
     virtual void Draw(BRect updateRect);
 
+    float GetCurrentUsage();
+
 private:
     void CreateLayout();
     void UpdateData();
@@ -34,6 +36,7 @@ private:
     
     BLocker fLocker;
     bigtime_t fPreviousTimeSnapshot;
+    float fCurrentUsage;
 };
 
 #endif // CPUVIEW_H

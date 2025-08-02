@@ -15,7 +15,8 @@
 // MemView Implementation
 MemView::MemView(BRect frame)
     : BView(frame, "MemoryView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW | B_PULSE_NEEDED),
-      fCacheGraphView(NULL)
+      fCacheGraphView(NULL),
+      fCurrentUsage(0.0f)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -116,6 +117,11 @@ void MemView::UpdateData()
         fCachedMemValue->SetText(FormatBytes(cachedBytes));
 
         if (totalBytes > 0) {
+            float usedPercent = (float)usedBytes / totalBytes * 100.0f;
+            if (usedPercent < 0.0f) usedPercent = 0.0f;
+            if (usedPercent > 100.0f) usedPercent = 100.0f;
+            fCurrentUsage = usedPercent;
+
             float cachePercent = (float)cachedBytes / totalBytes * 100.0f;
             if (cachePercent < 0.0f) cachePercent = 0.0f;
             if (cachePercent > 100.0f) cachePercent = 100.0f;
@@ -130,4 +136,9 @@ void MemView::UpdateData()
     }
 
     fLocker.Unlock();
+}
+
+float MemView::GetCurrentUsage()
+{
+    return fCurrentUsage;
 }

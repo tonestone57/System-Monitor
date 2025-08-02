@@ -26,7 +26,9 @@ enum {
 NetworkView::NetworkView(BRect frame)
     : BView(frame, "NetworkView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW | B_PULSE_NEEDED),
     fDownloadGraph(NULL),
-    fUploadGraph(NULL)
+    fUploadGraph(NULL),
+    fUploadSpeed(0.0f),
+    fDownloadSpeed(0.0f)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -198,12 +200,22 @@ void NetworkView::UpdateData()
         bigtime_t dt = 1000000; // 1 second, as Pulse is set to 1s
         double maxSpeed = 12.5 * 1024 * 1024; // 100 Mbit/s
 
-        double uploadSpeed = totalSentDelta / (dt / 1000000.0);
-        double downloadSpeed = totalReceivedDelta / (dt / 1000000.0);
+        fUploadSpeed = totalSentDelta / (dt / 1000000.0);
+        fDownloadSpeed = totalReceivedDelta / (dt / 1000000.0);
 
-        fUploadGraph->AddSample((uploadSpeed / maxSpeed) * 100.0f);
-        fDownloadGraph->AddSample((downloadSpeed / maxSpeed) * 100.0f);
+        fUploadGraph->AddSample((fUploadSpeed / maxSpeed) * 100.0f);
+        fDownloadGraph->AddSample((fDownloadSpeed / maxSpeed) * 100.0f);
     }
 
     fLocker.Unlock();
+}
+
+float NetworkView::GetUploadSpeed()
+{
+    return fUploadSpeed;
+}
+
+float NetworkView::GetDownloadSpeed()
+{
+    return fDownloadSpeed;
 }

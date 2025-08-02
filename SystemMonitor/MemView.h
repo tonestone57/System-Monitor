@@ -16,6 +16,8 @@ public:
     virtual void AttachedToWindow();
     virtual void Pulse();
 
+    float GetCurrentUsage();
+
 private:
     void UpdateData();
     BString FormatBytes(uint64 bytes);
@@ -32,6 +34,7 @@ private:
     GraphView* fCacheGraphView;
     
     BLocker fLocker;
+    float fCurrentUsage;
 };
 
 #endif // MEMVIEW_H

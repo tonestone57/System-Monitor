@@ -18,6 +18,7 @@
 #include "NetworkView.h"
 #include "GPUView.h"
 #include "SysInfoView.h"
+#include "SystemStats.h"
 
 // Forward declaration
 class MainWindow;
@@ -33,7 +34,7 @@ private:
 
 class SummaryView : public BView {
 public:
-    SummaryView() : BView("SummaryView", B_WILL_DRAW | B_PULSE_NEEDED) {
+    SummaryView(SystemStats* stats) : BView("SummaryView", B_WILL_DRAW | B_PULSE_NEEDED), fStats(stats) {
         SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
         fCpuGraph = new GraphView("cpu_summary_graph", (rgb_color){80, 255, 80, 255});
@@ -52,16 +53,18 @@ public:
     }
 
     virtual void Pulse() {
-        // TODO: Get real data
-        fCpuGraph->AddSample(rand() % 100);
-        fMemGraph->AddSample(rand() % 100);
-        fNetGraph->AddSample(rand() % 100);
+        if (fStats) {
+            fCpuGraph->AddSample(fStats->cpuUsage);
+            fMemGraph->AddSample(fStats->memoryUsage);
+            fNetGraph->AddSample(fStats->uploadSpeed + fStats->downloadSpeed);
+        }
     }
 
 private:
     GraphView* fCpuGraph;
     GraphView* fMemGraph;
     GraphView* fNetGraph;
+    SystemStats* fStats;
 };
 
 // Performance Tab - combines CPU, Memory, Disk, Network, GPU monitoring
@@ -69,44 +72,50 @@ class PerformanceView : public BView {
 public:
     PerformanceView();
     virtual void AttachedToWindow();
+    virtual void Pulse();
 
 private:
     BSplitView* fSplitView;
-    BView* fLeftPane;
+    SummaryView* fSummaryView;
     BView* fRightPane;
+
+    SystemStats fStats;
+    CPUView* fCPUView;
+    MemView* fMemView;
+    NetworkView* fNetworkView;
 };
 
 PerformanceView::PerformanceView()
-    : BView("PerformanceView", B_WILL_DRAW)
+    : BView("PerformanceView", B_WILL_DRAW | B_PULSE_NEEDED)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
         BSplitView* splitView = new BSplitView(B_HORIZONTAL, B_USE_DEFAULT_SPACING);
         splitView->SetInsets(B_USE_DEFAULT_SPACING);
 
-        fLeftPane = new SummaryView();
+        fSummaryView = new SummaryView(&fStats);
 
         BTabView* tabView = new BTabView("tab_view", B_WIDTH_FROM_WIDEST);
         fRightPane = tabView;
 
-        BView* cpuTab = new CPUView();
-        BView* memTab = new MemView(Bounds());
-        BView* netTab = new NetworkView(Bounds());
+        fCPUView = new CPUView();
+        fMemView = new MemView(Bounds());
+        fNetworkView = new NetworkView(Bounds());
         BView* diskTab = new DiskView(Bounds());
         BView* gpuTab = new GPUView(Bounds());
 
-        tabView->AddTab(cpuTab);
+        tabView->AddTab(fCPUView);
         tabView->TabAt(0)->SetLabel("CPU");
-        tabView->AddTab(memTab);
+        tabView->AddTab(fMemView);
         tabView->TabAt(1)->SetLabel("Memory");
-        tabView->AddTab(netTab);
+        tabView->AddTab(fNetworkView);
         tabView->TabAt(2)->SetLabel("Network");
         tabView->AddTab(diskTab);
         tabView->TabAt(3)->SetLabel("Disk");
         tabView->AddTab(gpuTab);
         tabView->TabAt(4)->SetLabel("GPU");
 
-        splitView->AddChild(fLeftPane);
+        splitView->AddChild(fSummaryView);
         splitView->AddChild(fRightPane);
 
         fSplitView = splitView;
@@ -120,7 +129,15 @@ void PerformanceView::AttachedToWindow()
 {
     BView::AttachedToWindow();
     float leftWidth = fSplitView->Bounds().Width() * 0.25;
-    fLeftPane->SetExplicitPreferredSize(BSize(leftWidth, B_SIZE_UNSET));
+    fSummaryView->SetExplicitPreferredSize(BSize(leftWidth, B_SIZE_UNSET));
+}
+
+void PerformanceView::Pulse()
+{
+    fStats.cpuUsage = fCPUView->GetCurrentUsage();
+    fStats.memoryUsage = fMemView->GetCurrentUsage();
+    fStats.uploadSpeed = fNetworkView->GetUploadSpeed();
+    fStats.downloadSpeed = fNetworkView->GetDownloadSpeed();
 }
 
 // Message constants for button switching
