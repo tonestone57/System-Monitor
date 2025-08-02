@@ -32,7 +32,6 @@ public:
 private:
     void UpdateData();
     status_t GetDiskInfo(BVolume& volume, DiskInfo& info);
-    BString FormatBytes(uint64 bytes);
     
     BBox* fDiskInfoBox;
     BColumnListView* fDiskListView;
