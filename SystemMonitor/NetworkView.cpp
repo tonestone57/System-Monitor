@@ -80,8 +80,8 @@ NetworkView::~NetworkView()
 
 void NetworkView::AttachedToWindow()
 {
-    UpdateData();
     BView::AttachedToWindow();
+    UpdateData();
 }
 
 void NetworkView::Pulse()

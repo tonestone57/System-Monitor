@@ -14,6 +14,7 @@
 #include <MenuItem.h>
 #include <Font.h>
 #include <set>
+#include <Window.h>
 
 
 class BCPUColumn : public BStringColumn {
@@ -38,15 +39,8 @@ public:
         : BStringColumn(title, width, minWidth, maxWidth, truncate, align) {}
 
     virtual int CompareFields(BField* field1, BField* field2) {
-        // Simple comparison based on string length first, then lexicographically
-        // This is a heuristic and might not be perfect for all cases (e.g. 900 KiB vs 1.0 MiB)
-        // A more robust solution would parse the units (KiB, MiB) and convert to a common base.
         const char* str1 = ((BStringField*)field1)->String();
         const char* str2 = ((BStringField*)field2)->String();
-
-        // For the scope of this fix, we'll assume sorting by magnitude is the goal
-        // and we can achieve that by parsing the value.
-        // A more complex implementation would be needed for perfect sorting of formatted strings.
         float val1 = 0, val2 = 0;
         char unit1[5] = {0}, unit2[5] = {0};
         sscanf(str1, "%f %s", &val1, unit1);
@@ -63,8 +57,6 @@ public:
     }
 };
 
-
-// Column identifiers
 enum {
     kPIDColumn,
     kProcessNameColumn,
@@ -74,13 +66,13 @@ enum {
     kUserNameColumn
 };
 
-// Context Menu Messages
 const uint32 MSG_KILL_PROCESS = 'kill';
-const uint32 MSG_SORT_COLUMN = 'sort';
 
 ProcessView::ProcessView(BRect frame)
-    : BView(frame, "ProcessView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW | B_PULSE_NEEDED),
-      fLastPulseSystemTime(0)
+    : BView(frame, "ProcessView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW),
+      fLastSystemTime(0),
+      fUpdateThread(B_ERROR),
+      fTerminated(false)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -98,7 +90,6 @@ ProcessView::ProcessView(BRect frame)
 
     fProcessListView->SetSortColumn(fProcessListView->ColumnAt(kCPUUsageColumn), false, false);
 
-    // Context Menu
     fContextMenu = new BPopUpMenu("ProcessContext", false, false);
     fContextMenu->AddItem(new BMenuItem("Kill Process", new BMessage(MSG_KILL_PROCESS)));
 
@@ -110,15 +101,33 @@ ProcessView::ProcessView(BRect frame)
 
 ProcessView::~ProcessView()
 {
+    fTerminated = true;
+    if (fUpdateThread != B_ERROR) {
+        status_t ret;
+        wait_for_thread(fUpdateThread, &ret);
+    }
     delete fContextMenu;
 }
 
 void ProcessView::AttachedToWindow()
 {
-    fProcessListView->SetTarget(this);
-    UpdateData();
-    fLastPulseSystemTime = system_time();
     BView::AttachedToWindow();
+    fProcessListView->SetTarget(this);
+    fLastSystemTime = system_time();
+
+    fUpdateThread = spawn_thread(UpdateThread, "Process Update", B_NORMAL_PRIORITY, this);
+    if (fUpdateThread >= 0)
+        resume_thread(fUpdateThread);
+}
+
+void ProcessView::DetachedFromWindow()
+{
+    fTerminated = true;
+    if (fUpdateThread != B_ERROR) {
+        status_t ret;
+        wait_for_thread(fUpdateThread, &ret);
+        fUpdateThread = B_ERROR;
+    }
 }
 
 void ProcessView::MessageReceived(BMessage* message)
@@ -127,15 +136,13 @@ void ProcessView::MessageReceived(BMessage* message)
         case MSG_KILL_PROCESS:
             KillSelectedProcess();
             break;
+        case MSG_PROCESS_DATA_UPDATE:
+            Update(message);
+            break;
         default:
             BView::MessageReceived(message);
             break;
     }
-}
-
-void ProcessView::Pulse()
-{
-    UpdateData();
 }
 
 BString ProcessView::FormatBytes(uint64 bytes) {
@@ -194,156 +201,55 @@ void ProcessView::KillSelectedProcess() {
             BAlert errAlert("Error", "Failed to kill process.", "OK",
                                           NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
             errAlert.Go();
-        } else {
-            fProcessListView->RemoveRow(selectedRow);
-            delete selectedRow;
-            fProcessTimeMap.erase(team);
         }
     }
 }
 
-void ProcessView::UpdateData()
+void ProcessView::Update(BMessage* message)
 {
-    fLocker.Lock();
-
-    bigtime_t currentSystemTime = system_time();
-    bigtime_t systemTimeDelta = currentSystemTime - fLastPulseSystemTime;
-    if (systemTimeDelta <= 0) systemTimeDelta = 1;
-
-    system_info sysInfo;
-    get_system_info(&sysInfo);
-    float totalPossibleCoreTime = sysInfo.cpu_count * systemTimeDelta;
-    if (totalPossibleCoreTime <= 0) totalPossibleCoreTime = 1.0f;
-
     std::set<team_id> activePIDsThisPulse;
-    std::map<team_id, float> teamCPUUsage;
-    bigtime_t totalActiveTime = 0;
+    const ProcessInfo* info;
+    ssize_t size;
 
-    int32 cookie = 0;
-    team_info teamInfo;
-    while (get_next_team_info(&cookie, &teamInfo) == B_OK) {
-        activePIDsThisPulse.insert(teamInfo.team);
-        ProcessInfo currentProc;
-        currentProc.id = teamInfo.team;
+    for (int i = 0; message->FindData("proc_info", B_RAW_TYPE, i, (const void**)&info, &size) == B_OK; i++) {
+        activePIDsThisPulse.insert(info->id);
         
-        // Get process name from image info
-        image_info imgInfo;
-        int32 imgCookie = 0;
-        if (get_next_image_info(teamInfo.team, &imgCookie, &imgInfo) == B_OK) {
-            BPath path(imgInfo.name);
-            currentProc.name = path.Leaf();
-            currentProc.path = imgInfo.name;
-        } else {
-            currentProc.name = teamInfo.args;
-            if (currentProc.name.Length() == 0) 
-                currentProc.name = "system_daemon";
-        }
-
-        currentProc.threadCount = teamInfo.thread_count;
-        currentProc.areaCount = teamInfo.area_count;
-        currentProc.userID = teamInfo.uid;
-        currentProc.userName = GetUserName(currentProc.userID);
-        
-        // Calculate CPU time
-        int32 threadCookie = 0;
-        thread_info tInfo;
-        bigtime_t teamActiveTimeDelta = 0;
-
-        while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
-            bigtime_t threadTime = tInfo.user_time + tInfo.kernel_time;
-            if (fThreadTimeMap.count(tInfo.thread)) {
-                bigtime_t threadTimeDelta = threadTime - fThreadTimeMap[tInfo.thread];
-                if (threadTimeDelta < 0) threadTimeDelta = 0;
-
-                // Exclude idle threads
-                if (strstr(tInfo.name, "idle thread") == NULL) {
-                    teamActiveTimeDelta += threadTimeDelta;
-                }
-            }
-            fThreadTimeMap[tInfo.thread] = threadTime;
-        }
-
-        // Calculate team CPU usage as a percentage
-        float teamCpuPercent = (float)teamActiveTimeDelta / totalPossibleCoreTime * 100.0f;
-        if (teamCpuPercent < 0.0f) teamCpuPercent = 0.0f;
-        if (teamCpuPercent > 100.0f) teamCpuPercent = 100.0f;
-        teamCPUUsage[teamInfo.team] = teamCpuPercent;
-
-        // Calculate Memory Usage
-        currentProc.memoryUsageBytes = 0;
-        area_info areaInfo;
-        ssize_t areaCookie = 0;
-        while (get_next_area_info(teamInfo.team, &areaCookie, &areaInfo) == B_OK) {
-            currentProc.memoryUsageBytes += areaInfo.ram_size;
-        }
-
-        currentProc.cpuUsage = teamCPUUsage[teamInfo.team];
-
-        // Find or Create Row in BColumnListView
         BRow* row = NULL;
-        for (int32 i = 0; (row = fProcessListView->RowAt(i)) != NULL; i++) {
+        for (int32 j = 0; (row = fProcessListView->RowAt(j)) != NULL; j++) {
             BIntegerField* pidField = static_cast<BIntegerField*>(row->GetField(kPIDColumn));
-            if (pidField && pidField->Value() == currentProc.id) {
+            if (pidField && pidField->Value() == info->id) {
                 break;
             }
         }
 
         if (row == NULL) { // New process
             row = new BRow();
-            row->SetField(new BIntegerField(currentProc.id), kPIDColumn);
-            row->SetField(new BStringField(currentProc.name.String()), kProcessNameColumn);
-
+            row->SetField(new BIntegerField(info->id), kPIDColumn);
+            row->SetField(new BStringField(info->name.String()), kProcessNameColumn);
             char cpuStr[16];
-            snprintf(cpuStr, sizeof(cpuStr), "%.1f", currentProc.cpuUsage);
+            snprintf(cpuStr, sizeof(cpuStr), "%.1f", info->cpuUsage);
             row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
-
-            row->SetField(new BStringField(FormatBytes(currentProc.memoryUsageBytes)), kMemoryUsageColumn);
-            row->SetField(new BIntegerField(currentProc.threadCount), kThreadCountColumn);
-            row->SetField(new BStringField(currentProc.userName), kUserNameColumn);
+            row->SetField(new BStringField(FormatBytes(info->memoryUsageBytes)), kMemoryUsageColumn);
+            row->SetField(new BIntegerField(info->threadCount), kThreadCountColumn);
+            row->SetField(new BStringField(info->userName.String()), kUserNameColumn);
             fProcessListView->AddRow(row);
-        } else { // Existing process, update fields
-            ((BStringField*)row->GetField(kProcessNameColumn))->SetString(currentProc.name);
-
+        } else { // Existing process
+            ((BStringField*)row->GetField(kProcessNameColumn))->SetString(info->name.String());
             char cpuStr[16];
-            snprintf(cpuStr, sizeof(cpuStr), "%.1f", currentProc.cpuUsage);
+            snprintf(cpuStr, sizeof(cpuStr), "%.1f", info->cpuUsage);
             ((BStringField*)row->GetField(kCPUUsageColumn))->SetString(cpuStr);
-
-            ((BStringField*)row->GetField(kMemoryUsageColumn))->SetString(FormatBytes(currentProc.memoryUsageBytes));
-            ((BIntegerField*)row->GetField(kThreadCountColumn))->SetValue(currentProc.threadCount);
-            ((BStringField*)row->GetField(kUserNameColumn))->SetString(currentProc.userName);
+            ((BStringField*)row->GetField(kMemoryUsageColumn))->SetString(FormatBytes(info->memoryUsageBytes));
+            ((BIntegerField*)row->GetField(kThreadCountColumn))->SetValue(info->threadCount);
+            ((BStringField*)row->GetField(kUserNameColumn))->SetString(info->userName.String());
             fProcessListView->UpdateRow(row);
         }
     }
 
-    // Correct kernel CPU usage
-    if (teamCPUUsage.count(2)) {
-        if (totalPossibleCoreTime > 0.0f) {
-            float kernelUsage = (float)totalActiveTime / totalPossibleCoreTime * 100.0f;
-            if (kernelUsage < 0.0f) kernelUsage = 0.0f;
-            if (kernelUsage > 100.0f) kernelUsage = 100.0f;
-            teamCPUUsage[2] = kernelUsage;
-
-            BRow* row = NULL;
-            for (int32 i = 0; (row = fProcessListView->RowAt(i)) != NULL; i++) {
-                BIntegerField* pidField = dynamic_cast<BIntegerField*>(row->GetField(kPIDColumn));
-                if (pidField && pidField->Value() == 2) {
-                    char cpuStr[16];
-                    snprintf(cpuStr, sizeof(cpuStr), "%.1f", kernelUsage);
-                    ((BStringField*)row->GetField(kCPUUsageColumn))->SetString(cpuStr);
-                    fProcessListView->UpdateRow(row);
-                    break;
-                }
-            }
-        }
-    }
-
-    // Remove Rows for Processes That No Longer Exist
     for (int32 i = 0; i < fProcessListView->CountRows(); ) {
         BRow* row = fProcessListView->RowAt(i);
         BIntegerField* pidField = static_cast<BIntegerField*>(row->GetField(kPIDColumn));
         if (pidField) {
             if (activePIDsThisPulse.find(pidField->Value()) == activePIDsThisPulse.end()) {
-                fProcessTimeMap.erase(pidField->Value());
                 fProcessListView->RemoveRow(row);
                 delete row;
                 continue;
@@ -351,7 +257,86 @@ void ProcessView::UpdateData()
         }
         i++;
     }
+}
 
-    fLastPulseSystemTime = currentSystemTime;
-    fLocker.Unlock();
+int32 ProcessView::UpdateThread(void* data)
+{
+    ProcessView* view = static_cast<ProcessView*>(data);
+
+    while (!view->fTerminated) {
+
+        BMessage msg(MSG_PROCESS_DATA_UPDATE);
+
+        bigtime_t currentSystemTime = system_time();
+        bigtime_t systemTimeDelta = currentSystemTime - view->fLastSystemTime;
+        if (systemTimeDelta <= 0) systemTimeDelta = 1;
+        view->fLastSystemTime = currentSystemTime;
+
+        system_info sysInfo;
+        get_system_info(&sysInfo);
+        float totalPossibleCoreTime = sysInfo.cpu_count * systemTimeDelta;
+        if (totalPossibleCoreTime <= 0) totalPossibleCoreTime = 1.0f;
+
+        int32 cookie = 0;
+        team_info teamInfo;
+        while (get_next_team_info(&cookie, &teamInfo) == B_OK) {
+            ProcessInfo currentProc;
+            currentProc.id = teamInfo.team;
+
+            image_info imgInfo;
+            int32 imgCookie = 0;
+            if (get_next_image_info(teamInfo.team, &imgCookie, &imgInfo) == B_OK) {
+                BPath path(imgInfo.name);
+                currentProc.name = path.Leaf();
+                currentProc.path = imgInfo.name;
+            } else {
+                currentProc.name = teamInfo.args;
+                if (currentProc.name.Length() == 0)
+                    currentProc.name = "system_daemon";
+            }
+
+            currentProc.threadCount = teamInfo.thread_count;
+            currentProc.areaCount = teamInfo.area_count;
+            currentProc.userID = teamInfo.uid;
+            currentProc.userName = view->GetUserName(currentProc.userID);
+
+            int32 threadCookie = 0;
+            thread_info tInfo;
+            bigtime_t teamActiveTimeDelta = 0;
+
+            while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
+                bigtime_t threadTime = tInfo.user_time + tInfo.kernel_time;
+                if (view->fThreadTimeMap.count(tInfo.thread)) {
+                    bigtime_t threadTimeDelta = threadTime - view->fThreadTimeMap[tInfo.thread];
+                    if (threadTimeDelta < 0) threadTimeDelta = 0;
+
+                    if (strstr(tInfo.name, "idle thread") == NULL) {
+                        teamActiveTimeDelta += threadTimeDelta;
+                    }
+                }
+                view->fThreadTimeMap[tInfo.thread] = threadTime;
+            }
+
+            float teamCpuPercent = (float)teamActiveTimeDelta / totalPossibleCoreTime * 100.0f;
+            if (teamCpuPercent < 0.0f) teamCpuPercent = 0.0f;
+            if (teamCpuPercent > 100.0f * sysInfo.cpu_count) teamCpuPercent = 100.0f * sysInfo.cpu_count;
+            currentProc.cpuUsage = teamCpuPercent;
+
+            currentProc.memoryUsageBytes = 0;
+            area_info areaInfo;
+            ssize_t areaCookie = 0;
+            while (get_next_area_info(teamInfo.team, &areaCookie, &areaInfo) == B_OK) {
+                currentProc.memoryUsageBytes += areaInfo.ram_size;
+            }
+
+            msg.AddData("proc_info", B_RAW_TYPE, &currentProc, sizeof(ProcessInfo));
+        }
+
+        if (view->Window())
+            view->Window()->PostMessage(&msg, view);
+
+        snooze(1000000);
+    }
+
+    return B_OK;
 }

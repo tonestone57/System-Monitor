@@ -6,6 +6,7 @@
 #include <String.h>
 #include <PopUpMenu.h>
 #include <map>
+#include <vector>
 #include <kernel/OS.h>
 
 class BColumnListView;
@@ -21,9 +22,11 @@ struct ProcessInfo {
     uid_t userID;
     uint64 memoryUsageBytes;
     float cpuUsage;
-    bigtime_t totalUserTime;
-    bigtime_t totalKernelTime;
 };
+
+
+const uint32 MSG_PROCESS_DATA_UPDATE = 'pdup';
+
 
 class ProcessView : public BView {
 public:
@@ -31,11 +34,13 @@ public:
     virtual ~ProcessView();
     
     virtual void AttachedToWindow();
+    virtual void DetachedFromWindow();
     virtual void MessageReceived(BMessage* message);
-    virtual void Pulse();
 
 private:
-    void UpdateData();
+    static int32 UpdateThread(void* data);
+    void Update();
+
     void KillSelectedProcess();
     void ShowContextMenu(BPoint screenPoint);
     BString FormatBytes(uint64 bytes);
@@ -44,11 +49,11 @@ private:
     BColumnListView* fProcessListView;
     BPopUpMenu* fContextMenu;
     
-    std::map<team_id, ProcessInfo> fProcessTimeMap;
     std::map<thread_id, bigtime_t> fThreadTimeMap;
-    bigtime_t fLastPulseSystemTime;
+    bigtime_t fLastSystemTime;
     
-    BLocker fLocker;
+    thread_id fUpdateThread;
+    volatile bool fTerminated;
 };
 
 #endif // PROCESSVIEW_H

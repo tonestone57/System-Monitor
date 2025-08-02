@@ -73,8 +73,8 @@ MemView::~MemView()
 
 void MemView::AttachedToWindow()
 {
-    UpdateData();
     BView::AttachedToWindow();
+    UpdateData();
 }
 
 void MemView::Pulse()

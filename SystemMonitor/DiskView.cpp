@@ -75,8 +75,8 @@ DiskView::~DiskView()
 
 void DiskView::AttachedToWindow()
 {
-    UpdateData();
     BView::AttachedToWindow();
+    UpdateData();
 }
 
 void DiskView::Pulse()

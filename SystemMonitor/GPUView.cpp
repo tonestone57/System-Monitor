@@ -66,8 +66,8 @@ GPUView::~GPUView()
 
 void GPUView::AttachedToWindow()
 {
-    UpdateData();
     BView::AttachedToWindow();
+    UpdateData();
 }
 
 BString GPUView::FormatBytes(uint64 bytes) {
