@@ -62,8 +62,7 @@ ActivityGraphView::_UpdateOffscreenBitmap()
 
 	BView* view = new BView(Bounds(), NULL, B_FOLLOW_NONE, 0);
 	fOffscreen->AddChild(view);
-	view->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
-	view->SetLowColor(view->ViewColor());
+	view->SetLowColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 }
 
 
