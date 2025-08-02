@@ -160,8 +160,8 @@ void NetworkView::UpdateData()
 		uint64 currentReceived = 0;
 
 		if (status == B_OK) {
-			currentSent = stats.bytes_sent;
-			currentReceived = stats.bytes_received;
+			currentSent = stats.ifs_tx_bytes;
+			currentReceived = stats.ifs_rx_bytes;
 		}
 
         BString sendSpeed = "N/A", recvSpeed = "N/A";
