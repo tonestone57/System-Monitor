@@ -22,6 +22,7 @@
 #include <Entry.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <system_revision.h>
 
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
@@ -149,9 +150,7 @@ BString SysInfoView::FormatHertz(uint64 hertz) {
     return str;
 }
 
-BString SysInfoView::FormatUptime(bigtime_t bootTime) {
-    bigtime_t now = system_time();
-    bigtime_t uptimeMicros = now - bootTime;
+BString SysInfoView::FormatUptime(bigtime_t uptimeMicros) {
     uint32 seconds = uptimeMicros / 1000000;
 
     uint32 days = seconds / (24 * 3600);
@@ -204,9 +203,12 @@ void SysInfoView::LoadData() {
     // OS Info
     infoText << "OPERATING SYSTEM\n\n";
     infoText << "Kernel Name: " << sysInfo.kernel_name << "\n";
-    BString kernelVer;
-    kernelVer.SetToFormat("%" B_PRId64 " (API %" B_PRIu32 ")",
-                          sysInfo.kernel_version, sysInfo.abi);
+	BString kernelVer;
+	const char* hrev = __get_haiku_revision();
+	if (hrev != NULL)
+		kernelVer.SetToFormat("%s", hrev);
+	else
+		kernelVer.SetToFormat("%" B_PRId64, sysInfo.kernel_version);
     infoText << "Kernel Version: " << kernelVer << "\n";
     char dateTimeStr[64];
     snprintf(dateTimeStr, sizeof(dateTimeStr), "%s %s",
@@ -240,7 +242,7 @@ void SysInfoView::LoadData() {
     archStr = "Unknown";
 #endif
     infoText << "CPU Architecture: " << archStr << "\n";
-    infoText << "System Uptime: " << FormatUptime(sysInfo.boot_time) << "\n\n\n";
+    infoText << "System Uptime: " << FormatUptime(system_time()) << "\n\n\n";
 
     // CPU Info
     infoText << "PROCESSOR\n\n";
