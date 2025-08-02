@@ -1,4 +1,5 @@
 #include "ActivityGraphView.h"
+#include <Autolock.h>
 #include <Bitmap.h>
 #include <ControlLook.h>
 
