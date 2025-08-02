@@ -24,9 +24,12 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <sys/utsname.h>
+
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
 #include <cstring>
+#include <cpu_type.h>
 
 /* CPU Features */
 static const char *kFeatures[32] = {
@@ -55,24 +58,6 @@ static const char *kAMDExtFeatures[32] = {
 	NULL, NULL, NULL, "SCE", NULL, NULL, NULL, NULL,
 	NULL, NULL, NULL, "MP", "NX", NULL, "AMD-MMX", NULL,
 	"FXSR", "FFXSR", "GBPAGES", "RDTSCP", NULL, "64", "3DNow+", "3DNow!"
-};
-
-
-/* AMD Extended features leaf 0x80000007 */
-static const char *kAMDExtFeaturesPower[32] = {
-	"TS", "FID", "VID", "TTP", "TM", "STC", "MUL100", "HWPS",
-	"ITSC", "CPB", "EFRO", "PFI", "PA", NULL, NULL, NULL,
-	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
-};
-
-
-/* AMD Extended features leaf 0x80000008 */
-static const char *kAMDExtFeaturesTwo[32] = {
-	"CLZERO", "IRPERF", "XSAVEPTR", NULL, NULL, NULL, NULL, NULL,
-	NULL, NULL, NULL, NULL, "AMD_IBPB", NULL, "AMD_IBRS", "AMD_STIBP",
-	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-	"AMD_SSBD", "VIRT_SSBD", "AMD_SSB_NO", NULL, NULL, NULL, NULL, NULL
 };
 
 #endif
@@ -182,12 +167,14 @@ void SysInfoView::LoadData() {
 
     // OS Info
     infoText << "OPERATING SYSTEM\n\n";
-    BString kernelVer;
-    kernelVer.SetToFormat("%s %s %" B_PRId64 " hrev%" B_PRId64 " %s %s %s %s Haiku",
-                          sysInfo.kernel_name, sysInfo.nodename, sysInfo.version,
-                          sysInfo.kernel_version, sysInfo.kernel_build_date,
-                          sysInfo.kernel_build_time, sysInfo.machine, sysInfo.platform);
-    infoText << "Kernel: " << kernelVer << "\n";
+    struct utsname unameInfo;
+    if (uname(&unameInfo) == 0) {
+        BString kernelVer;
+        kernelVer.SetToFormat("%s %s %s hrev%" B_PRId64 " %s %s",
+                              unameInfo.sysname, unameInfo.nodename, unameInfo.version,
+                              sysInfo.kernel_version, unameInfo.machine, unameInfo.machine);
+        infoText << "Kernel: " << kernelVer << "\n";
+    }
     BString archStr;
 #if defined(__x86_64__)
     archStr = "x86_64";
