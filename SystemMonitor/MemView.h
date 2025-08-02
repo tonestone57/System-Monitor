@@ -10,7 +10,7 @@ class BBox;
 
 class MemView : public BView {
 public:
-    MemView(BRect frame);
+    MemView();
     virtual ~MemView();
     
     virtual void AttachedToWindow();

@@ -99,10 +99,10 @@ PerformanceView::PerformanceView()
         fRightPane = tabView;
 
         fCPUView = new CPUView();
-        fMemView = new MemView(Bounds());
-        fNetworkView = new NetworkView(Bounds());
-        BView* diskTab = new DiskView(Bounds());
-        BView* gpuTab = new GPUView(Bounds());
+        fMemView = new MemView();
+        fNetworkView = new NetworkView();
+        BView* diskTab = new DiskView();
+        BView* gpuTab = new GPUView();
 
         tabView->AddTab(fCPUView);
         tabView->TabAt(0)->SetLabel("CPU");
@@ -193,8 +193,8 @@ MainWindow::MainWindow(BRect frame)
     
     // Create the three main views
     fPerformanceView = new PerformanceView();
-    fProcessView = new ProcessView(BRect(0, 0, 600, 400));
-    fSysInfoView = new SysInfoView(BRect(0, 0, 600, 400));
+    fProcessView = new ProcessView();
+    fSysInfoView = new SysInfoView();
     
     // Add views to card layout
     fCardLayout->AddView(fPerformanceView);

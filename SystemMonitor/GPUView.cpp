@@ -1,4 +1,5 @@
 #include "GPUView.h"
+#include "Utils.h"
 #include <cstdio>
 #include <LayoutBuilder.h>
 #include <Box.h>
@@ -7,8 +8,8 @@
 #include <Screen.h>
 #include <GraphicsDefs.h>
 
-GPUView::GPUView(BRect frame)
-    : BView(frame, "GPUView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW)
+GPUView::GPUView()
+    : BView("GPUView", B_WILL_DRAW)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -68,19 +69,6 @@ void GPUView::AttachedToWindow()
 {
     BView::AttachedToWindow();
     UpdateData();
-}
-
-BString GPUView::FormatBytes(uint64 bytes) {
-    BString str;
-    double mb = bytes / (1024.0 * 1024.0);
-    double gb = mb / 1024.0;
-
-    if (gb >= 1.0) {
-        str.SetToFormat("%.2f GiB", gb);
-    } else {
-        str.SetToFormat("%.0f MiB", mb);
-    }
-    return str;
 }
 
 void GPUView::UpdateData()

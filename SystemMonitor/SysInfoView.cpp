@@ -1,4 +1,5 @@
 #include "SysInfoView.h"
+#include "Utils.h"
 #include <kernel/OS.h>
 #include <Screen.h>
 #include <GraphicsDefs.h>
@@ -26,58 +27,12 @@
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
 #include <cstring>
-
-bool checkXCR0(unsigned int mask) {
-    unsigned int eax, edx;
-    asm volatile("xgetbv" : "=a"(eax), "=d"(edx) : "c"(0));
-    return (eax & mask) == mask;
-}
-
-bool hasSSE()    { unsigned int a,b,c,d; return __get_cpuid(1,&a,&b,&c,&d) && (d & bit_SSE); }
-bool hasSSE2()   { unsigned int a,b,c,d; return __get_cpuid(1,&a,&b,&c,&d) && (d & bit_SSE2); }
-bool hasSSE3()   { unsigned int a,b,c,d; return __get_cpuid(1,&a,&b,&c,&d) && (c & bit_SSE3); }
-bool hasSSSE3()  { unsigned int a,b,c,d; return __get_cpuid(1,&a,&b,&c,&d) && (c & (1 << 9)); }
-bool hasSSE41()  { unsigned int a,b,c,d; return __get_cpuid(1,&a,&b,&c,&d) && (c & (1 << 19)); }
-bool hasSSE42()  { unsigned int a,b,c,d; return __get_cpuid(1,&a,&b,&c,&d) && (c & (1 << 20)); }
-
-bool hasAVX() {
-    unsigned int a,b,c,d;
-    if (__get_cpuid(1, &a, &b, &c, &d)) {
-        bool avx = c & bit_AVX;
-        bool osxsave = c & bit_OSXSAVE;
-        return avx && osxsave && checkXCR0(0x6);
-    }
-    return false;
-}
-
-bool hasAVX2() {
-    unsigned int a,b,c,d;
-    if (__get_cpuid_count(7, 0, &a, &b, &c, &d)) {
-        return (b & (1 << 5)) && hasAVX();
-    }
-    return false;
-}
-
-bool hasAVX512() {
-    unsigned int a,b,c,d;
-    if (__get_cpuid_count(7, 0, &a, &b, &c, &d)) {
-        bool avx512f = b & (1 << 16);
-        return avx512f && checkXCR0(0xE6);
-    }
-    return false;
-}
-
-bool hasAES() {
-    unsigned int eax, ebx, ecx, edx;
-    return __get_cpuid(1, &eax, &ebx, &ecx, &edx) && (ecx & bit_AES);
-}
-
-#endif // __x86_64__ || __i386__
+#endif
 
 #include <InterfaceDefs.h>
 
-SysInfoView::SysInfoView(BRect frame)
-    : BView(frame, "SysInfoView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW),
+SysInfoView::SysInfoView()
+    : BView("SysInfoView", B_WILL_DRAW),
       fInfoTextView(NULL)
 {
     SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
@@ -111,24 +66,6 @@ void SysInfoView::AttachedToWindow()
 {
     BView::AttachedToWindow();
     LoadData();
-}
-
-BString SysInfoView::FormatBytes(uint64 bytes, int precision) {
-    BString str;
-    double kb = bytes / 1024.0;
-    double mb = kb / 1024.0;
-    double gb = mb / 1024.0;
-
-    if (gb >= 1.0) {
-        str.SetToFormat("%.*f GiB", precision, gb);
-    } else if (mb >= 1.0) {
-        str.SetToFormat("%.*f MiB", precision, mb);
-    } else if (kb >= 1.0) {
-        str.SetToFormat("%.*f KiB", precision, kb);
-    } else {
-        str.SetToFormat("%" B_PRIu64 " Bytes", bytes);
-    }
-    return str;
 }
 
 BString SysInfoView::FormatHertz(uint64 hertz) {
@@ -183,10 +120,6 @@ BString SysInfoView::GetCPUBrandString()
 #else
     return BString("Unknown CPU");
 #endif
-}
-
-void SysInfoView::GetCPUInfo(system_info* sysInfo)
-{
 }
 
 void SysInfoView::LoadData() {

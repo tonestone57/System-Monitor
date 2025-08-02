@@ -1,4 +1,5 @@
 #include "CPUView.h"
+#include <Autolock.h>
 #include <cstdio>
 #include <String.h>
 #include <kernel/OS.h>
@@ -70,7 +71,7 @@ void CPUView::CreateLayout()
         }
         for (uint32 i = 0; i < fCpuCount; ++i) {
             cpu_info info;
-            if (get_cpu_info(i, 1, &info) == B_OK)
+            if (get_cpu_info(i, &info) == B_OK)
                 fPreviousIdleTime[i] = info.active_time;
             else
                 fPreviousIdleTime[i] = 0;
@@ -87,8 +88,6 @@ CPUView::~CPUView() {
 
 void CPUView::AttachedToWindow() {
     SetFlags(Flags() | B_PULSE_NEEDED);
-    if (Window())
-        Window()->SetPulseRate(1000000); // 1 second
     UpdateData(); // Initial data fetch
     BView::AttachedToWindow();
 }
@@ -119,7 +118,7 @@ void CPUView::GetCPUUsage(float& overallUsage)
 
     for (uint32 i = 0; i < fCpuCount; ++i) {
         cpu_info info;
-        if (get_cpu_info(i, 1, &info) == B_OK) {
+        if (get_cpu_info(i, &info) == B_OK) {
             bigtime_t delta = info.active_time - fPreviousIdleTime[i];
             if (delta < 0) delta = 0; // Handle time rollover
             totalDeltaActiveTime += delta;
@@ -157,6 +156,7 @@ void CPUView::UpdateData()
 
 float CPUView::GetCurrentUsage()
 {
+	BAutolock locker(fLocker);
     return fCurrentUsage;
 }
 

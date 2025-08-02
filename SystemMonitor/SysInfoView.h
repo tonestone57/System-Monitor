@@ -12,7 +12,7 @@ class BScrollView;
 
 class SysInfoView : public BView {
 public:
-    SysInfoView(BRect frame);
+    SysInfoView();
     virtual ~SysInfoView();
     
     virtual void AttachedToWindow();

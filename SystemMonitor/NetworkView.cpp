@@ -4,10 +4,12 @@
 #include <private/interface/ColumnTypes.h>
 #include <Box.h>
 #include <Font.h>
+#include <Autolock.h>
 #include <NetworkRoster.h>
 #include <NetworkInterface.h>
 #include <Alert.h>
 #include <map>
+#include <set>
 #include <string>
 #include <net/if.h>
 #include "ActivityGraphView.h"
@@ -23,8 +25,8 @@ enum {
     kRecvSpeedColumn
 };
 
-NetworkView::NetworkView(BRect frame)
-    : BView(frame, "NetworkView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW | B_PULSE_NEEDED),
+NetworkView::NetworkView()
+    : BView("NetworkView", B_WILL_DRAW | B_PULSE_NEEDED),
     fDownloadGraph(NULL),
     fUploadGraph(NULL),
     fUploadSpeed(0.0f),
@@ -74,8 +76,12 @@ NetworkView::NetworkView(BRect frame)
     .End();
 }
 
+#include <private/interface/Row.h>
+
 NetworkView::~NetworkView()
 {
+	for (auto const& [name, row] : fInterfaceRowMap)
+		delete row;
 }
 
 void NetworkView::AttachedToWindow()
@@ -116,12 +122,7 @@ void NetworkView::UpdateData()
 {
     fLocker.Lock();
     
-    // Clear existing rows
-    while (BRow* row = fInterfaceListView->RowAt(0)) {
-        fInterfaceListView->RemoveRow(row);
-        delete row;
-    }
-
+	std::set<std::string> activeInterfaces;
     BNetworkRoster& roster = BNetworkRoster::Default();
     uint32 cookie = 0;
     BNetworkInterface interface;
@@ -130,9 +131,8 @@ void NetworkView::UpdateData()
     uint64 totalReceivedDelta = 0;
 
     while (roster.GetNextInterface(&cookie, interface) == B_OK) {
-        BRow* row = new BRow();
         BString name(interface.Name());
-        row->SetField(new BStringField(name), kInterfaceNameColumn);
+		activeInterfaces.insert(name.String());
 
         BString typeStr = "Ethernet";
         if (interface.Flags() & IFF_LOOPBACK) {
@@ -140,8 +140,6 @@ void NetworkView::UpdateData()
         } else if (interface.Flags() & IFF_POINTOPOINT) {
             typeStr = "Point-to-Point";
         }
-
-        row->SetField(new BStringField(typeStr), kInterfaceTypeColumn);
 
         BString addressStr = "N/A";
         for (int32 i = 0; i < interface.CountAddresses(); ++i) {
@@ -154,7 +152,6 @@ void NetworkView::UpdateData()
                 }
             }
         }
-        row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
 
 		ifreq_stats stats;
 		status_t status = interface.GetStats(stats);
@@ -187,13 +184,47 @@ void NetworkView::UpdateData()
         rec.bytesReceived = currentReceived;
         rec.lastUpdateTime = currentTime;
 
-        row->SetField(new BStringField(FormatBytes(currentSent)), kBytesSentColumn);
-        row->SetField(new BStringField(FormatBytes(currentReceived)), kBytesRecvColumn);
-        row->SetField(new BStringField(sendSpeed), kSendSpeedColumn);
-        row->SetField(new BStringField(recvSpeed), kRecvSpeedColumn);
-
-        fInterfaceListView->AddRow(row);
+		BRow* row;
+		if (fInterfaceRowMap.find(name.String()) == fInterfaceRowMap.end()) {
+			row = new BRow();
+			row->SetField(new BStringField(name), kInterfaceNameColumn);
+			row->SetField(new BStringField(typeStr), kInterfaceTypeColumn);
+			row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
+			row->SetField(new BStringField(FormatBytes(currentSent)), kBytesSentColumn);
+			row->SetField(new BStringField(FormatBytes(currentReceived)), kBytesRecvColumn);
+			row->SetField(new BStringField(sendSpeed), kSendSpeedColumn);
+			row->SetField(new BStringField(recvSpeed), kRecvSpeedColumn);
+			fInterfaceListView->AddRow(row);
+			fInterfaceRowMap[name.String()] = row;
+		} else {
+			row = fInterfaceRowMap[name.String()];
+			((BStringField*)row->GetField(kInterfaceTypeColumn))->SetString(typeStr);
+			((BStringField*)row->GetField(kInterfaceAddressColumn))->SetString(addressStr);
+			((BStringField*)row->GetField(kBytesSentColumn))->SetString(FormatBytes(currentSent));
+			((BStringField*)row->GetField(kBytesRecvColumn))->SetString(FormatBytes(currentReceived));
+			((BStringField*)row->GetField(kSendSpeedColumn))->SetString(sendSpeed);
+			((BStringField*)row->GetField(kRecvSpeedColumn))->SetString(recvSpeed);
+			fInterfaceListView->UpdateRow(row);
+		}
     }
+
+	// Prune dead interfaces from the map
+	for (auto it = fPreviousStatsMap.begin(); it != fPreviousStatsMap.end();) {
+		if (it->first != "__total__" && activeInterfaces.find(it->first) == activeInterfaces.end())
+			it = fPreviousStatsMap.erase(it);
+		else
+			++it;
+	}
+	for (auto it = fInterfaceRowMap.begin(); it != fInterfaceRowMap.end();) {
+		if (activeInterfaces.find(it->first) == activeInterfaces.end()) {
+			BRow* row = it->second;
+			fInterfaceListView->RemoveRow(row);
+			delete row;
+			it = fInterfaceRowMap.erase(it);
+		} else {
+			++it;
+		}
+	}
     
     // Update graphs
     if (fUploadGraph && fDownloadGraph) {
@@ -214,10 +245,12 @@ void NetworkView::UpdateData()
 
 float NetworkView::GetUploadSpeed()
 {
+	BAutolock locker(fLocker);
     return fUploadSpeed;
 }
 
 float NetworkView::GetDownloadSpeed()
 {
+	BAutolock locker(fLocker);
     return fDownloadSpeed;
 }

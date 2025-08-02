@@ -119,11 +119,19 @@ ActivityGraphView::_DrawHistory()
 				view->BeginLineArray(steps - 1);
 				BPoint prev;
 				bool first = true;
+				int64 min = fHistory->MinimumValue();
+				int64 max = fHistory->MaximumValue();
+				int64 range = max - min;
 
 				for (uint32 i = 0; i < steps; i++) {
 					int64 value = fHistory->ValueAt(now - (steps - 1 - i) * timeStep);
-					float y = frame.Height() - (value - fHistory->MinimumValue()) * frame.Height()
-						/ (fHistory->MaximumValue() - fHistory->MinimumValue());
+					float y;
+					if (range == 0)
+						y = frame.Height() / 2;
+					else {
+						y = frame.Height() - (value - min) * frame.Height()
+							/ range;
+					}
 
 					if (first) {
 						first = false;

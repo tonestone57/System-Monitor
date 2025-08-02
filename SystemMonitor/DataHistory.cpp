@@ -2,7 +2,7 @@
 
 DataHistory::DataHistory(bigtime_t memorize, bigtime_t interval)
 	:
-	fBuffer(10000),
+	fBuffer(memorize > 0 && interval > 0 ? memorize / interval : 100),
 	fMinimumValue(0),
 	fMaximumValue(0),
 	fRefreshInterval(interval),

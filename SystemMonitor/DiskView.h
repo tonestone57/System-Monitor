@@ -5,9 +5,11 @@
 #include <Locker.h>
 #include <String.h>
 #include <Volume.h>
+#include <map>
 
 class BBox;
 class BColumnListView;
+class BRow;
 
 struct DiskInfo {
     BString deviceName;
@@ -15,11 +17,12 @@ struct DiskInfo {
     BString fileSystemType;
     uint64 totalSize;
     uint64 freeSize;
+	dev_t deviceID;
 };
 
 class DiskView : public BView {
 public:
-    DiskView(BRect frame);
+    DiskView();
     virtual ~DiskView();
     
     virtual void AttachedToWindow();
@@ -35,6 +38,7 @@ private:
     BColumnListView* fDiskListView;
     
     BLocker fLocker;
+	std::map<dev_t, BRow*> fDeviceRowMap;
 };
 
 #endif // DISKVIEW_H

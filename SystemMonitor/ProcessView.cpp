@@ -68,8 +68,8 @@ enum {
 
 const uint32 MSG_KILL_PROCESS = 'kill';
 
-ProcessView::ProcessView(BRect frame)
-    : BView(frame, "ProcessView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW),
+ProcessView::ProcessView()
+    : BView("ProcessView", B_WILL_DRAW),
       fLastSystemTime(0),
       fUpdateThread(B_ERROR),
       fTerminated(false)
@@ -106,6 +106,8 @@ ProcessView::~ProcessView()
         status_t ret;
         wait_for_thread(fUpdateThread, &ret);
     }
+	for (auto const& [team, row] : fTeamRowMap)
+		delete row;
     delete fContextMenu;
 }
 
@@ -214,15 +216,8 @@ void ProcessView::Update(BMessage* message)
     for (int i = 0; message->FindData("proc_info", B_RAW_TYPE, i, (const void**)&info, &size) == B_OK; i++) {
         activePIDsThisPulse.insert(info->id);
         
-        BRow* row = NULL;
-        for (int32 j = 0; (row = fProcessListView->RowAt(j)) != NULL; j++) {
-            BIntegerField* pidField = static_cast<BIntegerField*>(row->GetField(kPIDColumn));
-            if (pidField && pidField->Value() == info->id) {
-                break;
-            }
-        }
-
-        if (row == NULL) { // New process
+		BRow* row;
+		if (fTeamRowMap.find(info->id) == fTeamRowMap.end()) {
             row = new BRow();
             row->SetField(new BIntegerField(info->id), kPIDColumn);
             row->SetField(new BStringField(info->name), kProcessNameColumn);
@@ -233,7 +228,9 @@ void ProcessView::Update(BMessage* message)
             row->SetField(new BIntegerField(info->threadCount), kThreadCountColumn);
             row->SetField(new BStringField(info->userName), kUserNameColumn);
             fProcessListView->AddRow(row);
+			fTeamRowMap[info->id] = row;
         } else { // Existing process
+			row = fTeamRowMap[info->id];
             ((BStringField*)row->GetField(kProcessNameColumn))->SetString(info->name);
             char cpuStr[16];
             snprintf(cpuStr, sizeof(cpuStr), "%.1f", info->cpuUsage);
@@ -245,26 +242,25 @@ void ProcessView::Update(BMessage* message)
         }
     }
 
-    for (int32 i = 0; i < fProcessListView->CountRows(); ) {
-        BRow* row = fProcessListView->RowAt(i);
-        BIntegerField* pidField = static_cast<BIntegerField*>(row->GetField(kPIDColumn));
-        if (pidField) {
-            if (activePIDsThisPulse.find(pidField->Value()) == activePIDsThisPulse.end()) {
-                fProcessListView->RemoveRow(row);
-                delete row;
-                continue;
-            }
-        }
-        i++;
-    }
+	for (auto it = fTeamRowMap.begin(); it != fTeamRowMap.end();) {
+		if (activePIDsThisPulse.find(it->first) == activePIDsThisPulse.end()) {
+			BRow* row = it->second;
+			fProcessListView->RemoveRow(row);
+			delete row;
+			it = fTeamRowMap.erase(it);
+		} else {
+			++it;
+		}
+	}
 }
 
 int32 ProcessView::UpdateThread(void* data)
 {
     ProcessView* view = static_cast<ProcessView*>(data);
+	std::set<thread_id> activeThreads;
 
     while (!view->fTerminated) {
-
+		activeThreads.clear();
         BMessage msg(MSG_PROCESS_DATA_UPDATE);
 
         bigtime_t currentSystemTime = system_time();
@@ -306,6 +302,7 @@ int32 ProcessView::UpdateThread(void* data)
             bigtime_t teamActiveTimeDelta = 0;
 
             while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
+				activeThreads.insert(tInfo.thread);
                 bigtime_t threadTime = tInfo.user_time + tInfo.kernel_time;
                 if (view->fThreadTimeMap.count(tInfo.thread)) {
                     bigtime_t threadTimeDelta = threadTime - view->fThreadTimeMap[tInfo.thread];
@@ -332,6 +329,14 @@ int32 ProcessView::UpdateThread(void* data)
 
             msg.AddData("proc_info", B_RAW_TYPE, &currentProc, sizeof(ProcessInfo));
         }
+
+		// Prune dead threads from the map
+		for (auto it = view->fThreadTimeMap.begin(); it != view->fThreadTimeMap.end();) {
+			if (activeThreads.find(it->first) == activeThreads.end())
+				it = view->fThreadTimeMap.erase(it);
+			else
+				++it;
+		}
 
         if (view->Window())
             view->Window()->PostMessage(&msg, view);

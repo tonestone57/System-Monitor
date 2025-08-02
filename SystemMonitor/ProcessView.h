@@ -32,7 +32,7 @@ const uint32 MSG_PROCESS_DATA_UPDATE = 'pdup';
 
 class ProcessView : public BView {
 public:
-    ProcessView(BRect frame);
+    ProcessView();
     virtual ~ProcessView();
     
     virtual void AttachedToWindow();
@@ -52,6 +52,7 @@ private:
     BPopUpMenu* fContextMenu;
     
     std::map<thread_id, bigtime_t> fThreadTimeMap;
+	std::map<team_id, BRow*> fTeamRowMap;
     bigtime_t fLastSystemTime;
     
     thread_id fUpdateThread;

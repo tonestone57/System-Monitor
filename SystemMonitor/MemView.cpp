@@ -1,7 +1,9 @@
 #include "MemView.h"
+#include "Utils.h"
 #include <Box.h>
 #include <GridLayout.h>
 #include <GroupLayoutBuilder.h>
+#include <Autolock.h>
 #include <SpaceLayoutItem.h>
 #include <StringView.h>
 #include <cstdio>
@@ -82,24 +84,6 @@ void MemView::Pulse()
     UpdateData();
 }
 
-BString MemView::FormatBytes(uint64 bytes) {
-    BString str;
-    double kb = bytes / 1024.0;
-    double mb = kb / 1024.0;
-    double gb = mb / 1024.0;
-
-    if (gb >= 1.0) {
-        str.SetToFormat("%.2f GiB", gb);
-    } else if (mb >= 1.0) {
-        str.SetToFormat("%.2f MiB", mb);
-    } else if (kb >= 1.0) {
-        str.SetToFormat("%.2f KiB", kb);
-    } else {
-        str.SetToFormat("%llu Bytes", (unsigned long long)bytes);
-    }
-    return str;
-}
-
 void MemView::UpdateData()
 {
     fLocker.Lock();
@@ -140,5 +124,6 @@ void MemView::UpdateData()
 
 float MemView::GetCurrentUsage()
 {
+	BAutolock locker(fLocker);
     return fCurrentUsage;
 }

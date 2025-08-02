@@ -1,4 +1,5 @@
 #include "DiskView.h"
+#include "Utils.h"
 #include <LayoutBuilder.h>
 #include <StringView.h>
 #include <cstdio>
@@ -11,6 +12,7 @@
 #include <private/interface/ColumnTypes.h>
 #include <Box.h>
 #include <Font.h>
+#include <set>
 
 // Define column constants for BColumnListView
 enum {
@@ -23,8 +25,8 @@ enum {
     kUsagePercentageColumn
 };
 
-DiskView::DiskView(BRect frame)
-    : BView(frame, "DiskView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW | B_PULSE_NEEDED)
+DiskView::DiskView()
+    : BView("DiskView", B_WILL_DRAW | B_PULSE_NEEDED)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -68,9 +70,12 @@ DiskView::DiskView(BRect frame)
     .End();
 }
 
+#include <private/interface/Row.h>
+
 DiskView::~DiskView()
 {
-    // Child views are deleted automatically
+	for (auto const& [dev, row] : fDeviceRowMap)
+		delete row;
 }
 
 void DiskView::AttachedToWindow()
@@ -84,22 +89,6 @@ void DiskView::Pulse()
     UpdateData();
 }
 
-BString DiskView::FormatBytes(uint64 bytes) {
-    BString str;
-    double kb = bytes / 1024.0;
-    double mb = kb / 1024.0;
-    double gb = mb / 1024.0;
-
-    if (gb >= 1.0) {
-        str.SetToFormat("%.2f GiB", gb);
-    } else if (mb >= 1.0) {
-        str.SetToFormat("%.2f MiB", mb);
-    } else {
-        str.SetToFormat("%.0f KiB", kb);
-    }
-    return str;
-}
-
 status_t DiskView::GetDiskInfo(BVolume& volume, DiskInfo& info) {
     fs_info fsInfo;
     status_t status = fs_stat_dev(volume.Device(), &fsInfo);
@@ -107,6 +96,7 @@ status_t DiskView::GetDiskInfo(BVolume& volume, DiskInfo& info) {
         return status;
     }
 
+	info.deviceID = fsInfo.dev;
     info.totalSize = fsInfo.total_blocks * fsInfo.block_size;
     info.freeSize = fsInfo.free_blocks * fsInfo.block_size;
     info.fileSystemType = fsInfo.fsh_name;
@@ -148,12 +138,7 @@ void DiskView::UpdateData()
         return;
     }
 
-    // Clear existing rows
-    while (BRow* row = fDiskListView->RowAt(0)) {
-        fDiskListView->RemoveRow(row);
-        delete row;
-    }
-
+	std::set<dev_t> activeDevices;
     BVolumeRoster volRoster;
     BVolume volume;
     volRoster.Rewind();
@@ -165,15 +150,9 @@ void DiskView::UpdateData()
         if (GetDiskInfo(volume, currentDiskInfo) != B_OK) {
             continue;
         }
+		activeDevices.insert(currentDiskInfo.deviceID);
 
         if (currentDiskInfo.totalSize == 0) continue;
-
-        BRow* row = new BRow();
-        struct RowGuard {
-            BRow*& fRow;
-            RowGuard(BRow*& row) : fRow(row) {}
-            ~RowGuard() { if (fRow) delete fRow; }
-        } rowGuard(row);
 
         uint64 usedSize = currentDiskInfo.totalSize - currentDiskInfo.freeSize;
         double usagePercent = 0.0;
@@ -183,17 +162,44 @@ void DiskView::UpdateData()
         char percentStr[16];
         snprintf(percentStr, sizeof(percentStr), "%.1f%%", usagePercent);
 
-        row->SetField(new BStringField(currentDiskInfo.deviceName), kDeviceColumn);
-        row->SetField(new BStringField(currentDiskInfo.mountPoint), kMountPointColumn);
-        row->SetField(new BStringField(currentDiskInfo.fileSystemType), kFSTypeColumn);
-        row->SetField(new BStringField(FormatBytes(currentDiskInfo.totalSize)), kTotalSizeColumn);
-        row->SetField(new BStringField(FormatBytes(usedSize)), kUsedSizeColumn);
-        row->SetField(new BStringField(FormatBytes(currentDiskInfo.freeSize)), kFreeSizeColumn);
-        row->SetField(new BStringField(percentStr), kUsagePercentageColumn);
-
-        fDiskListView->AddRow(row);
-        row = nullptr; // The BColumnListView now owns the row
+		BRow* row;
+		if (fDeviceRowMap.find(currentDiskInfo.deviceID) == fDeviceRowMap.end()) {
+			// New device, create a new row
+			row = new BRow();
+			row->SetField(new BStringField(currentDiskInfo.deviceName), kDeviceColumn);
+			row->SetField(new BStringField(currentDiskInfo.mountPoint), kMountPointColumn);
+			row->SetField(new BStringField(currentDiskInfo.fileSystemType), kFSTypeColumn);
+			row->SetField(new BStringField(FormatBytes(currentDiskInfo.totalSize)), kTotalSizeColumn);
+			row->SetField(new BStringField(FormatBytes(usedSize)), kUsedSizeColumn);
+			row->SetField(new BStringField(FormatBytes(currentDiskInfo.freeSize)), kFreeSizeColumn);
+			row->SetField(new BStringField(percentStr), kUsagePercentageColumn);
+			fDiskListView->AddRow(row);
+			fDeviceRowMap[currentDiskInfo.deviceID] = row;
+		} else {
+			// Existing device, update the row
+			row = fDeviceRowMap[currentDiskInfo.deviceID];
+			((BStringField*)row->GetField(kDeviceColumn))->SetString(currentDiskInfo.deviceName);
+			((BStringField*)row->GetField(kMountPointColumn))->SetString(currentDiskInfo.mountPoint);
+			((BStringField*)row->GetField(kFSTypeColumn))->SetString(currentDiskInfo.fileSystemType);
+			((BStringField*)row->GetField(kTotalSizeColumn))->SetString(FormatBytes(currentDiskInfo.totalSize));
+			((BStringField*)row->GetField(kUsedSizeColumn))->SetString(FormatBytes(usedSize));
+			((BStringField*)row->GetField(kFreeSizeColumn))->SetString(FormatBytes(currentDiskInfo.freeSize));
+			((BStringField*)row->GetField(kUsagePercentageColumn))->SetString(percentStr);
+			fDiskListView->UpdateRow(row);
+		}
     }
+
+	// Remove devices that are no longer present
+	for (auto it = fDeviceRowMap.begin(); it != fDeviceRowMap.end();) {
+		if (activeDevices.find(it->first) == activeDevices.end()) {
+			BRow* row = it->second;
+			fDiskListView->RemoveRow(row);
+			delete row;
+			it = fDeviceRowMap.erase(it);
+		} else {
+			++it;
+		}
+	}
 
     fLocker.Unlock();
 }

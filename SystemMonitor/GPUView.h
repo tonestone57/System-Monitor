@@ -7,7 +7,7 @@
 
 class GPUView : public BView {
 public:
-    GPUView(BRect frame);
+    GPUView();
     virtual ~GPUView();
     
     virtual void AttachedToWindow();

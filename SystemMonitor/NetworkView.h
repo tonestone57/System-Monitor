@@ -9,6 +9,7 @@
 #include "ActivityGraphView.h"
 
 class BColumnListView;
+class BRow;
 class ActivityGraphView;
 
 struct InterfaceStatsRecord {
@@ -19,7 +20,7 @@ struct InterfaceStatsRecord {
 
 class NetworkView : public BView {
 public:
-    NetworkView(BRect frame);
+    NetworkView();
     virtual ~NetworkView();
     
     virtual void AttachedToWindow();
@@ -39,6 +40,7 @@ private:
     
     BLocker fLocker;
     std::map<std::string, InterfaceStatsRecord> fPreviousStatsMap;
+    std::map<std::string, BRow*> fInterfaceRowMap;
     float fUploadSpeed;
     float fDownloadSpeed;
 };

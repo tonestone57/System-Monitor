@@ -20,7 +20,8 @@ SRCS = \
 	GPUView.cpp \
 	SysInfoView.cpp \
 	DataHistory.cpp \
-	ActivityGraphView.cpp
+	ActivityGraphView.cpp \
+	Utils.cpp
 
 # Resource definition files
 # RDEFS = SysMonTask.rdef
