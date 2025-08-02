@@ -30,43 +30,77 @@ private:
     MainWindow* mainWindow;
 };
 
+class SummaryView : public BView {
+public:
+    SummaryView() : BView("SummaryView", B_WILL_DRAW | B_PULSE_NEEDED) {
+        SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+
+        fCpuGraph = new GraphView("cpu_summary_graph", (rgb_color){80, 255, 80, 255});
+        fMemGraph = new GraphView("mem_summary_graph", (rgb_color){80, 80, 255, 255});
+        fNetGraph = new GraphView("net_summary_graph", (rgb_color){255, 80, 80, 255});
+
+        BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
+            .SetInsets(B_USE_DEFAULT_SPACING)
+            .Add(new BStringView("cpu_label", "CPU Usage"))
+            .Add(fCpuGraph)
+            .Add(new BStringView("mem_label", "Memory Usage"))
+            .Add(fMemGraph)
+            .Add(new BStringView("net_label", "Network Usage"))
+            .Add(fNetGraph)
+            .AddGlue();
+    }
+
+    virtual void Pulse() {
+        // TODO: Get real data
+        fCpuGraph->AddSample(rand() % 100);
+        fMemGraph->AddSample(rand() % 100);
+        fNetGraph->AddSample(rand() % 100);
+    }
+
+private:
+    GraphView* fCpuGraph;
+    GraphView* fMemGraph;
+    GraphView* fNetGraph;
+};
+
 // Performance Tab - combines CPU, Memory, Disk, Network, GPU monitoring
 class PerformanceView : public BView {
 public:
-    PerformanceView() : BView("PerformanceView", B_WILL_DRAW | B_PULSE_NEEDED) {
+    PerformanceView() : BView("PerformanceView", B_WILL_DRAW) {
         SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
-        
-        // Create monitoring views
-        fCPUView = new CPUView();
-        fMemView = new MemView(BRect(0, 0, 400, 200));
-        fDiskView = new DiskView(BRect(0, 0, 400, 200));
-        fNetworkView = new NetworkView(BRect(0, 0, 400, 200));
-        fGPUView = new GPUView(BRect(0, 0, 400, 200));
-        
-        BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
-            .SetInsets(B_USE_DEFAULT_SPACING)
-            .Add(fCPUView)
-            .Add(fMemView)
-            .Add(fDiskView)
-            .Add(fNetworkView)
-            .Add(fGPUView)
-            .AddGlue();
-    }
-    
-    virtual void AttachedToWindow() {
-        SetFlags(Flags() | B_PULSE_NEEDED);
-        if (Window())
-            Window()->SetPulseRate(1000000); // 1 second
-        BView::AttachedToWindow();
-    }
-    
 
-private:
-    CPUView* fCPUView;
-    MemView* fMemView;
-    DiskView* fDiskView;
-    NetworkView* fNetworkView;
-    GPUView* fGPUView;
+        BSplitView* splitView = new BSplitView(B_HORIZONTAL, B_USE_DEFAULT_SPACING);
+        splitView->SetInsets(B_USE_DEFAULT_SPACING);
+
+        BView* leftPane = new SummaryView();
+
+        BTabView* tabView = new BTabView("tab_view", B_WIDTH_FROM_WIDEST);
+
+        BView* cpuTab = new CPUView();
+        BView* memTab = new MemView(Bounds());
+        BView* netTab = new NetworkView(Bounds());
+        BView* diskTab = new DiskView(Bounds());
+        BView* gpuTab = new GPUView(Bounds());
+
+        tabView->AddTab(cpuTab, new BTab("CPU"));
+        tabView->AddTab(memTab, new BTab("Memory"));
+        tabView->AddTab(netTab, new BTab("Network"));
+        tabView->AddTab(diskTab, new BTab("Disk"));
+        tabView->AddTab(gpuTab, new BTab("GPU"));
+
+        BView* processTab = new ProcessView(Bounds());
+        tabView->AddTab(processTab, new BTab("Processes"));
+
+        splitView->AddChild(leftPane);
+        splitView->AddChild(tabView);
+
+        splitView->SetItemWeight(0, 0.25f);
+        splitView->SetItemWeight(1, 0.75f);
+
+        BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
+            .Add(splitView)
+            .End();
+    }
 };
 
 // Message constants for button switching
