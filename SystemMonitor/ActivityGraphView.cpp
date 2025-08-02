@@ -39,6 +39,12 @@ ActivityGraphView::FrameResized(float /*width*/, float /*height*/)
 void
 ActivityGraphView::_UpdateOffscreenBitmap()
 {
+	if (fOffscreen != NULL && Bounds() == fOffscreen->Bounds())
+		return;
+
+	delete fOffscreen;
+	fOffscreen = NULL;
+
 	if (Window() == NULL)
 		return;
 
@@ -46,14 +52,7 @@ ActivityGraphView::_UpdateOffscreenBitmap()
 	if (!locker.IsLocked())
 		return;
 
-	BRect frame = Bounds();
-
-	if (fOffscreen != NULL && frame == fOffscreen->Bounds())
-		return;
-
-	delete fOffscreen;
-
-	fOffscreen = new(std::nothrow) BBitmap(frame, B_BITMAP_ACCEPTS_VIEWS,
+	fOffscreen = new(std::nothrow) BBitmap(Bounds(), B_BITMAP_ACCEPTS_VIEWS,
 		B_RGB32);
 	if (fOffscreen == NULL || fOffscreen->InitCheck() != B_OK) {
 		delete fOffscreen;
@@ -61,7 +60,7 @@ ActivityGraphView::_UpdateOffscreenBitmap()
 		return;
 	}
 
-	BView* view = new BView(frame, NULL, B_FOLLOW_NONE, 0);
+	BView* view = new BView(Bounds(), NULL, B_FOLLOW_NONE, 0);
 	fOffscreen->AddChild(view);
 	view->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 	view->SetLowColor(view->ViewColor());
@@ -96,54 +95,51 @@ ActivityGraphView::Draw(BRect updateRect)
 void
 ActivityGraphView::_DrawHistory()
 {
-	_UpdateOffscreenBitmap();
+	if (fOffscreen == NULL)
+		_UpdateOffscreenBitmap();
 
-	BView* view = this;
-	if (fOffscreen != NULL) {
-		fOffscreen->Lock();
-		view = _OffscreenView();
-	}
-
-	BRect frame = Bounds();
-	view->FillRect(frame, B_SOLID_LOW);
-
-	uint32 steps = frame.IntegerWidth();
-	if (steps <= 0)
+	if (fOffscreen == NULL)
 		return;
 
-	bigtime_t now = system_time();
-	bigtime_t timeStep = 1000000;
+	if (fOffscreen->Lock()) {
+		BView* view = _OffscreenView();
+		BRect frame = view->Bounds();
+		view->FillRect(frame, B_SOLID_LOW);
 
-	view->SetPenSize(1.5);
-	view->SetHighColor(fColor);
-	view->SetLineMode(B_BUTT_CAP, B_ROUND_JOIN);
-	view->MovePenTo(B_ORIGIN);
+		uint32 steps = frame.IntegerWidth();
+		if (steps > 0) {
+			bigtime_t now = system_time();
+			bigtime_t timeStep = 1000000;
 
-	try {
-		view->BeginLineArray(steps - 1);
-		BPoint prev;
-		bool first = true;
+			view->SetPenSize(1.5);
+			view->SetHighColor(fColor);
+			view->SetLineMode(B_BUTT_CAP, B_ROUND_JOIN);
+			view->MovePenTo(B_ORIGIN);
 
-		for (uint32 i = 0; i < steps; i++) {
-			int64 value = fHistory->ValueAt(now - (steps - 1 - i) * timeStep);
-			float y = frame.Height() - (value - fHistory->MinimumValue()) * frame.Height()
-				/ (fHistory->MaximumValue() - fHistory->MinimumValue());
+			try {
+				view->BeginLineArray(steps - 1);
+				BPoint prev;
+				bool first = true;
 
-			if (first) {
-				first = false;
-			} else
-				view->AddLine(prev, BPoint(i, y), fColor);
+				for (uint32 i = 0; i < steps; i++) {
+					int64 value = fHistory->ValueAt(now - (steps - 1 - i) * timeStep);
+					float y = frame.Height() - (value - fHistory->MinimumValue()) * frame.Height()
+						/ (fHistory->MaximumValue() - fHistory->MinimumValue());
 
-			prev.Set(i, y);
+					if (first) {
+						first = false;
+					} else
+						view->AddLine(prev, BPoint(i, y), fColor);
+
+					prev.Set(i, y);
+				}
+				view->EndLineArray();
+			} catch (std::bad_alloc&) {
+				// ignore
+			}
 		}
-		view->EndLineArray();
-	} catch (std::bad_alloc&) {
-		// ignore
-	}
-
-	view->Sync();
-	if (fOffscreen != NULL) {
+		view->Sync();
 		fOffscreen->Unlock();
-		DrawBitmap(fOffscreen, Bounds());
 	}
+	DrawBitmap(fOffscreen, Bounds());
 }
