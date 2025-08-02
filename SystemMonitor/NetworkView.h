@@ -8,6 +8,7 @@
 #include <string>
 
 class BColumnListView;
+class GraphView;
 
 struct InterfaceStatsRecord {
     uint64 bytesSent = 0;
@@ -29,6 +30,8 @@ private:
     BString FormatSpeed(uint64 bytesDelta, bigtime_t microSecondsDelta);
     
     BColumnListView* fInterfaceListView;
+    GraphView* fDownloadGraph;
+    GraphView* fUploadGraph;
     
     BLocker fLocker;
     std::map<std::string, InterfaceStatsRecord> fPreviousStatsMap;

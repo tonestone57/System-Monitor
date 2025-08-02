@@ -9,6 +9,7 @@
 #include <Alert.h>
 #include <map>
 #include <string>
+#include "GraphView.h"
 
 // Column identifiers
 enum {
@@ -22,7 +23,9 @@ enum {
 };
 
 NetworkView::NetworkView(BRect frame)
-    : BView(frame, "NetworkView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW | B_PULSE_NEEDED)
+    : BView(frame, "NetworkView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW | B_PULSE_NEEDED),
+    fDownloadGraph(NULL),
+    fUploadGraph(NULL)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -57,9 +60,14 @@ NetworkView::NetworkView(BRect frame)
                    B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
         .Add(fInterfaceListView);
 
-    BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
-        .SetInsets(0)
+    fDownloadGraph = new GraphView("download_graph", (rgb_color){80, 80, 255, 255});
+    fUploadGraph = new GraphView("upload_graph", (rgb_color){255, 80, 80, 255});
+
+    BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
+        .SetInsets(B_USE_DEFAULT_SPACING)
         .Add(netBox)
+        .Add(fDownloadGraph)
+        .Add(fUploadGraph)
     .End();
 }
 
@@ -115,6 +123,10 @@ void NetworkView::UpdateData()
     uint32 cookie = 0;
     BNetworkInterface interface;
     bigtime_t currentTime = system_time();
+    uint64 totalSent = 0;
+    uint64 totalReceived = 0;
+    uint64 totalSentDelta = 0;
+    uint64 totalReceivedDelta = 0;
 
     while (roster.GetNextInterface(&cookie, interface) == B_OK) {
         BRow* row = new BRow();
@@ -143,31 +155,56 @@ void NetworkView::UpdateData()
         }
         row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
 
-        // Use dummy traffic stats (real stats would require platform-specific code)
-        uint64 dummyTx = rand() % 10000000;
-        uint64 dummyRx = rand() % 10000000;
+		ifnet_stats stats;
+		status_t status = interface.GetStats(stats);
+		uint64 currentSent = 0;
+		uint64 currentReceived = 0;
+
+		if (status == B_OK) {
+			currentSent = stats.bytes_sent;
+			currentReceived = stats.bytes_received;
+		}
+
         BString sendSpeed = "N/A", recvSpeed = "N/A";
 
         InterfaceStatsRecord& rec = fPreviousStatsMap[name.String()];
         if (rec.lastUpdateTime > 0) {
             bigtime_t dt = currentTime - rec.lastUpdateTime;
             if (dt > 0) {
-                sendSpeed = FormatSpeed(dummyTx > rec.bytesSent ? dummyTx - rec.bytesSent : 0, dt);
-                recvSpeed = FormatSpeed(dummyRx > rec.bytesReceived ? dummyRx - rec.bytesReceived : 0, dt);
+                uint64 sentDelta = (currentSent > rec.bytesSent) ? currentSent - rec.bytesSent : 0;
+                uint64 recvDelta = (currentReceived > rec.bytesReceived) ? currentReceived - rec.bytesReceived : 0;
+                sendSpeed = FormatSpeed(sentDelta, dt);
+                recvSpeed = FormatSpeed(recvDelta, dt);
+                if (!(interface.Flags() & IFF_LOOPBACK)) {
+                    totalSentDelta += sentDelta;
+                    totalReceivedDelta += recvDelta;
+                }
             }
         }
 
-        rec.bytesSent = dummyTx;
-        rec.bytesReceived = dummyRx;
+        rec.bytesSent = currentSent;
+        rec.bytesReceived = currentReceived;
         rec.lastUpdateTime = currentTime;
 
-        row->SetField(new BStringField(FormatBytes(dummyTx)), kBytesSentColumn);
-        row->SetField(new BStringField(FormatBytes(dummyRx)), kBytesRecvColumn);
+        row->SetField(new BStringField(FormatBytes(currentSent)), kBytesSentColumn);
+        row->SetField(new BStringField(FormatBytes(currentReceived)), kBytesRecvColumn);
         row->SetField(new BStringField(sendSpeed), kSendSpeedColumn);
         row->SetField(new BStringField(recvSpeed), kRecvSpeedColumn);
 
         fInterfaceListView->AddRow(row);
     }
     
+    // Update graphs
+    if (fUploadGraph && fDownloadGraph) {
+        bigtime_t dt = 1000000; // 1 second, as Pulse is set to 1s
+        double maxSpeed = 12.5 * 1024 * 1024; // 100 Mbit/s
+
+        double uploadSpeed = totalSentDelta / (dt / 1000000.0);
+        double downloadSpeed = totalReceivedDelta / (dt / 1000000.0);
+
+        fUploadGraph->AddSample((uploadSpeed / maxSpeed) * 100.0f);
+        fDownloadGraph->AddSample((downloadSpeed / maxSpeed) * 100.0f);
+    }
+
     fLocker.Unlock();
 }
