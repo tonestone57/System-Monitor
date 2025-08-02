@@ -83,7 +83,7 @@ void GPUView::UpdateData()
     if (screen.GetDeviceInfo(&deviceInfo) == B_OK) {
         fCardNameValue->SetText(deviceInfo.name);
         fChipsetValue->SetText(deviceInfo.chipset);
-        fMemorySizeValue->SetText(FormatBytes(deviceInfo.memory));
+        fMemorySizeValue->SetText(::FormatBytes(deviceInfo.memory));
 
         char dacSpeedStr[32];
         snprintf(dacSpeedStr, sizeof(dacSpeedStr), "%u MHz", 

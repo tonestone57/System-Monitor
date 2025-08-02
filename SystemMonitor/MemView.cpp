@@ -95,10 +95,10 @@ void MemView::UpdateData()
         uint64 freeBytes = totalBytes - usedBytes;
         uint64 cachedBytes = ((uint64)sysInfo.cached_pages + (uint64)sysInfo.block_cache_pages) * B_PAGE_SIZE;
 
-        fTotalMemValue->SetText(FormatBytes(totalBytes));
-        fUsedMemValue->SetText(FormatBytes(usedBytes));
-        fFreeMemValue->SetText(FormatBytes(freeBytes));
-        fCachedMemValue->SetText(FormatBytes(cachedBytes));
+        fTotalMemValue->SetText(::FormatBytes(totalBytes));
+        fUsedMemValue->SetText(::FormatBytes(usedBytes));
+        fFreeMemValue->SetText(::FormatBytes(freeBytes));
+        fCachedMemValue->SetText(::FormatBytes(cachedBytes));
 
         if (totalBytes > 0) {
             float usedPercent = (float)usedBytes / totalBytes * 100.0f;

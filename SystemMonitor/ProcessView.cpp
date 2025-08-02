@@ -210,7 +210,7 @@ void ProcessView::Update(BMessage* message)
             char cpuStr[16];
             snprintf(cpuStr, sizeof(cpuStr), "%.1f", info->cpuUsage);
             row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
-            row->SetField(new BStringField(FormatBytes(info->memoryUsageBytes)), kMemoryUsageColumn);
+            row->SetField(new BStringField(::FormatBytes(info->memoryUsageBytes)), kMemoryUsageColumn);
             row->SetField(new BIntegerField(info->threadCount), kThreadCountColumn);
             row->SetField(new BStringField(info->userName), kUserNameColumn);
             fProcessListView->AddRow(row);
@@ -221,7 +221,7 @@ void ProcessView::Update(BMessage* message)
             char cpuStr[16];
             snprintf(cpuStr, sizeof(cpuStr), "%.1f", info->cpuUsage);
             ((BStringField*)row->GetField(kCPUUsageColumn))->SetString(cpuStr);
-            ((BStringField*)row->GetField(kMemoryUsageColumn))->SetString(FormatBytes(info->memoryUsageBytes));
+            ((BStringField*)row->GetField(kMemoryUsageColumn))->SetString(::FormatBytes(info->memoryUsageBytes));
             ((BIntegerField*)row->GetField(kThreadCountColumn))->SetValue(info->threadCount);
             ((BStringField*)row->GetField(kUserNameColumn))->SetString(info->userName);
             fProcessListView->UpdateRow(row);
