@@ -21,7 +21,7 @@ DataHistory::AddValue(bigtime_t time, int64 value)
 {
 	bool wasEmpty = fBuffer.IsEmpty();
 	data_item* oldest = NULL;
-	if (fBuffer.CountItems() == fBuffer.Size())
+	if ((size_t)fBuffer.CountItems() == fBuffer.Size())
 		oldest = fBuffer.ItemAt(0);
 
 	data_item item = {time, value};
