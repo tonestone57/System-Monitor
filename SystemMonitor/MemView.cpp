@@ -15,8 +15,8 @@
 
 
 // MemView Implementation
-MemView::MemView(BRect frame)
-    : BView(frame, "MemoryView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW | B_PULSE_NEEDED),
+MemView::MemView()
+    : BView("MemoryView", B_WILL_DRAW | B_PULSE_NEEDED),
       fCacheGraphView(NULL),
       fCurrentUsage(0.0f)
 {

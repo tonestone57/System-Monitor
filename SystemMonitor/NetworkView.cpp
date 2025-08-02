@@ -76,8 +76,6 @@ NetworkView::NetworkView()
     .End();
 }
 
-#include <private/interface/Row.h>
-
 NetworkView::~NetworkView()
 {
 	for (auto const& [name, row] : fInterfaceRowMap)

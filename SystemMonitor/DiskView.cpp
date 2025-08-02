@@ -70,8 +70,6 @@ DiskView::DiskView()
     .End();
 }
 
-#include <private/interface/Row.h>
-
 DiskView::~DiskView()
 {
 	for (auto const& [dev, row] : fDeviceRowMap)

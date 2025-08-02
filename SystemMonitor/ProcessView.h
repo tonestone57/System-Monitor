@@ -11,6 +11,7 @@
 
 class BColumnListView;
 class BMenuItem;
+class BRow;
 
 #include <kernel/OS.h>
 

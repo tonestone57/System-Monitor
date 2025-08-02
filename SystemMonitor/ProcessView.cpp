@@ -1,4 +1,5 @@
 #include "ProcessView.h"
+#include "Utils.h"
 #include <LayoutBuilder.h>
 #include <private/interface/ColumnListView.h>
 #include <private/interface/ColumnTypes.h>
@@ -145,21 +146,6 @@ void ProcessView::MessageReceived(BMessage* message)
             BView::MessageReceived(message);
             break;
     }
-}
-
-BString ProcessView::FormatBytes(uint64 bytes) {
-    BString str;
-    double kb = bytes / 1024.0;
-    double mb = kb / 1024.0;
-
-    if (mb >= 1.0) {
-        str.SetToFormat("%.1f MiB", mb);
-    } else if (kb >= 1.0) {
-        str.SetToFormat("%.0f KiB", kb);
-    } else {
-        str.SetToFormat("%llu B", (unsigned long long)bytes);
-    }
-    return str;
 }
 
 BString ProcessView::GetUserName(uid_t uid) {

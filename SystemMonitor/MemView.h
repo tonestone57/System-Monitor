@@ -20,7 +20,6 @@ public:
 
 private:
     void UpdateData();
-    BString FormatBytes(uint64 bytes);
     
     BStringView* fTotalMemLabel;
     BStringView* fTotalMemValue;
