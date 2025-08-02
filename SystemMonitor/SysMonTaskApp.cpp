@@ -134,6 +134,10 @@ void PerformanceView::AttachedToWindow()
 
 void PerformanceView::Pulse()
 {
+    fCPUView->Pulse();
+    fMemView->Pulse();
+    fNetworkView->Pulse();
+
     fStats.cpuUsage = fCPUView->GetCurrentUsage();
     fStats.memoryUsage = fMemView->GetCurrentUsage();
     fStats.uploadSpeed = fNetworkView->GetUploadSpeed();
