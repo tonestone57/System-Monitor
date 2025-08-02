@@ -12,7 +12,7 @@ class BScrollView;
 
 class SysInfoView : public BView {
 public:
-    SysInfoView();
+    SysInfoView(BRect frame);
     virtual ~SysInfoView();
     
     virtual void AttachedToWindow();
@@ -25,6 +25,7 @@ private:
     BString FormatHertz(uint64 hertz);
     BString FormatUptime(bigtime_t bootTime);
     BString GetCPUBrandString();
+    BString _GetCPUFeaturesString();
     void GetCPUInfo(system_info* sysInfo);
     
     BTextView* fInfoTextView;

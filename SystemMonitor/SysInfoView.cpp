@@ -27,6 +27,54 @@
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
 #include <cstring>
+
+/* CPU Features */
+static const char *kFeatures[32] = {
+	"FPU", "VME", "DE", "PSE",
+	"TSC", "MSR", "PAE", "MCE",
+	"CX8", "APIC", NULL, "SEP",
+	"MTRR", "PGE", "MCA", "CMOV",
+	"PAT", "PSE36", "PSN", "CFLUSH",
+	NULL, "DS", "ACPI", "MMX",
+	"FXSTR", "SSE", "SSE2", "SS",
+	"HTT", "TM", "IA64", "PBE",
+};
+
+/* CPU Extended features */
+static const char *kExtendedFeatures[36] = {
+    "SSE3", "PCLMULDQ", "DTES64", "MONITOR", "DS-CPL", "VMX", "SMX", "EST",
+    "TM2", "SSSE3", "CNTXT-ID", "SDBG", "FMA", "CX16", "xTPR", "PDCM",
+    NULL, "PCID", "DCA", "SSE4.1", "SSE4.2", "x2APIC", "MOVEB", "POPCNT",
+    "TSC-DEADLINE", "AES", "XSAVE", "OSXSAVE", "AVX", "F16C", "RDRND",
+    "HYPERVISOR", "AVX2", "AVX512F", "AVX512DQ", "AVX512VL"
+};
+
+/* AMD Extended features leaf 0x80000001 */
+static const char *kAMDExtFeatures[32] = {
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, "SCE", NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, "MP", "NX", NULL, "AMD-MMX", NULL,
+	"FXSR", "FFXSR", "GBPAGES", "RDTSCP", NULL, "64", "3DNow+", "3DNow!"
+};
+
+
+/* AMD Extended features leaf 0x80000007 */
+static const char *kAMDExtFeaturesPower[32] = {
+	"TS", "FID", "VID", "TTP", "TM", "STC", "MUL100", "HWPS",
+	"ITSC", "CPB", "EFRO", "PFI", "PA", NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+};
+
+
+/* AMD Extended features leaf 0x80000008 */
+static const char *kAMDExtFeaturesTwo[32] = {
+	"CLZERO", "IRPERF", "XSAVEPTR", NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, "AMD_IBPB", NULL, "AMD_IBRS", "AMD_STIBP",
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	"AMD_SSBD", "VIRT_SSBD", "AMD_SSB_NO", NULL, NULL, NULL, NULL, NULL
+};
+
 #endif
 
 #include <InterfaceDefs.h>
@@ -177,6 +225,7 @@ void SysInfoView::LoadData() {
     BString cpuBrand = GetCPUBrandString();
     infoText << "Model: " << (cpuBrand.IsEmpty() ? "Unknown CPU" : cpuBrand) << "\n";
     infoText << "Cores: " << sysInfo.cpu_count << "\n";
+    infoText << "Features: " << _GetCPUFeaturesString() << "\n";
     cpu_topology_node_info* topology = NULL;
     uint32_t topologyNodeCount = 0;
     if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
@@ -279,4 +328,44 @@ void SysInfoView::LoadData() {
     fInfoTextView->SetFontAndColor(infoText.FindFirst("GRAPHICS"), infoText.FindFirst("GRAPHICS") + 8, &boldFont);
     fInfoTextView->SetFontAndColor(infoText.FindFirst("MEMORY"), infoText.FindFirst("MEMORY") + 6, &boldFont);
     fInfoTextView->SetFontAndColor(infoText.FindFirst("DISK VOLUMES"), infoText.FindFirst("DISK VOLUMES") + 12, &boldFont);
+}
+
+BString
+SysInfoView::_GetCPUFeaturesString()
+{
+#if defined(__i386__) || defined(__x86_64__)
+    BString features;
+    unsigned int eax, ebx, ecx, edx;
+
+    if (__get_cpuid(1, &eax, &ebx, &ecx, &edx) == 1) {
+        for (int i = 0; i < 32; i++) {
+            if ((edx & (1 << i)) && kFeatures[i]) {
+                if (features.Length() > 0)
+                    features << " ";
+                features << kFeatures[i];
+            }
+        }
+        for (int i = 0; i < 32; i++) {
+            if ((ecx & (1 << i)) && kExtendedFeatures[i]) {
+                if (features.Length() > 0)
+                    features << " ";
+                features << kExtendedFeatures[i];
+            }
+        }
+    }
+
+    if (__get_cpuid(0x80000001, &eax, &ebx, &ecx, &edx) == 1) {
+        for (int i = 0; i < 32; i++) {
+            if ((edx & (1 << i)) && kAMDExtFeatures[i]) {
+                if (features.Length() > 0)
+                    features << " ";
+                features << kAMDExtFeatures[i];
+            }
+        }
+    }
+
+    return features;
+#else
+    return "Not available on this architecture";
+#endif
 }

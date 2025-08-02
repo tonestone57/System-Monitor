@@ -13,6 +13,41 @@ GPUView::GPUView()
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
+    BBox* monitorBox = new BBox("MonitorInfoBox");
+    monitorBox->SetLabel("Monitor Information");
+
+    BGridLayout* monitorGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+
+    fMonitorNameLabel = new BStringView("monitor_name_label", "Name:");
+    fMonitorNameValue = new BStringView("monitor_name_value", "N/A");
+    fResolutionLabel = new BStringView("monitor_res_label", "Resolution:");
+    fResolutionValue = new BStringView("monitor_res_value", "N/A");
+    fColorDepthLabel = new BStringView("monitor_color_label", "Color Depth:");
+    fColorDepthValue = new BStringView("monitor_color_value", "N/A");
+    fRefreshRateLabel = new BStringView("monitor_refresh_label", "Refresh Rate:");
+    fRefreshRateValue = new BStringView("monitor_refresh_value", "N/A");
+
+    BLayoutBuilder::Grid<>(monitorGrid)
+        .SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
+        .Add(fMonitorNameLabel, 0, 0)
+        .Add(fMonitorNameValue, 1, 0)
+        .Add(BSpaceLayoutItem::CreateGlue(), 2, 0)
+
+        .Add(fResolutionLabel, 0, 1)
+        .Add(fResolutionValue, 1, 1)
+        .Add(BSpaceLayoutItem::CreateGlue(), 2, 1)
+
+        .Add(fColorDepthLabel, 0, 2)
+        .Add(fColorDepthValue, 1, 2)
+        .Add(BSpaceLayoutItem::CreateGlue(), 2, 2)
+
+        .Add(fRefreshRateLabel, 0, 3)
+        .Add(fRefreshRateValue, 1, 3)
+        .Add(BSpaceLayoutItem::CreateGlue(), 2, 3);
+
+    monitorGrid->SetColumnWeight(2, 1.0f);
+    monitorBox->SetLayout(monitorGrid);
+
     BBox* infoBox = new BBox("GPUInfoBox");
     infoBox->SetLabel("Graphics Card Information");
 
@@ -56,6 +91,7 @@ GPUView::GPUView()
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
         .SetInsets(B_USE_DEFAULT_SPACING)
+        .Add(monitorBox)
         .Add(infoBox)
         .AddGlue();
 }
@@ -101,5 +137,70 @@ void GPUView::UpdateData()
         fMemorySizeValue->SetText("-");
         fDacSpeedValue->SetText("-");
         fDriverVersionValue->SetText("-");
+    }
+
+    display_mode mode;
+    if (screen.GetMode(&mode) == B_OK) {
+        BString resStr;
+        resStr.SetToFormat("%dx%d", mode.virtual_width, mode.virtual_height);
+        fResolutionValue->SetText(resStr);
+
+        int32 bitsPerPixel = 0;
+        switch (mode.space) {
+            case B_RGB32:
+            case B_RGBA32:
+            case B_RGB32_BIG:
+            case B_RGBA32_BIG:
+                bitsPerPixel = 32;
+                break;
+            case B_RGB24:
+            case B_RGB24_BIG:
+                bitsPerPixel = 24;
+                break;
+            case B_RGB16:
+            case B_RGB16_BIG:
+                bitsPerPixel = 16;
+                break;
+            case B_RGB15:
+            case B_RGBA15:
+            case B_RGB15_BIG:
+            case B_RGBA15_BIG:
+                bitsPerPixel = 15;
+                break;
+            case B_CMAP8:
+                bitsPerPixel = 8;
+                break;
+            default:
+                bitsPerPixel = 0; // Unknown
+                break;
+        }
+        if (bitsPerPixel > 0) {
+            BString colorStr;
+            colorStr.SetToFormat("%d-bit", bitsPerPixel);
+            fColorDepthValue->SetText(colorStr);
+        } else {
+            fColorDepthValue->SetText("N/A");
+        }
+
+        if (mode.timing.h_total > 0 && mode.timing.v_total > 0) {
+            double refresh = (double)mode.timing.pixel_clock * 1000.0
+                / (mode.timing.h_total * mode.timing.v_total);
+            char refreshStr[16];
+            snprintf(refreshStr, sizeof(refreshStr), "%.2f Hz", refresh);
+            fRefreshRateValue->SetText(refreshStr);
+        } else {
+            fRefreshRateValue->SetText("N/A");
+        }
+    } else {
+        fResolutionValue->SetText("N/A");
+        fColorDepthValue->SetText("N/A");
+        fRefreshRateValue->SetText("N/A");
+    }
+
+    monitor_info monInfo;
+    if (screen.GetMonitorInfo(&monInfo) == B_OK) {
+        fMonitorNameValue->SetText(monInfo.name);
+    } else {
+        fMonitorNameValue->SetText("N/A");
     }
 }

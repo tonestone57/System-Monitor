@@ -14,8 +14,16 @@ public:
 
 private:
     void UpdateData();
-    BString FormatBytes(uint64 bytes);
     
+    BStringView* fMonitorNameLabel;
+    BStringView* fMonitorNameValue;
+    BStringView* fResolutionLabel;
+    BStringView* fResolutionValue;
+    BStringView* fColorDepthLabel;
+    BStringView* fColorDepthValue;
+    BStringView* fRefreshRateLabel;
+    BStringView* fRefreshRateValue;
+
     BStringView* fCardNameLabel;
     BStringView* fCardNameValue;
     BStringView* fChipsetLabel;
