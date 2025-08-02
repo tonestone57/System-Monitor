@@ -93,17 +93,6 @@ void NetworkView::Pulse()
     UpdateData();
 }
 
-BString NetworkView::FormatBytes(uint64 bytes)
-{
-    double kb = bytes / 1024.0, mb = kb / 1024.0, gb = mb / 1024.0;
-    BString str;
-    if (gb >= 1.0) str.SetToFormat("%.2f GiB", gb);
-    else if (mb >= 1.0) str.SetToFormat("%.2f MiB", mb);
-    else if (kb >= 1.0) str.SetToFormat("%.1f KiB", kb);
-    else str.SetToFormat("%llu B", (unsigned long long)bytes);
-    return str;
-}
-
 BString NetworkView::FormatSpeed(uint64 bytesDelta, bigtime_t microSecondsDelta)
 {
     if (microSecondsDelta <= 0) return "0 B/s";
@@ -188,20 +177,20 @@ void NetworkView::UpdateData()
 			row->SetField(new BStringField(name), kInterfaceNameColumn);
 			row->SetField(new BStringField(typeStr), kInterfaceTypeColumn);
 			row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
-			row->SetField(new BStringField(FormatBytes(currentSent)), kBytesSentColumn);
-			row->SetField(new BStringField(FormatBytes(currentReceived)), kBytesRecvColumn);
+			row->SetField(new BStringField(::FormatBytes(currentSent)), kBytesSentColumn);
+			row->SetField(new BStringField(::FormatBytes(currentReceived)), kBytesRecvColumn);
 			row->SetField(new BStringField(sendSpeed), kSendSpeedColumn);
 			row->SetField(new BStringField(recvSpeed), kRecvSpeedColumn);
 			fInterfaceListView->AddRow(row);
 			fInterfaceRowMap[name.String()] = row;
 		} else {
 			row = fInterfaceRowMap[name.String()];
-			((BStringField*)row->GetField(kInterfaceTypeColumn))->SetString(typeStr);
-			((BStringField*)row->GetField(kInterfaceAddressColumn))->SetString(addressStr);
-			((BStringField*)row->GetField(kBytesSentColumn))->SetString(FormatBytes(currentSent));
-			((BStringField*)row->GetField(kBytesRecvColumn))->SetString(FormatBytes(currentReceived));
-			((BStringField*)row->GetField(kSendSpeedColumn))->SetString(sendSpeed);
-			((BStringField*)row->GetField(kRecvSpeedColumn))->SetString(recvSpeed);
+			row->SetField(new BStringField(typeStr), kInterfaceTypeColumn);
+			row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
+			row->SetField(new BStringField(::FormatBytes(currentSent)), kBytesSentColumn);
+			row->SetField(new BStringField(::FormatBytes(currentReceived)), kBytesRecvColumn);
+			row->SetField(new BStringField(sendSpeed), kSendSpeedColumn);
+			row->SetField(new BStringField(recvSpeed), kRecvSpeedColumn);
 			fInterfaceListView->UpdateRow(row);
 		}
     }

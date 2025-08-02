@@ -176,13 +176,13 @@ void DiskView::UpdateData()
 		} else {
 			// Existing device, update the row
 			row = fDeviceRowMap[currentDiskInfo.deviceID];
-			((BStringField*)row->GetField(kDeviceColumn))->SetString(currentDiskInfo.deviceName);
-			((BStringField*)row->GetField(kMountPointColumn))->SetString(currentDiskInfo.mountPoint);
-			((BStringField*)row->GetField(kFSTypeColumn))->SetString(currentDiskInfo.fileSystemType);
-			((BStringField*)row->GetField(kTotalSizeColumn))->SetString(::FormatBytes(currentDiskInfo.totalSize));
-			((BStringField*)row->GetField(kUsedSizeColumn))->SetString(::FormatBytes(usedSize));
-			((BStringField*)row->GetField(kFreeSizeColumn))->SetString(::FormatBytes(currentDiskInfo.freeSize));
-			((BStringField*)row->GetField(kUsagePercentageColumn))->SetString(percentStr);
+			row->SetField(new BStringField(currentDiskInfo.deviceName), kDeviceColumn);
+			row->SetField(new BStringField(currentDiskInfo.mountPoint), kMountPointColumn);
+			row->SetField(new BStringField(currentDiskInfo.fileSystemType), kFSTypeColumn);
+			row->SetField(new BStringField(::FormatBytes(currentDiskInfo.totalSize)), kTotalSizeColumn);
+			row->SetField(new BStringField(::FormatBytes(usedSize)), kUsedSizeColumn);
+			row->SetField(new BStringField(::FormatBytes(currentDiskInfo.freeSize)), kFreeSizeColumn);
+			row->SetField(new BStringField(percentStr), kUsagePercentageColumn);
 			fDiskListView->UpdateRow(row);
 		}
     }

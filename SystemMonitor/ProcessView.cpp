@@ -217,13 +217,13 @@ void ProcessView::Update(BMessage* message)
 			fTeamRowMap[info->id] = row;
         } else { // Existing process
 			row = fTeamRowMap[info->id];
-            ((BStringField*)row->GetField(kProcessNameColumn))->SetString(info->name);
+			row->SetField(new BStringField(info->name), kProcessNameColumn);
             char cpuStr[16];
             snprintf(cpuStr, sizeof(cpuStr), "%.1f", info->cpuUsage);
-            ((BStringField*)row->GetField(kCPUUsageColumn))->SetString(cpuStr);
-            ((BStringField*)row->GetField(kMemoryUsageColumn))->SetString(::FormatBytes(info->memoryUsageBytes));
-            ((BIntegerField*)row->GetField(kThreadCountColumn))->SetValue(info->threadCount);
-            ((BStringField*)row->GetField(kUserNameColumn))->SetString(info->userName);
+			row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
+			row->SetField(new BStringField(::FormatBytes(info->memoryUsageBytes)), kMemoryUsageColumn);
+			row->SetField(new BIntegerField(info->threadCount), kThreadCountColumn);
+			row->SetField(new BStringField(info->userName), kUserNameColumn);
             fProcessListView->UpdateRow(row);
         }
     }
