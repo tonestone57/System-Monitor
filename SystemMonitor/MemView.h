@@ -4,7 +4,7 @@
 #include <View.h>
 #include <StringView.h>
 #include <Locker.h>
-#include "GraphView.h"
+#include "ActivityGraphView.h"
 
 class BBox;
 
@@ -31,7 +31,7 @@ private:
     BStringView* fCachedMemLabel;
     BStringView* fCachedMemValue;
     
-    GraphView* fCacheGraphView;
+    ActivityGraphView* fCacheGraphView;
     
     BLocker fLocker;
     float fCurrentUsage;

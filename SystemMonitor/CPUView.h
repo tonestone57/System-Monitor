@@ -5,7 +5,7 @@
 #include <StringView.h>
 #include <Locker.h>
 #include <vector>
-#include "GraphView.h"
+#include "ActivityGraphView.h"
 
 class BBox;
 
@@ -26,7 +26,7 @@ private:
     void GetCPUUsage(float& overallUsage);
     
     BStringView* fOverallUsageValue;
-    GraphView* fGraphView;
+    ActivityGraphView* fGraphView;
     
     bigtime_t* fPreviousIdleTime;
     uint32 fCpuCount;

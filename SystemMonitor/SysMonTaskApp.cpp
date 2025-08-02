@@ -37,9 +37,9 @@ public:
     SummaryView(SystemStats* stats) : BView("SummaryView", B_WILL_DRAW | B_PULSE_NEEDED), fStats(stats) {
         SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
-        fCpuGraph = new GraphView("cpu_summary_graph", (rgb_color){80, 255, 80, 255});
-        fMemGraph = new GraphView("mem_summary_graph", (rgb_color){80, 80, 255, 255});
-        fNetGraph = new GraphView("net_summary_graph", (rgb_color){255, 80, 80, 255});
+        fCpuGraph = new ActivityGraphView("cpu_summary_graph", (rgb_color){80, 255, 80, 255});
+        fMemGraph = new ActivityGraphView("mem_summary_graph", (rgb_color){80, 80, 255, 255});
+        fNetGraph = new ActivityGraphView("net_summary_graph", (rgb_color){255, 80, 80, 255});
 
         BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
             .SetInsets(B_USE_DEFAULT_SPACING)
@@ -54,16 +54,16 @@ public:
 
     virtual void Pulse() {
         if (fStats) {
-            fCpuGraph->AddSample(fStats->cpuUsage);
-            fMemGraph->AddSample(fStats->memoryUsage);
-            fNetGraph->AddSample(fStats->uploadSpeed + fStats->downloadSpeed);
+            fCpuGraph->AddValue(system_time(), fStats->cpuUsage);
+            fMemGraph->AddValue(system_time(), fStats->memoryUsage);
+            fNetGraph->AddValue(system_time(), fStats->uploadSpeed + fStats->downloadSpeed);
         }
     }
 
 private:
-    GraphView* fCpuGraph;
-    GraphView* fMemGraph;
-    GraphView* fNetGraph;
+    ActivityGraphView* fCpuGraph;
+    ActivityGraphView* fMemGraph;
+    ActivityGraphView* fNetGraph;
     SystemStats* fStats;
 };
 

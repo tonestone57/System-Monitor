@@ -55,7 +55,7 @@ MemView::MemView(BRect frame)
     gridLayout->SetColumnWeight(2, 1.0f);
     statsBox->SetLayout(gridLayout);
 
-    fCacheGraphView = new GraphView("cacheGraph", (rgb_color){0, 128, 255, 255});
+    fCacheGraphView = new ActivityGraphView("cacheGraph", (rgb_color){0, 128, 255, 255});
     fCacheGraphView->SetExplicitMinSize(BSize(0, 60));
     fCacheGraphView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 100));
 
@@ -125,7 +125,7 @@ void MemView::UpdateData()
             float cachePercent = (float)cachedBytes / totalBytes * 100.0f;
             if (cachePercent < 0.0f) cachePercent = 0.0f;
             if (cachePercent > 100.0f) cachePercent = 100.0f;
-            fCacheGraphView->AddSample(cachePercent);
+            fCacheGraphView->AddValue(system_time(), cachePercent);
         }
 
     } else {

@@ -10,7 +10,7 @@
 #include <map>
 #include <string>
 #include <net/if.h>
-#include "GraphView.h"
+#include "ActivityGraphView.h"
 
 // Column identifiers
 enum {
@@ -63,8 +63,8 @@ NetworkView::NetworkView(BRect frame)
                    B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
         .Add(fInterfaceListView);
 
-    fDownloadGraph = new GraphView("download_graph", (rgb_color){80, 80, 255, 255});
-    fUploadGraph = new GraphView("upload_graph", (rgb_color){255, 80, 80, 255});
+    fDownloadGraph = new ActivityGraphView("download_graph", (rgb_color){80, 80, 255, 255});
+    fUploadGraph = new ActivityGraphView("upload_graph", (rgb_color){255, 80, 80, 255});
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
         .SetInsets(B_USE_DEFAULT_SPACING)
@@ -203,8 +203,8 @@ void NetworkView::UpdateData()
         fUploadSpeed = totalSentDelta / (dt / 1000000.0);
         fDownloadSpeed = totalReceivedDelta / (dt / 1000000.0);
 
-        fUploadGraph->AddSample((fUploadSpeed / maxSpeed) * 100.0f);
-        fDownloadGraph->AddSample((fDownloadSpeed / maxSpeed) * 100.0f);
+        fUploadGraph->AddValue(system_time(), fUploadSpeed);
+        fDownloadGraph->AddValue(system_time(), fDownloadSpeed);
     }
 
     fLocker.Unlock();

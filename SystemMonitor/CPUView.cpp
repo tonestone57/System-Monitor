@@ -42,7 +42,7 @@ void CPUView::CreateLayout()
     overallBox->SetLayout(grid);
 
     // Create graph view
-    fGraphView = new GraphView("cpu_graph", {0, 150, 0, 255});
+    fGraphView = new ActivityGraphView("cpu_graph", {0, 150, 0, 255});
     fGraphView->SetExplicitMinSize(BSize(200, 80));
 
     // Main layout
@@ -149,7 +149,7 @@ void CPUView::UpdateData()
     }
 
     if (fGraphView && overallUsage >= 0)
-        fGraphView->AddSample(overallUsage);
+        fGraphView->AddValue(system_time(), overallUsage);
 
     fCurrentUsage = overallUsage;
     fLocker.Unlock();

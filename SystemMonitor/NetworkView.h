@@ -5,10 +5,10 @@
 #include <Locker.h>
 #include <String.h>
 #include <map>
-#include <string>
+#include "ActivityGraphView.h"
 
 class BColumnListView;
-class GraphView;
+class ActivityGraphView;
 
 struct InterfaceStatsRecord {
     uint64 bytesSent = 0;
@@ -33,8 +33,8 @@ private:
     BString FormatSpeed(uint64 bytesDelta, bigtime_t microSecondsDelta);
     
     BColumnListView* fInterfaceListView;
-    GraphView* fDownloadGraph;
-    GraphView* fUploadGraph;
+    ActivityGraphView* fDownloadGraph;
+    ActivityGraphView* fUploadGraph;
     
     BLocker fLocker;
     std::map<std::string, InterfaceStatsRecord> fPreviousStatsMap;
