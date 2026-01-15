@@ -23,14 +23,6 @@ enum {
     kRecvSpeedColumn
 };
 
-// Struct to hold per-interface stats for speed calculations
-struct InterfaceStatsRecord {
-    uint64 bytesSent = 0;
-    uint64 bytesReceived = 0;
-    bigtime_t lastUpdateTime = 0;
-};
-
-static std::map<std::string, InterfaceStatsRecord> gPreviousStatsMap;
 
 NetworkView::NetworkView(BRect frame)
     : BView(frame, "NetworkView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW | B_PULSE_NEEDED),
@@ -161,7 +153,7 @@ void NetworkView::UpdateData()
         uint64 dummyRx = rand() % 10000000;
         BString sendSpeed = "N/A", recvSpeed = "N/A";
 
-        InterfaceStatsRecord& rec = gPreviousStatsMap[name.String()];
+        InterfaceStatsRecord& rec = fPreviousStatsMap[name.String()];
         if (rec.lastUpdateTime > 0) {
             bigtime_t dt = currentTime - rec.lastUpdateTime;
             if (dt > 0) {

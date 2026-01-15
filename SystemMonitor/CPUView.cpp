@@ -13,7 +13,9 @@ CPUView::CPUView()
     : BView("CPUView", B_WILL_DRAW | B_PULSE_NEEDED),
       fPreviousIdleTime(nullptr),
       fCpuCount(0),
-      fFirstTime(true)
+      fFirstTime(true),
+      fPreviousTimeSnapshot(0),
+      fPreviousTime(0)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     CreateLayout();
@@ -97,9 +99,10 @@ void CPUView::GetCPUUsage(float* overallUsage) {
     }
 
     bigtime_t currentTimeSnapshot = system_time();
-    static bigtime_t previousTimeSnapshot = currentTimeSnapshot;
-    bigtime_t elapsedWallTime = currentTimeSnapshot - previousTimeSnapshot;
-    previousTimeSnapshot = currentTimeSnapshot;
+    if (fPreviousTimeSnapshot == 0)
+        fPreviousTimeSnapshot = currentTimeSnapshot;
+    bigtime_t elapsedWallTime = currentTimeSnapshot - fPreviousTimeSnapshot;
+    fPreviousTimeSnapshot = currentTimeSnapshot;
 
     if (elapsedWallTime <= 0) {
         *overallUsage = 0.0f;
@@ -143,9 +146,10 @@ void CPUView::UpdateData() {
 
     // Per-core usage calculation
     bigtime_t currentTime = system_time();
-    static bigtime_t previousTime = currentTime;
-    bigtime_t elapsed = currentTime - previousTime;
-    previousTime = currentTime;
+    if (fPreviousTime == 0)
+        fPreviousTime = currentTime;
+    bigtime_t elapsed = currentTime - fPreviousTime;
+    fPreviousTime = currentTime;
 
     if (elapsed > 0 && fCpuCount > 0) {
         fPerCoreUsage.resize(fCpuCount);

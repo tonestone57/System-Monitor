@@ -34,6 +34,9 @@ private:
     std::vector<float> fPerCoreUsage;
     
     BLocker fLocker;
+
+    bigtime_t fPreviousTimeSnapshot;
+    bigtime_t fPreviousTime;
 };
 
 #endif // CPUVIEW_H
