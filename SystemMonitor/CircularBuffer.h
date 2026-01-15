@@ -34,11 +34,12 @@ public:
 
 	status_t SetSize(size_t size)
 	{
-		MakeEmpty();
-
 		if (fSize == size)
 			return B_OK;
 
+		MakeEmpty();
+
+		free(fBuffer);
 		fSize = size;
 		fBuffer = (Type*)malloc(fSize * sizeof(Type));
 		if (fBuffer == NULL) {
@@ -76,10 +77,12 @@ public:
 	void AddItem(const Type& item)
 	{
 		uint32 index;
-		if (fIn < fSize)
+		if (fIn < fSize) {
 			index = fFirst + fIn++;
-		else
-			index = fFirst++;
+		} else {
+			index = fFirst;
+			fFirst = (fFirst + 1) % fSize;
+		}
 
 		if (fBuffer != NULL)
 			fBuffer[index % fSize] = item;
@@ -91,6 +94,9 @@ public:
 	}
 
 private:
+	CircularBuffer(const CircularBuffer& other);
+	CircularBuffer& operator=(const CircularBuffer& other);
+
 	uint32		fFirst;
 	uint32		fIn;
 	uint32		fSize;

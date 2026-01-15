@@ -79,8 +79,6 @@ NetworkView::NetworkView()
 
 NetworkView::~NetworkView()
 {
-	for (auto const& [name, row] : fInterfaceRowMap)
-		delete row;
 }
 
 void NetworkView::AttachedToWindow()

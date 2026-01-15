@@ -107,8 +107,6 @@ ProcessView::~ProcessView()
         status_t ret;
         wait_for_thread(fUpdateThread, &ret);
     }
-	for (auto const& [team, row] : fTeamRowMap)
-		delete row;
     delete fContextMenu;
 }
 

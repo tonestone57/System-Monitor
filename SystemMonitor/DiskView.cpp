@@ -72,8 +72,6 @@ DiskView::DiskView()
 
 DiskView::~DiskView()
 {
-	for (auto const& [dev, row] : fDeviceRowMap)
-		delete row;
 }
 
 void DiskView::AttachedToWindow()
