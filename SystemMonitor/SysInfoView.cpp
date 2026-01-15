@@ -100,43 +100,6 @@ void SysInfoView::AttachedToWindow()
     LoadData();
 }
 
-BString SysInfoView::FormatHertz(uint64 hertz) {
-    BString str;
-    double ghz = hertz / 1000000000.0;
-    double mhz = hertz / 1000000.0;
-    double khz = hertz / 1000.0;
-
-    if (ghz >= 1.0) {
-        str.SetToFormat("%.2f GHz", ghz);
-    } else if (mhz >= 1.0) {
-        str.SetToFormat("%.0f MHz", mhz);
-    } else if (khz >= 1.0) {
-        str.SetToFormat("%.0f KHz", khz);
-    } else {
-        str.SetToFormat("%" B_PRIu64 " Hz", hertz);
-    }
-    return str;
-}
-
-BString SysInfoView::FormatUptime(bigtime_t uptimeMicros) {
-    uint32 seconds = uptimeMicros / 1000000;
-
-    uint32 days = seconds / (24 * 3600);
-    seconds %= (24 * 3600);
-    uint32 hours = seconds / 3600;
-    seconds %= 3600;
-    uint32 minutes = seconds / 60;
-    seconds %= 60;
-
-    BString uptimeStr;
-    if (days > 0) {
-        uptimeStr.SetToFormat("%u days, %02u:%02u:%02u", days, hours, minutes, seconds);
-    } else {
-        uptimeStr.SetToFormat("%02u:%02u:%02u", hours, minutes, seconds);
-    }
-    return uptimeStr;
-}
-
 BString SysInfoView::GetCPUBrandString()
 {
 #if defined(__x86_64__) || defined(__i386__)
@@ -195,7 +158,7 @@ void SysInfoView::LoadData() {
     archStr = "Unknown";
 #endif
     infoText << "CPU Architecture: " << archStr << "\n";
-    infoText << "System Uptime: " << FormatUptime(system_time()) << "\n\n\n";
+    infoText << "System Uptime: " << ::FormatUptime(system_time()) << "\n\n\n";
 
     // CPU Info
     infoText << "PROCESSOR\n\n";
@@ -218,7 +181,7 @@ void SysInfoView::LoadData() {
                     }
                 }
                 if (max_freq > 0)
-                    infoText << "Clock Speed: " << FormatHertz(max_freq) << "\n";
+                    infoText << "Clock Speed: " << ::FormatHertz(max_freq) << "\n";
             }
             delete[] topology;
         }

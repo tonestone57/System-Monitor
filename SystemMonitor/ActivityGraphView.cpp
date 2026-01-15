@@ -115,35 +115,31 @@ ActivityGraphView::_DrawHistory()
 			view->SetLineMode(B_BUTT_CAP, B_ROUND_JOIN);
 			view->MovePenTo(B_ORIGIN);
 
-			try {
-				view->BeginLineArray(steps - 1);
-				BPoint prev;
-				bool first = true;
-				int64 min = fHistory->MinimumValue();
-				int64 max = fHistory->MaximumValue();
-				int64 range = max - min;
+			view->BeginLineArray(steps - 1);
+			BPoint prev;
+			bool first = true;
+			int64 min = fHistory->MinimumValue();
+			int64 max = fHistory->MaximumValue();
+			int64 range = max - min;
 
-				for (uint32 i = 0; i < steps; i++) {
-					int64 value = fHistory->ValueAt(now - (steps - 1 - i) * timeStep);
-					float y;
-					if (range == 0)
-						y = frame.Height() / 2;
-					else {
-						y = frame.Height() - (value - min) * frame.Height()
-							/ range;
-					}
-
-					if (first) {
-						first = false;
-					} else
-						view->AddLine(prev, BPoint(i, y), fColor);
-
-					prev.Set(i, y);
+			for (uint32 i = 0; i < steps; i++) {
+				int64 value = fHistory->ValueAt(now - (steps - 1 - i) * timeStep);
+				float y;
+				if (range == 0)
+					y = frame.Height() / 2;
+				else {
+					y = frame.Height() - (value - min) * frame.Height()
+						/ range;
 				}
-				view->EndLineArray();
-			} catch (std::bad_alloc&) {
-				// ignore
+
+				if (first) {
+					first = false;
+				} else
+					view->AddLine(prev, BPoint(i, y), fColor);
+
+				prev.Set(i, y);
 			}
+			view->EndLineArray();
 		}
 		view->Sync();
 		fOffscreen->Unlock();

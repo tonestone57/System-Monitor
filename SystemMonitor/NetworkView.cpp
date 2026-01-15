@@ -92,18 +92,6 @@ void NetworkView::Pulse()
     UpdateData();
 }
 
-BString NetworkView::FormatSpeed(uint64 bytesDelta, bigtime_t microSecondsDelta)
-{
-    if (microSecondsDelta <= 0) return "0 B/s";
-    double speed = bytesDelta / (microSecondsDelta / 1000000.0);
-    double kbs = speed / 1024.0, mbs = kbs / 1024.0;
-    BString str;
-    if (mbs >= 1.0) str.SetToFormat("%.2f MiB/s", mbs);
-    else if (kbs >= 1.0) str.SetToFormat("%.2f KiB/s", kbs);
-    else str.SetToFormat("%.0f B/s", speed);
-    return str;
-}
-
 void NetworkView::UpdateData()
 {
     fLocker.Lock();
@@ -157,8 +145,8 @@ void NetworkView::UpdateData()
             if (dt > 0) {
                 uint64 sentDelta = (currentSent > rec.bytesSent) ? currentSent - rec.bytesSent : 0;
                 uint64 recvDelta = (currentReceived > rec.bytesReceived) ? currentReceived - rec.bytesReceived : 0;
-                sendSpeed = FormatSpeed(sentDelta, dt);
-                recvSpeed = FormatSpeed(recvDelta, dt);
+                sendSpeed = ::FormatSpeed(sentDelta, dt);
+                recvSpeed = ::FormatSpeed(recvDelta, dt);
                 if (!(interface.Flags() & IFF_LOOPBACK)) {
                     totalSentDelta += sentDelta;
                     totalReceivedDelta += recvDelta;

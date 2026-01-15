@@ -7,6 +7,7 @@
 
 
 #include <stdlib.h>
+#include <new>
 
 #include <OS.h>
 
@@ -24,7 +25,7 @@ public:
 
 	~CircularBuffer()
 	{
-		free(fBuffer);
+		delete[] fBuffer;
 	}
 
 	status_t InitCheck() const
@@ -39,9 +40,9 @@ public:
 
 		MakeEmpty();
 
-		free(fBuffer);
+		delete[] fBuffer;
 		fSize = size;
-		fBuffer = (Type*)malloc(fSize * sizeof(Type));
+		fBuffer = new(std::nothrow) Type[fSize];
 		if (fBuffer == NULL) {
 			fSize = 0;
 			return B_NO_MEMORY;

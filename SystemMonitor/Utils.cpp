@@ -17,3 +17,52 @@ BString FormatBytes(uint64 bytes, int precision) {
     }
     return str;
 }
+
+BString FormatHertz(uint64 hertz) {
+    BString str;
+    double ghz = hertz / 1000000000.0;
+    double mhz = hertz / 1000000.0;
+    double khz = hertz / 1000.0;
+
+    if (ghz >= 1.0) {
+        str.SetToFormat("%.2f GHz", ghz);
+    } else if (mhz >= 1.0) {
+        str.SetToFormat("%.0f MHz", mhz);
+    } else if (khz >= 1.0) {
+        str.SetToFormat("%.0f KHz", khz);
+    } else {
+        str.SetToFormat("%" B_PRIu64 " Hz", hertz);
+    }
+    return str;
+}
+
+BString FormatUptime(bigtime_t uptimeMicros) {
+    uint32 seconds = uptimeMicros / 1000000;
+
+    uint32 days = seconds / (24 * 3600);
+    seconds %= (24 * 3600);
+    uint32 hours = seconds / 3600;
+    seconds %= 3600;
+    uint32 minutes = seconds / 60;
+    seconds %= 60;
+
+    BString uptimeStr;
+    if (days > 0) {
+        uptimeStr.SetToFormat("%u days, %02u:%02u:%02u", days, hours, minutes, seconds);
+    } else {
+        uptimeStr.SetToFormat("%02u:%02u:%02u", hours, minutes, seconds);
+    }
+    return uptimeStr;
+}
+
+BString FormatSpeed(uint64 bytesDelta, bigtime_t microSecondsDelta)
+{
+    if (microSecondsDelta <= 0) return "0 B/s";
+    double speed = bytesDelta / (microSecondsDelta / 1000000.0);
+    double kbs = speed / 1024.0, mbs = kbs / 1024.0;
+    BString str;
+    if (mbs >= 1.0) str.SetToFormat("%.2f MiB/s", mbs);
+    else if (kbs >= 1.0) str.SetToFormat("%.2f KiB/s", kbs);
+    else str.SetToFormat("%.0f B/s", speed);
+    return str;
+}
