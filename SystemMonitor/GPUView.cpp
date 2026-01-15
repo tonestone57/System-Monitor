@@ -7,6 +7,10 @@
 #include <SpaceLayoutItem.h>
 #include <Screen.h>
 #include <GraphicsDefs.h>
+#include <Catalog.h>
+
+#undef B_TRANSLATION_CONTEXT
+#define B_TRANSLATION_CONTEXT "GPUView"
 
 GPUView::GPUView()
     : BView("GPUView", B_WILL_DRAW)
@@ -14,17 +18,17 @@ GPUView::GPUView()
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
     BBox* monitorBox = new BBox("MonitorInfoBox");
-    monitorBox->SetLabel("Monitor Information");
+    monitorBox->SetLabel(B_TRANSLATE("Monitor Information"));
 
     BGridLayout* monitorGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
 
-    fMonitorNameLabel = new BStringView("monitor_name_label", "Name:");
+    fMonitorNameLabel = new BStringView("monitor_name_label", B_TRANSLATE("Name:"));
     fMonitorNameValue = new BStringView("monitor_name_value", "N/A");
-    fResolutionLabel = new BStringView("monitor_res_label", "Resolution:");
+    fResolutionLabel = new BStringView("monitor_res_label", B_TRANSLATE("Resolution:"));
     fResolutionValue = new BStringView("monitor_res_value", "N/A");
-    fColorDepthLabel = new BStringView("monitor_color_label", "Color Depth:");
+    fColorDepthLabel = new BStringView("monitor_color_label", B_TRANSLATE("Color Depth:"));
     fColorDepthValue = new BStringView("monitor_color_value", "N/A");
-    fRefreshRateLabel = new BStringView("monitor_refresh_label", "Refresh Rate:");
+    fRefreshRateLabel = new BStringView("monitor_refresh_label", B_TRANSLATE("Refresh Rate:"));
     fRefreshRateValue = new BStringView("monitor_refresh_value", "N/A");
 
     BLayoutBuilder::Grid<>(monitorGrid)
@@ -49,19 +53,19 @@ GPUView::GPUView()
     monitorBox->SetLayout(monitorGrid);
 
     BBox* infoBox = new BBox("GPUInfoBox");
-    infoBox->SetLabel("Graphics Card Information");
+    infoBox->SetLabel(B_TRANSLATE("Graphics Card Information"));
 
     BGridLayout* grid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     
-    fCardNameLabel = new BStringView("gpu_name_label", "Card Name:");
+    fCardNameLabel = new BStringView("gpu_name_label", B_TRANSLATE("Card Name:"));
     fCardNameValue = new BStringView("gpu_name_value", "N/A");
-    fChipsetLabel = new BStringView("gpu_chipset_label", "Chipset:");
+    fChipsetLabel = new BStringView("gpu_chipset_label", B_TRANSLATE("Chipset:"));
     fChipsetValue = new BStringView("gpu_chipset_value", "N/A");
-    fMemorySizeLabel = new BStringView("gpu_mem_label", "Memory Size:");
+    fMemorySizeLabel = new BStringView("gpu_mem_label", B_TRANSLATE("Memory Size:"));
     fMemorySizeValue = new BStringView("gpu_mem_value", "N/A");
-    fDacSpeedLabel = new BStringView("gpu_dac_label", "DAC Speed:");
+    fDacSpeedLabel = new BStringView("gpu_dac_label", B_TRANSLATE("DAC Speed:"));
     fDacSpeedValue = new BStringView("gpu_dac_value", "N/A");
-    fDriverVersionLabel = new BStringView("gpu_driver_label", "Driver API Version:");
+    fDriverVersionLabel = new BStringView("gpu_driver_label", B_TRANSLATE("Driver API Version:"));
     fDriverVersionValue = new BStringView("gpu_driver_value", "N/A");
 
     BLayoutBuilder::Grid<>(grid)
@@ -111,7 +115,7 @@ void GPUView::UpdateData()
 {
     BScreen screen(B_MAIN_SCREEN_ID);
     if (!screen.IsValid()) {
-        fCardNameValue->SetText("Error: Invalid screen object");
+        fCardNameValue->SetText(B_TRANSLATE("Error: Invalid screen object"));
         return;
     }
 
@@ -132,7 +136,7 @@ void GPUView::UpdateData()
         fDriverVersionValue->SetText(versionStr);
 
     } else {
-        fCardNameValue->SetText("Error: Could not get device info");
+        fCardNameValue->SetText(B_TRANSLATE("Error: Could not get device info"));
         fChipsetValue->SetText("-");
         fMemorySizeValue->SetText("-");
         fDacSpeedValue->SetText("-");

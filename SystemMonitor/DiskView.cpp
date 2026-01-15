@@ -61,11 +61,21 @@ DiskView::DiskView()
 
     fDiskListView->SetSortColumn(fDiskListView->ColumnAt(kMountPointColumn), true, true);
 
+    // Add explanatory note
+    BStringView* noteView = new BStringView("io_note", B_TRANSLATE("Real-time Disk I/O monitoring is not supported on this system."));
+    noteView->SetAlignment(B_ALIGN_CENTER);
+    BFont font(be_plain_font);
+    font.SetSize(font.Size() * 0.9f); // Slightly smaller
+    noteView->SetFont(&font);
+    noteView->SetHighColor(ui_color(B_CONTROL_TEXT_COLOR)); // Ensure visibility
+
     // Use layout to properly position the ColumnListView
     BLayoutBuilder::Group<>(fDiskInfoBox, B_VERTICAL, 0)
         .SetInsets(B_USE_DEFAULT_SPACING, fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING, 
                    B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
-        .Add(fDiskListView);
+        .Add(fDiskListView)
+        .AddStrut(B_USE_DEFAULT_SPACING)
+        .Add(noteView);
 
     // Main layout for the DiskView
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
