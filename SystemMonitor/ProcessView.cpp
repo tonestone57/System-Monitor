@@ -128,7 +128,8 @@ ProcessView::ProcessView()
 ProcessView::~ProcessView()
 {
     fTerminated = true;
-    delete_sem(fQuitSem);
+    if (fQuitSem >= 0)
+        delete_sem(fQuitSem);
     if (fUpdateThread != B_ERROR) {
         status_t ret;
         wait_for_thread(fUpdateThread, &ret);
@@ -151,7 +152,10 @@ void ProcessView::AttachedToWindow()
 void ProcessView::DetachedFromWindow()
 {
     fTerminated = true;
-    delete_sem(fQuitSem);
+    if (fQuitSem >= 0) {
+        delete_sem(fQuitSem);
+        fQuitSem = -1;
+    }
     if (fUpdateThread != B_ERROR) {
         status_t ret;
         wait_for_thread(fUpdateThread, &ret);
@@ -171,7 +175,8 @@ void ProcessView::MessageReceived(BMessage* message)
         case MSG_SEARCH_UPDATED:
             // Release the semaphore to wake up the thread immediately
             // This triggers an immediate refresh cycle
-            release_sem(fQuitSem);
+            if (fQuitSem >= 0)
+                release_sem(fQuitSem);
             break;
         default:
             BView::MessageReceived(message);
