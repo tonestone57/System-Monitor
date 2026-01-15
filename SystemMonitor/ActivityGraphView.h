@@ -8,7 +8,7 @@ class BBitmap;
 
 class ActivityGraphView : public BView {
 public:
-						ActivityGraphView(const char* name, rgb_color color);
+						ActivityGraphView(const char* name, rgb_color color, color_which systemColor = (color_which)-1);
 	virtual				~ActivityGraphView();
 
 	virtual void		AttachedToWindow();
@@ -24,6 +24,7 @@ private:
 
 private:
 	rgb_color			fColor;
+    color_which         fSystemColor;
 	BBitmap*			fOffscreen;
 	DataHistory*		fHistory;
 };

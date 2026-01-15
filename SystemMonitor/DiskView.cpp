@@ -13,6 +13,10 @@
 #include <Box.h>
 #include <Font.h>
 #include <set>
+#include <Catalog.h>
+
+#undef B_TRANSLATION_CONTEXT
+#define B_TRANSLATION_CONTEXT "DiskView"
 
 // Define column constants for BColumnListView
 enum {
@@ -31,7 +35,7 @@ DiskView::DiskView()
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
     fDiskInfoBox = new BBox("DiskInfoBox");
-    fDiskInfoBox->SetLabel("Disk Volumes");
+    fDiskInfoBox->SetLabel(B_TRANSLATE("Disk Volumes"));
 
     // Calculate proper positioning for ColumnListView inside BBox
     BRect clvRect = fDiskInfoBox->Bounds();
@@ -47,13 +51,13 @@ DiskView::DiskView()
                                         B_WILL_DRAW | B_NAVIGABLE,
                                         B_PLAIN_BORDER, true);
 
-    fDiskListView->AddColumn(new BStringColumn("Device", 120, 50, 300, B_TRUNCATE_MIDDLE), kDeviceColumn);
-    fDiskListView->AddColumn(new BStringColumn("Mount Point", 120, 50, 300, B_TRUNCATE_MIDDLE), kMountPointColumn);
-    fDiskListView->AddColumn(new BStringColumn("FS Type", 80, 40, 150, B_TRUNCATE_END), kFSTypeColumn);
-    fDiskListView->AddColumn(new BStringColumn("Total Size", 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kTotalSizeColumn);
-    fDiskListView->AddColumn(new BStringColumn("Used Size", 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kUsedSizeColumn);
-    fDiskListView->AddColumn(new BStringColumn("Free Size", 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kFreeSizeColumn);
-    fDiskListView->AddColumn(new BStringColumn("Usage %", 80, 40, 100, B_TRUNCATE_END, B_ALIGN_RIGHT), kUsagePercentageColumn);
+    fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("Device"), 120, 50, 300, B_TRUNCATE_MIDDLE), kDeviceColumn);
+    fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("Mount Point"), 120, 50, 300, B_TRUNCATE_MIDDLE), kMountPointColumn);
+    fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("FS Type"), 80, 40, 150, B_TRUNCATE_END), kFSTypeColumn);
+    fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("Total Size"), 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kTotalSizeColumn);
+    fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("Used Size"), 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kUsedSizeColumn);
+    fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("Free Size"), 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kFreeSizeColumn);
+    fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("Usage %"), 80, 40, 100, B_TRUNCATE_END, B_ALIGN_RIGHT), kUsagePercentageColumn);
 
     fDiskListView->SetSortColumn(fDiskListView->ColumnAt(kMountPointColumn), true, true);
 

@@ -10,6 +10,13 @@
 #include <CardLayout.h>
 #include <CardView.h>
 #include <TabView.h>
+#include <File.h>
+#include <FindDirectory.h>
+#include <Path.h>
+#include <Catalog.h>
+
+#undef B_TRANSLATION_CONTEXT
+#define B_TRANSLATION_CONTEXT "SysMonTaskApp"
 
 #include "ProcessView.h"
 #include "CPUView.h"
@@ -37,17 +44,17 @@ public:
     SummaryView(SystemStats* stats) : BView("SummaryView", B_WILL_DRAW | B_PULSE_NEEDED), fStats(stats) {
         SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
-        fCpuGraph = new ActivityGraphView("cpu_summary_graph", (rgb_color){80, 255, 80, 255});
-        fMemGraph = new ActivityGraphView("mem_summary_graph", (rgb_color){80, 80, 255, 255});
-        fNetGraph = new ActivityGraphView("net_summary_graph", (rgb_color){255, 80, 80, 255});
+        fCpuGraph = new ActivityGraphView("cpu_summary_graph", {0, 0, 0, 0}, B_SUCCESS_COLOR);
+        fMemGraph = new ActivityGraphView("mem_summary_graph", {0, 0, 0, 0}, B_MENU_SELECTION_BACKGROUND_COLOR);
+        fNetGraph = new ActivityGraphView("net_summary_graph", {0, 0, 0, 0}, B_FAILURE_COLOR);
 
         BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
             .SetInsets(B_USE_DEFAULT_SPACING)
-            .Add(new BStringView("cpu_label", "CPU Usage"))
+            .Add(new BStringView("cpu_label", B_TRANSLATE("CPU Usage")))
             .Add(fCpuGraph)
-            .Add(new BStringView("mem_label", "Memory Usage"))
+            .Add(new BStringView("mem_label", B_TRANSLATE("Memory Usage")))
             .Add(fMemGraph)
-            .Add(new BStringView("net_label", "Network Usage"))
+            .Add(new BStringView("net_label", B_TRANSLATE("Network Usage")))
             .Add(fNetGraph)
             .AddGlue();
     }
@@ -105,15 +112,15 @@ PerformanceView::PerformanceView()
         BView* gpuTab = new GPUView();
 
         tabView->AddTab(fCPUView);
-        tabView->TabAt(0)->SetLabel("CPU");
+        tabView->TabAt(0)->SetLabel(B_TRANSLATE("CPU"));
         tabView->AddTab(fMemView);
-        tabView->TabAt(1)->SetLabel("Memory");
+        tabView->TabAt(1)->SetLabel(B_TRANSLATE("Memory"));
         tabView->AddTab(fNetworkView);
-        tabView->TabAt(2)->SetLabel("Network");
+        tabView->TabAt(2)->SetLabel(B_TRANSLATE("Network"));
         tabView->AddTab(diskTab);
-        tabView->TabAt(3)->SetLabel("Disk");
+        tabView->TabAt(3)->SetLabel(B_TRANSLATE("Disk"));
         tabView->AddTab(gpuTab);
-        tabView->TabAt(4)->SetLabel("GPU");
+        tabView->TabAt(4)->SetLabel(B_TRANSLATE("GPU"));
 
         splitView->AddChild(fSummaryView);
         splitView->AddChild(fRightPane);
@@ -155,6 +162,9 @@ public:
     virtual bool QuitRequested();
     virtual void MessageReceived(BMessage* message);
 
+    void SaveSettings();
+    void LoadSettings();
+
 private:
     void SwitchToView(int32 index);
     
@@ -171,14 +181,14 @@ private:
 };
 
 MainWindow::MainWindow(BRect frame)
-    : BWindow(frame, "SysMonTask - Haiku System Monitor", B_TITLED_WINDOW, 
+    : BWindow(frame, B_TRANSLATE("SysMonTask - Haiku System Monitor"), B_TITLED_WINDOW,
               B_QUIT_ON_WINDOW_CLOSE | B_AUTO_UPDATE_SIZE_LIMITS),
       fCurrentViewIndex(0) {
 
     // Create button bar
-    fPerformanceButton = new BButton("Performance", new BMessage(MSG_SWITCH_TO_PERFORMANCE));
-    fProcessesButton = new BButton("Processes", new BMessage(MSG_SWITCH_TO_PROCESSES));
-    fSystemButton = new BButton("System", new BMessage(MSG_SWITCH_TO_SYSTEM));
+    fPerformanceButton = new BButton("Performance", B_TRANSLATE("Performance"), new BMessage(MSG_SWITCH_TO_PERFORMANCE));
+    fProcessesButton = new BButton("Processes", B_TRANSLATE("Processes"), new BMessage(MSG_SWITCH_TO_PROCESSES));
+    fSystemButton = new BButton("System", B_TRANSLATE("System"), new BMessage(MSG_SWITCH_TO_SYSTEM));
     
     // Set initial button states
     fPerformanceButton->SetValue(B_CONTROL_ON);
@@ -224,9 +234,12 @@ MainWindow::MainWindow(BRect frame)
     
     // Center window on screen
     CenterOnScreen();
+
+    LoadSettings();
 }
 
 bool MainWindow::QuitRequested() {
+    SaveSettings();
     be_app->PostMessage(B_QUIT_REQUESTED);
     return true;
 }
@@ -263,6 +276,35 @@ void MainWindow::SwitchToView(int32 index) {
     // Switch the visible view
     fCardLayout->SetVisibleItem(index);
     fCurrentViewIndex = index;
+}
+
+void MainWindow::SaveSettings() {
+    BPath path;
+    if (find_directory(B_USER_SETTINGS_DIRECTORY, &path) == B_OK) {
+        path.Append("SysMonTask_settings");
+        BFile file(path.Path(), B_WRITE_ONLY | B_CREATE_FILE | B_ERASE_FILE);
+        if (file.InitCheck() == B_OK) {
+            BMessage settings;
+            if (fProcessView)
+                fProcessView->SaveState(settings);
+            settings.Flatten(&file);
+        }
+    }
+}
+
+void MainWindow::LoadSettings() {
+    BPath path;
+    if (find_directory(B_USER_SETTINGS_DIRECTORY, &path) == B_OK) {
+        path.Append("SysMonTask_settings");
+        BFile file(path.Path(), B_READ_ONLY);
+        if (file.InitCheck() == B_OK) {
+            BMessage settings;
+            if (settings.Unflatten(&file) == B_OK) {
+                if (fProcessView)
+                    fProcessView->LoadState(settings);
+            }
+        }
+    }
 }
 
 SysMonTaskApp::SysMonTaskApp()

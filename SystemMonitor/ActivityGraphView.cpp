@@ -2,10 +2,12 @@
 #include <Autolock.h>
 #include <Bitmap.h>
 #include <ControlLook.h>
+#include <Window.h>
 
-ActivityGraphView::ActivityGraphView(const char* name, rgb_color color)
+ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_which systemColor)
 	: BView(name, B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE),
 	fColor(color),
+    fSystemColor(systemColor),
 	fOffscreen(NULL)
 {
 	fHistory = new DataHistory(10 * 60000000LL, 1000000);
@@ -33,8 +35,6 @@ ActivityGraphView::FrameResized(float /*width*/, float /*height*/)
 	_UpdateOffscreenBitmap();
 }
 
-
-#include <Window.h>
 
 void
 ActivityGraphView::_UpdateOffscreenBitmap()
@@ -111,7 +111,13 @@ ActivityGraphView::_DrawHistory()
 			bigtime_t timeStep = 1000000;
 
 			view->SetPenSize(1.5);
-			view->SetHighColor(fColor);
+
+            rgb_color drawColor = fColor;
+            if (fSystemColor != (color_which)-1) {
+                drawColor = ui_color(fSystemColor);
+            }
+
+			view->SetHighColor(drawColor);
 			view->SetLineMode(B_BUTT_CAP, B_ROUND_JOIN);
 			view->MovePenTo(B_ORIGIN);
 
@@ -135,7 +141,7 @@ ActivityGraphView::_DrawHistory()
 				if (first) {
 					first = false;
 				} else
-					view->AddLine(prev, BPoint(i, y), fColor);
+					view->AddLine(prev, BPoint(i, y), drawColor);
 
 				prev.Set(i, y);
 			}

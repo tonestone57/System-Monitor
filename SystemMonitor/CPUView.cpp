@@ -9,6 +9,10 @@
 #include <GridLayout.h>
 #include <SpaceLayoutItem.h>
 #include <InterfaceDefs.h>
+#include <Catalog.h>
+
+#undef B_TRANSLATION_CONTEXT
+#define B_TRANSLATION_CONTEXT "CPUView"
 
 CPUView::CPUView()
     : BView("CPUView", B_WILL_DRAW | B_PULSE_NEEDED),
@@ -25,14 +29,14 @@ void CPUView::CreateLayout()
 {
     // Create overall usage box
     BBox* overallBox = new BBox("OverallCPUBox");
-    overallBox->SetLabel("Overall CPU Usage");
+    overallBox->SetLabel(B_TRANSLATE("Overall CPU Usage"));
 
     // Create grid layout for CPU stats
     BGridLayout* grid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     grid->SetInsets(B_USE_DEFAULT_SPACING);
 
     // Add CPU usage display
-    BStringView* overallLabel = new BStringView("overall_label", "Total Usage:");
+    BStringView* overallLabel = new BStringView("overall_label", B_TRANSLATE("Total Usage:"));
     fOverallUsageValue = new BStringView("overall_value", "0.0%");
     
     grid->AddView(overallLabel, 0, 0);
@@ -43,7 +47,7 @@ void CPUView::CreateLayout()
     overallBox->SetLayout(grid);
 
     // Create graph view
-    fGraphView = new ActivityGraphView("cpu_graph", {0, 150, 0, 255});
+    fGraphView = new ActivityGraphView("cpu_graph", {0, 150, 0, 255}, B_SUCCESS_COLOR);
     fGraphView->SetExplicitMinSize(BSize(200, 80));
 
     // Main layout
@@ -56,7 +60,7 @@ void CPUView::CreateLayout()
     // Initialize system info
     system_info sysInfo;
     if (get_system_info(&sysInfo) != B_OK) {
-        fOverallUsageValue->SetText("Error fetching CPU info");
+        fOverallUsageValue->SetText(B_TRANSLATE("Error fetching CPU info"));
         return;
     }
 
@@ -66,7 +70,7 @@ void CPUView::CreateLayout()
     if (fCpuCount > 0) {
         fPreviousIdleTime = new(std::nothrow) bigtime_t[fCpuCount];
         if (!fPreviousIdleTime) {
-            fOverallUsageValue->SetText("Memory allocation failed");
+            fOverallUsageValue->SetText(B_TRANSLATE("Memory allocation failed"));
             return;
         }
         for (uint32 i = 0; i < fCpuCount; ++i) {
@@ -77,7 +81,7 @@ void CPUView::CreateLayout()
                 fPreviousIdleTime[i] = 0;
         }
     } else {
-        fOverallUsageValue->SetText("No CPU data");
+        fOverallUsageValue->SetText(B_TRANSLATE("No CPU data"));
     }
 }
 

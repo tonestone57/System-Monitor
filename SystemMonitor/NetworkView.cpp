@@ -14,6 +14,10 @@
 #include <string>
 #include <net/if.h>
 #include "ActivityGraphView.h"
+#include <Catalog.h>
+
+#undef B_TRANSLATION_CONTEXT
+#define B_TRANSLATION_CONTEXT "NetworkView"
 
 // Column identifiers
 enum {
@@ -36,7 +40,7 @@ NetworkView::NetworkView()
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
     auto* netBox = new BBox("NetworkInterfacesBox");
-    netBox->SetLabel("Network Interfaces");
+    netBox->SetLabel(B_TRANSLATE("Network Interfaces"));
 
     font_height fh;
     netBox->GetFontHeight(&fh);
@@ -51,13 +55,13 @@ NetworkView::NetworkView()
                                              B_PLAIN_BORDER, true);
 
     // Setup columns
-    fInterfaceListView->AddColumn(new BStringColumn("Name", 100, 50, 200, B_TRUNCATE_END), kInterfaceNameColumn);
-    fInterfaceListView->AddColumn(new BStringColumn("Type", 80, 40, 150, B_TRUNCATE_END), kInterfaceTypeColumn);
-    fInterfaceListView->AddColumn(new BStringColumn("Address", 120, 50, 300, B_TRUNCATE_END), kInterfaceAddressColumn);
-    fInterfaceListView->AddColumn(new BStringColumn("Sent", 90, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kBytesSentColumn);
-    fInterfaceListView->AddColumn(new BStringColumn("Recv", 90, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kBytesRecvColumn);
-    fInterfaceListView->AddColumn(new BStringColumn("TX Speed", 90, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kSendSpeedColumn);
-    fInterfaceListView->AddColumn(new BStringColumn("RX Speed", 90, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kRecvSpeedColumn);
+    fInterfaceListView->AddColumn(new BStringColumn(B_TRANSLATE("Name"), 100, 50, 200, B_TRUNCATE_END), kInterfaceNameColumn);
+    fInterfaceListView->AddColumn(new BStringColumn(B_TRANSLATE("Type"), 80, 40, 150, B_TRUNCATE_END), kInterfaceTypeColumn);
+    fInterfaceListView->AddColumn(new BStringColumn(B_TRANSLATE("Address"), 120, 50, 300, B_TRUNCATE_END), kInterfaceAddressColumn);
+    fInterfaceListView->AddColumn(new BStringColumn(B_TRANSLATE("Sent"), 90, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kBytesSentColumn);
+    fInterfaceListView->AddColumn(new BStringColumn(B_TRANSLATE("Recv"), 90, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kBytesRecvColumn);
+    fInterfaceListView->AddColumn(new BStringColumn(B_TRANSLATE("TX Speed"), 90, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kSendSpeedColumn);
+    fInterfaceListView->AddColumn(new BStringColumn(B_TRANSLATE("RX Speed"), 90, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kRecvSpeedColumn);
 
     fInterfaceListView->SetSortColumn(fInterfaceListView->ColumnAt(kInterfaceNameColumn), true, true);
 
@@ -66,8 +70,8 @@ NetworkView::NetworkView()
                    B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
         .Add(fInterfaceListView);
 
-    fDownloadGraph = new ActivityGraphView("download_graph", (rgb_color){80, 80, 255, 255});
-    fUploadGraph = new ActivityGraphView("upload_graph", (rgb_color){255, 80, 80, 255});
+    fDownloadGraph = new ActivityGraphView("download_graph", {0, 0, 0, 0}, B_MENU_SELECTION_BACKGROUND_COLOR);
+    fUploadGraph = new ActivityGraphView("upload_graph", {0, 0, 0, 0}, B_FAILURE_COLOR);
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
         .SetInsets(B_USE_DEFAULT_SPACING)
@@ -110,9 +114,9 @@ void NetworkView::UpdateData()
 
         BString typeStr = "Ethernet";
         if (interface.Flags() & IFF_LOOPBACK) {
-            typeStr = "Loopback";
+            typeStr = B_TRANSLATE("Loopback");
         } else if (interface.Flags() & IFF_POINTOPOINT) {
-            typeStr = "Point-to-Point";
+            typeStr = B_TRANSLATE("Point-to-Point");
         }
 
         BString addressStr = "N/A";

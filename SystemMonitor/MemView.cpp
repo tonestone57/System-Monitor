@@ -12,6 +12,10 @@
 #include <InterfaceDefs.h>
 #include <LayoutBuilder.h>
 #include <Font.h>
+#include <Catalog.h>
+
+#undef B_TRANSLATION_CONTEXT
+#define B_TRANSLATION_CONTEXT "MemView"
 
 
 // MemView Implementation
@@ -23,17 +27,17 @@ MemView::MemView()
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
     BBox* statsBox = new BBox("MemoryStatsBox");
-    statsBox->SetLabel("Memory Statistics");
+    statsBox->SetLabel(B_TRANSLATE("Memory Statistics"));
 
     BGridLayout* gridLayout = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     
-    fTotalMemLabel = new BStringView("total_mem_label", "Total Memory:");
+    fTotalMemLabel = new BStringView("total_mem_label", B_TRANSLATE("Total Memory:"));
     fTotalMemValue = new BStringView("total_mem_value", "N/A");
-    fUsedMemLabel = new BStringView("used_mem_label", "Used Memory:");
+    fUsedMemLabel = new BStringView("used_mem_label", B_TRANSLATE("Used Memory:"));
     fUsedMemValue = new BStringView("used_mem_value", "N/A");
-    fFreeMemLabel = new BStringView("free_mem_label", "Free Memory:");
+    fFreeMemLabel = new BStringView("free_mem_label", B_TRANSLATE("Free Memory:"));
     fFreeMemValue = new BStringView("free_mem_value", "N/A");
-    fCachedMemLabel = new BStringView("cached_mem_label", "Cached Memory:");
+    fCachedMemLabel = new BStringView("cached_mem_label", B_TRANSLATE("Cached Memory:"));
     fCachedMemValue = new BStringView("cached_mem_value", "N/A");
 
     BLayoutBuilder::Grid<>(gridLayout)
@@ -57,7 +61,7 @@ MemView::MemView()
     gridLayout->SetColumnWeight(2, 1.0f);
     statsBox->SetLayout(gridLayout);
 
-    fCacheGraphView = new ActivityGraphView("cacheGraph", (rgb_color){0, 128, 255, 255});
+    fCacheGraphView = new ActivityGraphView("cacheGraph", {0, 0, 0, 0}, B_MENU_SELECTION_BACKGROUND_COLOR);
     fCacheGraphView->SetExplicitMinSize(BSize(0, 60));
     fCacheGraphView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 100));
 
@@ -113,10 +117,10 @@ void MemView::UpdateData()
         }
 
     } else {
-        fTotalMemValue->SetText("Error");
-        fUsedMemValue->SetText("Error");
-        fFreeMemValue->SetText("Error");
-        fCachedMemValue->SetText("Error");
+        fTotalMemValue->SetText(B_TRANSLATE("Error"));
+        fUsedMemValue->SetText(B_TRANSLATE("Error"));
+        fFreeMemValue->SetText(B_TRANSLATE("Error"));
+        fCachedMemValue->SetText(B_TRANSLATE("Error"));
     }
 
     fLocker.Unlock();

@@ -5,6 +5,8 @@
 #include <Locker.h>
 #include <String.h>
 #include <PopUpMenu.h>
+#include <TextControl.h>
+#include <Message.h>
 #include <map>
 #include <vector>
 #include <kernel/OS.h>
@@ -12,6 +14,7 @@
 class BColumnListView;
 class BMenuItem;
 class BRow;
+class BColumn;
 
 #include <kernel/OS.h>
 
@@ -29,6 +32,7 @@ struct ProcessInfo {
 
 
 const uint32 MSG_PROCESS_DATA_UPDATE = 'pdup';
+const uint32 MSG_SEARCH_UPDATED = 'srch';
 
 
 class ProcessView : public BView {
@@ -39,6 +43,9 @@ public:
     virtual void AttachedToWindow();
     virtual void DetachedFromWindow();
     virtual void MessageReceived(BMessage* message);
+
+    void SaveState(BMessage& state);
+    void LoadState(const BMessage& state);
 
 private:
     static int32 UpdateThread(void* data);
@@ -51,12 +58,21 @@ private:
     
     BColumnListView* fProcessListView;
     BPopUpMenu* fContextMenu;
+    BTextControl* fSearchControl;
+
+    BColumn* fPIDColumn;
+    BColumn* fNameColumn;
+    BColumn* fCPUColumn;
+    BColumn* fMemColumn;
+    BColumn* fThreadsColumn;
+    BColumn* fUserColumn;
     
     std::map<thread_id, bigtime_t> fThreadTimeMap;
 	std::map<team_id, BRow*> fTeamRowMap;
     bigtime_t fLastSystemTime;
     
     thread_id fUpdateThread;
+    sem_id fQuitSem;
     volatile bool fTerminated;
 };
 
