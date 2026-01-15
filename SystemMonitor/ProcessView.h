@@ -23,6 +23,7 @@ struct ProcessInfo {
     char name[B_OS_NAME_LENGTH];
     char path[B_PATH_NAME_LENGTH];
     char userName[B_OS_NAME_LENGTH];
+    char state[32];
     uint32 threadCount;
     uint32 areaCount;
     uid_t userID;
@@ -62,6 +63,7 @@ private:
 
     BColumn* fPIDColumn;
     BColumn* fNameColumn;
+    BColumn* fStateColumn;
     BColumn* fCPUColumn;
     BColumn* fMemColumn;
     BColumn* fThreadsColumn;

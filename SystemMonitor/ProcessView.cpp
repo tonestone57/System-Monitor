@@ -65,6 +65,7 @@ public:
 enum {
     kPIDColumn,
     kProcessNameColumn,
+    kStateColumn,
     kCPUUsageColumn,
     kMemoryUsageColumn,
     kThreadCountColumn,
@@ -96,6 +97,9 @@ ProcessView::ProcessView()
 
     fNameColumn = new BStringColumn(B_TRANSLATE("Name"), 180, 50, 500, B_TRUNCATE_END);
     fProcessListView->AddColumn(fNameColumn, kProcessNameColumn);
+
+    fStateColumn = new BStringColumn(B_TRANSLATE("State"), 80, 40, 150, B_TRUNCATE_END);
+    fProcessListView->AddColumn(fStateColumn, kStateColumn);
 
     fCPUColumn = new BCPUColumn(B_TRANSLATE("CPU %"), 90, 50, 120, B_TRUNCATE_END, B_ALIGN_RIGHT);
     fProcessListView->AddColumn(fCPUColumn, kCPUUsageColumn);
@@ -166,6 +170,7 @@ void ProcessView::MessageReceived(BMessage* message)
             break;
         case MSG_SEARCH_UPDATED:
             // Release the semaphore to wake up the thread immediately
+            // This triggers an immediate refresh cycle
             release_sem(fQuitSem);
             break;
         default:
@@ -248,6 +253,7 @@ void ProcessView::Update(BMessage* message)
                 row = new BRow();
                 row->SetField(new BIntegerField(info->id), kPIDColumn);
                 row->SetField(new BStringField(info->name), kProcessNameColumn);
+                row->SetField(new BStringField(B_TRANSLATE(info->state)), kStateColumn);
                 char cpuStr[16];
                 snprintf(cpuStr, sizeof(cpuStr), "%.1f", info->cpuUsage);
                 row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
@@ -263,6 +269,7 @@ void ProcessView::Update(BMessage* message)
                 }
 
                 row->SetField(new BStringField(info->name), kProcessNameColumn);
+                row->SetField(new BStringField(B_TRANSLATE(info->state)), kStateColumn);
                 char cpuStr[16];
                 snprintf(cpuStr, sizeof(cpuStr), "%.1f", info->cpuUsage);
                 row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
@@ -281,6 +288,7 @@ void ProcessView::Update(BMessage* message)
 			BRow* row = it->second;
             if (fProcessListView->HasRow(row))
 			    fProcessListView->RemoveRow(row);
+
 			delete row;
 			it = fTeamRowMap.erase(it);
 		} else {
@@ -336,9 +344,16 @@ int32 ProcessView::UpdateThread(void* data)
             thread_info tInfo;
             bigtime_t teamActiveTimeDelta = 0;
 
+            bool isRunning = false;
+            bool isReady = false;
+
             while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
 				activeThreads.insert(tInfo.thread);
                 bigtime_t threadTime = tInfo.user_time + tInfo.kernel_time;
+
+                if (tInfo.state == B_THREAD_RUNNING) isRunning = true;
+                if (tInfo.state == B_THREAD_READY) isReady = true;
+
                 if (view->fThreadTimeMap.count(tInfo.thread)) {
                     bigtime_t threadTimeDelta = threadTime - view->fThreadTimeMap[tInfo.thread];
                     if (threadTimeDelta < 0) threadTimeDelta = 0;
@@ -349,6 +364,10 @@ int32 ProcessView::UpdateThread(void* data)
                 }
                 view->fThreadTimeMap[tInfo.thread] = threadTime;
             }
+
+            if (isRunning) strncpy(currentProc.state, "Running", sizeof(currentProc.state));
+            else if (isReady) strncpy(currentProc.state, "Ready", sizeof(currentProc.state));
+            else strncpy(currentProc.state, "Sleeping", sizeof(currentProc.state));
 
             float teamCpuPercent = (float)teamActiveTimeDelta / totalPossibleCoreTime * 100.0f;
             if (teamCpuPercent < 0.0f) teamCpuPercent = 0.0f;
@@ -391,6 +410,7 @@ void ProcessView::SaveState(BMessage& state)
             const char* id = "unknown";
             if (col == fPIDColumn) id = "pid";
             else if (col == fNameColumn) id = "name";
+            else if (col == fStateColumn) id = "state";
             else if (col == fCPUColumn) id = "cpu";
             else if (col == fMemColumn) id = "mem";
             else if (col == fThreadsColumn) id = "threads";
@@ -404,29 +424,6 @@ void ProcessView::SaveState(BMessage& state)
             BString visibleKey = "visible_"; visibleKey << id;
             state.AddBool(visibleKey.String(), col->IsVisible());
         }
-
-        // Save sort state (Standard Haiku API allows getting sort mode usually)
-        // If SortMode() / SortColumn() are available
-        // Note: BColumnListView doesn't declare SortMode() public in some older headers,
-        // but let's try assuming standard usage.
-        // Actually, we can assume the sort column is one of ours.
-        // However, without getters, we can't save sort state safely.
-        // But since the review blocked on "Persistence Bugs", and order is fixed by keys,
-        // omitting sort is better than breaking build.
-        // I'll add a comment.
-        /*
-        BColumn* sortCol = fProcessListView->SortColumn();
-        if (sortCol) {
-            const char* id = "unknown";
-            if (sortCol == fPIDColumn) id = "pid";
-            else if (sortCol == fNameColumn) id = "name";
-            else if (sortCol == fCPUColumn) id = "cpu";
-            else if (sortCol == fMemColumn) id = "mem";
-            else if (sortCol == fThreadsColumn) id = "threads";
-            else if (sortCol == fUserColumn) id = "user";
-            state.AddString("sort_col", id);
-        }
-        */
     }
 }
 
@@ -440,6 +437,7 @@ void ProcessView::LoadState(const BMessage& state)
             BColumn* col = NULL;
             if (id == "pid") col = fPIDColumn;
             else if (id == "name") col = fNameColumn;
+            else if (id == "state") col = fStateColumn;
             else if (id == "cpu") col = fCPUColumn;
             else if (id == "mem") col = fMemColumn;
             else if (id == "threads") col = fThreadsColumn;
@@ -461,7 +459,5 @@ void ProcessView::LoadState(const BMessage& state)
             }
             index++;
         }
-
-        // Restore sort (if saved)
     }
 }

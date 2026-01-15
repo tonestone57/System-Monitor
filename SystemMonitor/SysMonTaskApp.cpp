@@ -14,6 +14,10 @@
 #include <FindDirectory.h>
 #include <Path.h>
 #include <Catalog.h>
+#include <MenuBar.h>
+#include <Menu.h>
+#include <MenuItem.h>
+#include <AboutWindow.h>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "SysMonTaskApp"
@@ -29,6 +33,8 @@
 
 // Forward declaration
 class MainWindow;
+
+const uint32 MSG_ABOUT_REQUESTED = 'abou';
 
 class SysMonTaskApp : public BApplication {
 public:
@@ -185,6 +191,15 @@ MainWindow::MainWindow(BRect frame)
               B_QUIT_ON_WINDOW_CLOSE | B_AUTO_UPDATE_SIZE_LIMITS),
       fCurrentViewIndex(0) {
 
+    // Create Menu Bar
+    BMenuBar* menuBar = new BMenuBar("MenuBar");
+    BMenu* appMenu = new BMenu(B_TRANSLATE("App"));
+    BMenuItem* aboutItem = new BMenuItem(B_TRANSLATE("About"), new BMessage(MSG_ABOUT_REQUESTED));
+    appMenu->AddItem(aboutItem);
+    appMenu->AddSeparatorItem();
+    appMenu->AddItem(new BMenuItem(B_TRANSLATE("Quit"), new BMessage(B_QUIT_REQUESTED), 'Q'));
+    menuBar->AddItem(appMenu);
+
     // Create button bar
     fPerformanceButton = new BButton("Performance", B_TRANSLATE("Performance"), new BMessage(MSG_SWITCH_TO_PERFORMANCE));
     fProcessesButton = new BButton("Processes", B_TRANSLATE("Processes"), new BMessage(MSG_SWITCH_TO_PROCESSES));
@@ -216,14 +231,17 @@ MainWindow::MainWindow(BRect frame)
     
     // Set up main window layout
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
-        .SetInsets(5)
-        .AddGroup(B_HORIZONTAL, 5)
-            .Add(fPerformanceButton)
-            .Add(fProcessesButton) 
-            .Add(fSystemButton)
-            .AddGlue()
+        .Add(menuBar)
+        .AddGroup(B_VERTICAL, 0)
+            .SetInsets(5)
+            .AddGroup(B_HORIZONTAL, 5)
+                .Add(fPerformanceButton)
+                .Add(fProcessesButton)
+                .Add(fSystemButton)
+                .AddGlue()
+            .End()
+            .Add(fCardLayout)
         .End()
-        .Add(fCardLayout)
     .End();
     
     // Configure window
@@ -256,6 +274,14 @@ void MainWindow::MessageReceived(BMessage* message) {
             
         case MSG_SWITCH_TO_SYSTEM:
             SwitchToView(2);
+            break;
+        case MSG_ABOUT_REQUESTED:
+            {
+                BAboutWindow* about = new BAboutWindow(B_TRANSLATE("SysMonTask"), "application/x-vnd.HaikuSysMonTask");
+                about->AddDescription(B_TRANSLATE("A comprehensive system monitor for Haiku."));
+                about->AddCopyright(2023, "Haiku Archives");
+                about->Show();
+            }
             break;
             
         default:

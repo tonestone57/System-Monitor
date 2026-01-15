@@ -112,11 +112,13 @@ void NetworkView::UpdateData()
         BString name(interface.Name());
 		activeInterfaces.insert(name.String());
 
-        BString typeStr = "Ethernet";
+        BString typeStr = B_TRANSLATE("Ethernet");
         if (interface.Flags() & IFF_LOOPBACK) {
             typeStr = B_TRANSLATE("Loopback");
         } else if (interface.Flags() & IFF_POINTOPOINT) {
             typeStr = B_TRANSLATE("Point-to-Point");
+        } else if (interface.IsWireless()) {
+             typeStr = B_TRANSLATE("Wireless");
         }
 
         BString addressStr = "N/A";
