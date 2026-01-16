@@ -27,6 +27,11 @@ private:
     
     BStringView* fOverallUsageValue;
     ActivityGraphView* fGraphView;
+
+    BStringView* fSpeedValue;
+    BStringView* fProcessesValue;
+    BStringView* fThreadsValue;
+    BStringView* fUptimeValue;
     
     bigtime_t* fPreviousIdleTime;
     uint32 fCpuCount;

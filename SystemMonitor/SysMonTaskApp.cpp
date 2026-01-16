@@ -88,18 +88,33 @@ public:
         SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
         fCpuGraph = new ActivityGraphView("cpu_summary_graph", {0, 0, 0, 0}, B_SUCCESS_COLOR);
+        fCpuGraph->SetExplicitMinSize(BSize(B_SIZE_UNSET, 60));
         fMemGraph = new ActivityGraphView("mem_summary_graph", {0, 0, 0, 0}, B_MENU_SELECTION_BACKGROUND_COLOR);
+        fMemGraph->SetExplicitMinSize(BSize(B_SIZE_UNSET, 60));
         fNetGraph = new ActivityGraphView("net_summary_graph", {0, 0, 0, 0}, B_FAILURE_COLOR);
+        fNetGraph->SetExplicitMinSize(BSize(B_SIZE_UNSET, 60));
 
         BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
             .SetInsets(B_USE_DEFAULT_SPACING)
-            .Add(new BStringView("cpu_label", B_TRANSLATE("CPU Usage")))
-            .Add(fCpuGraph)
-            .Add(new BStringView("mem_label", B_TRANSLATE("Memory Usage")))
-            .Add(fMemGraph)
-            .Add(new BStringView("net_label", B_TRANSLATE("Network Usage")))
-            .Add(fNetGraph)
+            .Add(_CreateCard(B_TRANSLATE("CPU"), fCpuGraph))
+            .Add(_CreateCard(B_TRANSLATE("Memory"), fMemGraph))
+            .Add(_CreateCard(B_TRANSLATE("Network"), fNetGraph))
             .AddGlue();
+    }
+
+private:
+    BView* _CreateCard(const char* label, BView* content) {
+        BBox* card = new BBox(B_FANCY_BORDER, NULL);
+        BStringView* labelView = new BStringView(NULL, label);
+        BFont font(be_bold_font);
+        labelView->SetFont(&font);
+
+        BLayoutBuilder::Group<>(card, B_VERTICAL, 0)
+            .SetInsets(B_USE_DEFAULT_SPACING / 2)
+            .Add(labelView)
+            .AddStrut(5)
+            .Add(content);
+        return card;
     }
 
     virtual void Pulse() {

@@ -10,6 +10,7 @@
 #include <SpaceLayoutItem.h>
 #include <InterfaceDefs.h>
 #include <Catalog.h>
+#include "Utils.h"
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "CPUView"
@@ -19,7 +20,11 @@ CPUView::CPUView()
       fPreviousIdleTime(nullptr),
       fCpuCount(0),
       fPreviousTimeSnapshot(0),
-      fCurrentUsage(0.0f)
+      fCurrentUsage(0.0f),
+      fSpeedValue(NULL),
+      fProcessesValue(NULL),
+      fThreadsValue(NULL),
+      fUptimeValue(NULL)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     CreateLayout();
@@ -27,34 +32,58 @@ CPUView::CPUView()
 
 void CPUView::CreateLayout()
 {
-    // Create overall usage box
-    BBox* overallBox = new BBox("OverallCPUBox");
-    overallBox->SetLabel(B_TRANSLATE("Overall CPU Usage"));
-
-    // Create grid layout for CPU stats
-    BGridLayout* grid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    grid->SetInsets(B_USE_DEFAULT_SPACING);
-
-    // Add CPU usage display
-    BStringView* overallLabel = new BStringView("overall_label", B_TRANSLATE("Total Usage:"));
-    fOverallUsageValue = new BStringView("overall_value", "0.0%");
-    
-    grid->AddView(overallLabel, 0, 0);
-    grid->AddView(fOverallUsageValue, 1, 0);
-    grid->AddItem(BSpaceLayoutItem::CreateGlue(), 2, 0);
-    grid->SetColumnWeight(2, 1.0f);
-    
-    overallBox->SetLayout(grid);
-
     // Create graph view
     fGraphView = new ActivityGraphView("cpu_graph", {0, 150, 0, 255}, B_SUCCESS_COLOR);
-    fGraphView->SetExplicitMinSize(BSize(200, 80));
+    fGraphView->SetExplicitMinSize(BSize(200, 150));
+
+    // Info Grid
+    BGridLayout* infoGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+    infoGrid->SetInsets(0, B_USE_DEFAULT_SPACING, 0, 0);
+
+    // Row 0 Labels
+    infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Utilization")), 0, 0);
+    infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Speed")), 1, 0);
+    
+    // Row 1 Values
+    fOverallUsageValue = new BStringView("overall_value", "0.0%");
+    BFont bigFont(be_bold_font);
+    bigFont.SetSize(bigFont.Size() * 1.2);
+    fOverallUsageValue->SetFont(&bigFont);
+    infoGrid->AddView(fOverallUsageValue, 0, 1);
+
+    fSpeedValue = new BStringView("speed", "0.00 GHz");
+    fSpeedValue->SetFont(&bigFont);
+    infoGrid->AddView(fSpeedValue, 1, 1);
+
+    // Row 2 Labels
+    infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Processes")), 0, 2);
+    infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Threads")), 1, 2);
+
+    // Row 3 Values
+    fProcessesValue = new BStringView("procs", "0");
+    fProcessesValue->SetFont(&bigFont);
+    infoGrid->AddView(fProcessesValue, 0, 3);
+
+    fThreadsValue = new BStringView("threads", "0");
+    fThreadsValue->SetFont(&bigFont);
+    infoGrid->AddView(fThreadsValue, 1, 3);
+
+    // Row 4 Labels
+    infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Up time")), 1, 4);
+
+    // Row 5 Values
+    fUptimeValue = new BStringView("uptime", "0:00:00:00");
+    fUptimeValue->SetFont(&bigFont);
+    infoGrid->AddView(fUptimeValue, 1, 5);
+
+    infoGrid->SetColumnWeight(0, 1.0f);
+    infoGrid->SetColumnWeight(1, 1.0f);
 
     // Main layout
     BLayoutBuilder::Group<>(this, B_VERTICAL)
         .SetInsets(B_USE_DEFAULT_SPACING)
-        .Add(overallBox)
         .Add(fGraphView)
+        .Add(infoGrid)
         .AddGlue();
 
     // Initialize system info
@@ -155,6 +184,40 @@ void CPUView::UpdateData()
 
     if (fGraphView && overallUsage >= 0)
         fGraphView->AddValue(system_time(), overallUsage);
+
+    // Update Info
+    system_info sysInfo;
+    if (get_system_info(&sysInfo) == B_OK) {
+        BString procStr; procStr << sysInfo.used_teams;
+        fProcessesValue->SetText(procStr.String());
+
+        BString threadStr; threadStr << sysInfo.used_threads;
+        fThreadsValue->SetText(threadStr.String());
+
+        fUptimeValue->SetText(::FormatUptime(system_time()).String());
+
+        // Speed
+        cpu_topology_node_info* topology = NULL;
+        uint32_t topologyNodeCount = 0;
+        if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
+             topology = new(std::nothrow) cpu_topology_node_info[topologyNodeCount];
+             if (topology) {
+                 uint32_t actualCount = topologyNodeCount;
+                 if (get_cpu_topology_info(topology, &actualCount) == B_OK) {
+                     uint64 maxFreq = 0;
+                     for (uint32 i = 0; i < actualCount; i++) {
+                         if (topology[i].type == B_TOPOLOGY_CORE) {
+                             if (topology[i].data.core.default_frequency > maxFreq)
+                                 maxFreq = topology[i].data.core.default_frequency;
+                         }
+                     }
+                     if (maxFreq > 0)
+                         fSpeedValue->SetText(::FormatHertz(maxFreq).String());
+                 }
+                 delete[] topology;
+             }
+        }
+    }
 
     fCurrentUsage = overallUsage;
     fLocker.Unlock();
