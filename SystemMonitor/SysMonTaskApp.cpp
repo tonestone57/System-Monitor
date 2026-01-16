@@ -225,7 +225,7 @@ private:
 
 MainWindow::MainWindow(BRect frame)
     : BWindow(frame, B_TRANSLATE("SysMonTask - Haiku System Monitor"), B_TITLED_WINDOW,
-              B_QUIT_ON_WINDOW_CLOSE | B_AUTO_UPDATE_SIZE_LIMITS),
+              B_QUIT_ON_WINDOW_CLOSE),
       fCurrentViewIndex(0) {
 
     // Create Menu Bar

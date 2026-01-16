@@ -47,12 +47,20 @@ static const char *kFeatures[32] = {
 };
 
 /* CPU Extended features */
-static const char *kExtendedFeatures[36] = {
+static const char *kExtendedFeatures[32] = {
     "SSE3", "PCLMULDQ", "DTES64", "MONITOR", "DS-CPL", "VMX", "SMX", "EST",
     "TM2", "SSSE3", "CNTXT-ID", "SDBG", "FMA", "CX16", "xTPR", "PDCM",
     NULL, "PCID", "DCA", "SSE4.1", "SSE4.2", "x2APIC", "MOVEB", "POPCNT",
     "TSC-DEADLINE", "AES", "XSAVE", "OSXSAVE", "AVX", "F16C", "RDRND",
-    "HYPERVISOR", "AVX2", "AVX512F", "AVX512DQ", "AVX512VL"
+    "HYPERVISOR"
+};
+
+/* Leaf 7, subleaf 0, EBX */
+static const char *kLeaf7Features[32] = {
+    "FSGSBASE", NULL, NULL, "BMI1", NULL, "AVX2", NULL, "SMEP",
+    "BMI2", "ERMS", "INVPCID", NULL, NULL, NULL, NULL, NULL,
+    "AVX512F", "AVX512DQ", "RDSEED", "ADX", "SMAP", NULL, NULL, "CLFLUSHOPT",
+    NULL, NULL, NULL, NULL, "AVX512CD", "SHA", "AVX512BW", "AVX512VL"
 };
 
 /* AMD Extended features leaf 0x80000001 */
@@ -319,6 +327,19 @@ SysInfoView::_GetCPUFeaturesString()
                 if (features.Length() > 0)
                     features << " ";
                 features << kAMDExtFeatures[i];
+            }
+        }
+    }
+
+    // Leaf 7 features
+    if (__get_cpuid_max(0, NULL) >= 7) {
+        if (__get_cpuid_count(7, 0, &eax, &ebx, &ecx, &edx) == 1) {
+            for (int i = 0; i < 32; i++) {
+                if ((ebx & (1 << i)) && kLeaf7Features[i]) {
+                    if (features.Length() > 0)
+                        features << " ";
+                    features << kLeaf7Features[i];
+                }
             }
         }
     }
