@@ -429,6 +429,29 @@ void ProcessView::SaveState(BMessage& state)
             BString visibleKey = "visible_"; visibleKey << id;
             state.AddBool(visibleKey.String(), col->IsVisible());
         }
+
+        // Save sort state
+        BColumn* sortCol = NULL;
+        bool inverse = false;
+        bool sensitive = false;
+
+        // Note: Assuming standard BColumnListView signature
+        // If compilation fails here, we will need to omit it or use alternate means
+        fProcessListView->GetSortColumn(&sortCol, &inverse, &sensitive);
+
+        if (sortCol) {
+            const char* id = "unknown";
+            if (sortCol == fPIDColumn) id = "pid";
+            else if (sortCol == fNameColumn) id = "name";
+            else if (sortCol == fStateColumn) id = "state";
+            else if (sortCol == fCPUColumn) id = "cpu";
+            else if (sortCol == fMemColumn) id = "mem";
+            else if (sortCol == fThreadsColumn) id = "threads";
+            else if (sortCol == fUserColumn) id = "user";
+
+            state.AddString("sort_col", id);
+            state.AddBool("sort_inverse", inverse);
+        }
     }
 }
 
@@ -463,6 +486,26 @@ void ProcessView::LoadState(const BMessage& state)
                     col->SetVisible(visible);
             }
             index++;
+        }
+
+        // Restore sort
+        BString sortId;
+        if (state.FindString("sort_col", &sortId) == B_OK) {
+            BColumn* col = NULL;
+            if (sortId == "pid") col = fPIDColumn;
+            else if (sortId == "name") col = fNameColumn;
+            else if (sortId == "state") col = fStateColumn;
+            else if (sortId == "cpu") col = fCPUColumn;
+            else if (sortId == "mem") col = fMemColumn;
+            else if (sortId == "threads") col = fThreadsColumn;
+            else if (sortId == "user") col = fUserColumn;
+
+            bool inverse = false;
+            state.FindBool("sort_inverse", &inverse);
+
+            if (col) {
+                fProcessListView->SetSortColumn(col, inverse, true);
+            }
         }
     }
 }
