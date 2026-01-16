@@ -131,7 +131,7 @@ ProcessView::ProcessView()
     fNameColumn = new BStringColumn(B_TRANSLATE("Name"), 180, 50, 500, B_TRUNCATE_END);
     fProcessListView->AddColumn(fNameColumn, kProcessNameColumn);
 
-    fCPUColumn = new BCPUColumn(B_TRANSLATE("CPU %"), 90, 50, 120, B_TRUNCATE_END, B_ALIGN_RIGHT);
+    fCPUColumn = new BCPUColumn(B_TRANSLATE("Total CPU %"), 90, 50, 120, B_TRUNCATE_END, B_ALIGN_RIGHT);
     fProcessListView->AddColumn(fCPUColumn, kCPUUsageColumn);
 
     fMemColumn = new BMemoryColumn(B_TRANSLATE("Memory"), 100, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT);
@@ -351,7 +351,7 @@ int32 ProcessView::UpdateThread(void* data)
 
         system_info sysInfo;
         get_system_info(&sysInfo);
-        float totalPossibleCoreTime = systemTimeDelta;
+        float totalPossibleCoreTime = sysInfo.cpu_count * systemTimeDelta;
         if (totalPossibleCoreTime <= 0) totalPossibleCoreTime = 1.0f;
 
         int32 cookie = 0;
@@ -409,7 +409,7 @@ int32 ProcessView::UpdateThread(void* data)
 
             float teamCpuPercent = (float)teamActiveTimeDelta / totalPossibleCoreTime * 100.0f;
             if (teamCpuPercent < 0.0f) teamCpuPercent = 0.0f;
-            if (teamCpuPercent > 100.0f * sysInfo.cpu_count) teamCpuPercent = 100.0f * sysInfo.cpu_count;
+            if (teamCpuPercent > 100.0f) teamCpuPercent = 100.0f;
             currentProc.cpuUsage = teamCpuPercent;
 
             currentProc.memoryUsageBytes = 0;
