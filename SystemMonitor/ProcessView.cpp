@@ -62,6 +62,35 @@ public:
     }
 };
 
+class ProcessListView : public BColumnListView {
+public:
+    ProcessListView(BRect rect, const char* name, uint32 resizingMode, uint32 flags,
+        border_style border = B_NO_BORDER, bool showHorizontalScrollbar = true)
+        : BColumnListView(rect, name, resizingMode, flags, border, showHorizontalScrollbar),
+          fSortColumn(NULL),
+          fSortInverse(false)
+    {
+    }
+
+    virtual void SetSortColumn(BColumn* column, bool add, bool inverse) {
+        if (!add) {
+            fSortColumn = column;
+            fSortInverse = inverse;
+        }
+        BColumnListView::SetSortColumn(column, add, inverse);
+    }
+
+    void GetSortColumn(BColumn** column, bool* inverse, bool* sensitive) {
+        if (column) *column = fSortColumn;
+        if (inverse) *inverse = fSortInverse;
+        if (sensitive) *sensitive = true;
+    }
+
+private:
+    BColumn* fSortColumn;
+    bool fSortInverse;
+};
+
 enum {
     kPIDColumn,
     kProcessNameColumn,
@@ -87,7 +116,7 @@ ProcessView::ProcessView()
     fSearchControl = new BTextControl("Search", B_TRANSLATE("Search:"), "", new BMessage(MSG_SEARCH_UPDATED));
     fSearchControl->SetModificationMessage(new BMessage(MSG_SEARCH_UPDATED));
 
-    fProcessListView = new BColumnListView(Bounds(), "process_clv",
+    fProcessListView = new ProcessListView(Bounds(), "process_clv",
                                            B_FOLLOW_ALL_SIDES,
                                            B_WILL_DRAW | B_NAVIGABLE,
                                            B_PLAIN_BORDER, true);
@@ -113,7 +142,7 @@ ProcessView::ProcessView()
     fUserColumn = new BStringColumn(B_TRANSLATE("User"), 80, 40, 150, B_TRUNCATE_END);
     fProcessListView->AddColumn(fUserColumn, kUserNameColumn);
 
-    fProcessListView->SetSortColumn(fCPUColumn, false, false);
+    ((ProcessListView*)fProcessListView)->SetSortColumn(fCPUColumn, false, false);
 
     fContextMenu = new BPopUpMenu("ProcessContext", false, false);
     fContextMenu->AddItem(new BMenuItem(B_TRANSLATE("Kill Process"), new BMessage(MSG_KILL_PROCESS)));
@@ -437,7 +466,7 @@ void ProcessView::SaveState(BMessage& state)
 
         // Note: Assuming standard BColumnListView signature
         // If compilation fails here, we will need to omit it or use alternate means
-        fProcessListView->GetSortColumn(&sortCol, &inverse, &sensitive);
+        ((ProcessListView*)fProcessListView)->GetSortColumn(&sortCol, &inverse, &sensitive);
 
         if (sortCol) {
             const char* id = "unknown";
