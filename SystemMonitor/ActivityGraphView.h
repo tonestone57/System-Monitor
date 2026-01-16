@@ -12,6 +12,7 @@ public:
 	virtual				~ActivityGraphView();
 
 	virtual void		AttachedToWindow();
+	virtual void		MessageReceived(BMessage* message);
 	virtual void		FrameResized(float width, float height);
 	virtual void		Draw(BRect updateRect);
 
@@ -27,6 +28,7 @@ private:
     color_which         fSystemColor;
 	BBitmap*			fOffscreen;
 	DataHistory*		fHistory;
+	bigtime_t			fResolution;
 };
 
 #endif // ACTIVITYGRAPHVIEW_H

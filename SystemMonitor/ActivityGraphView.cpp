@@ -9,7 +9,8 @@ ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_wh
 	: BView(name, B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE),
 	fColor(color),
     fSystemColor(systemColor),
-	fOffscreen(NULL)
+	fOffscreen(NULL),
+	fResolution(1000000)
 {
 	fHistory = new DataHistory(10 * 60000000LL, 1000000);
 }
@@ -27,6 +28,30 @@ ActivityGraphView::AttachedToWindow()
 {
 	BView::AttachedToWindow();
 	FrameResized(Bounds().Width(), Bounds().Height());
+}
+
+void
+ActivityGraphView::MessageReceived(BMessage* message)
+{
+	switch (message->what) {
+		case B_MOUSE_WHEEL_CHANGED: {
+			float deltaY;
+			if (message->FindFloat("be:wheel_delta_y", &deltaY) == B_OK) {
+				if (deltaY > 0)
+					fResolution *= 2;
+				else
+					fResolution /= 2;
+
+				if (fResolution < 10000) fResolution = 10000;
+				if (fResolution > 60000000) fResolution = 60000000;
+
+				Invalidate();
+			}
+			break;
+		}
+		default:
+			BView::MessageReceived(message);
+	}
 }
 
 
@@ -109,7 +134,7 @@ ActivityGraphView::_DrawHistory()
 		uint32 steps = frame.IntegerWidth();
 		if (steps > 0) {
 			bigtime_t now = system_time();
-			bigtime_t timeStep = 1000000;
+			bigtime_t timeStep = fResolution;
 
             rgb_color drawColor = fColor;
             if (fSystemColor != (color_which)-1) {
