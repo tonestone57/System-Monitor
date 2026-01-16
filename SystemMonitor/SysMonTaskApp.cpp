@@ -17,7 +17,10 @@
 #include <MenuBar.h>
 #include <Menu.h>
 #include <MenuItem.h>
-#include <AboutWindow.h>
+#include <StringView.h>
+#include <String.h>
+#include <Font.h>
+#include <Rect.h>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "SysMonTaskApp"
@@ -35,6 +38,40 @@
 class MainWindow;
 
 const uint32 MSG_ABOUT_REQUESTED = 'abou';
+
+class AboutWindow : public BWindow {
+public:
+    AboutWindow()
+        : BWindow(BRect(0, 0, 300, 200), B_TRANSLATE("About SysMonTask"),
+                  B_TITLED_WINDOW, B_NOT_RESIZABLE | B_NOT_ZOOMABLE | B_AUTO_UPDATE_SIZE_LIMITS | B_CLOSE_ON_ESCAPE)
+    {
+        BStringView* titleView = new BStringView("title", "SysMonTask");
+        BFont titleFont(be_bold_font);
+        titleFont.SetSize(titleFont.Size() * 1.5);
+        titleView->SetFont(&titleFont);
+        titleView->SetAlignment(B_ALIGN_CENTER);
+
+        BStringView* descView = new BStringView("desc", B_TRANSLATE("A comprehensive system monitor for Haiku."));
+        descView->SetAlignment(B_ALIGN_CENTER);
+
+        BStringView* copyView = new BStringView("copyright", "Copyright 2023 Haiku Archives");
+        copyView->SetAlignment(B_ALIGN_CENTER);
+
+        BButton* okButton = new BButton("ok", "OK", new BMessage(B_QUIT_REQUESTED));
+
+        BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
+            .SetInsets(B_USE_DEFAULT_SPACING)
+            .Add(titleView)
+            .AddStrut(B_USE_DEFAULT_SPACING)
+            .Add(descView)
+            .Add(copyView)
+            .AddStrut(B_USE_DEFAULT_SPACING)
+            .Add(okButton)
+            .End();
+
+        CenterOnScreen();
+    }
+};
 
 class SysMonTaskApp : public BApplication {
 public:
@@ -277,9 +314,7 @@ void MainWindow::MessageReceived(BMessage* message) {
             break;
         case MSG_ABOUT_REQUESTED:
             {
-                BAboutWindow* about = new BAboutWindow(B_TRANSLATE("SysMonTask"), "application/x-vnd.HaikuSysMonTask");
-                about->AddDescription(B_TRANSLATE("A comprehensive system monitor for Haiku."));
-                about->AddCopyright(2023, "Haiku Archives");
+                AboutWindow* about = new AboutWindow();
                 about->Show();
             }
             break;
