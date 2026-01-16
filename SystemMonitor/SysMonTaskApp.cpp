@@ -183,6 +183,8 @@ PerformanceView::PerformanceView()
         splitView->AddChild(fSummaryView);
         splitView->AddChild(fRightPane);
 
+        splitView->SetItemWeight(0, 0.25f, false);
+
         fSplitView = splitView;
 
         BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
@@ -193,8 +195,6 @@ PerformanceView::PerformanceView()
 void PerformanceView::AttachedToWindow()
 {
     BView::AttachedToWindow();
-    float leftWidth = fSplitView->Bounds().Width() * 0.25;
-    fSummaryView->SetExplicitPreferredSize(BSize(leftWidth, B_SIZE_UNSET));
 }
 
 void PerformanceView::Pulse()

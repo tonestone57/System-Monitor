@@ -26,7 +26,8 @@ private:
     void GetCPUUsage(float& overallUsage);
     
     BStringView* fOverallUsageValue;
-    ActivityGraphView* fGraphView;
+    BStringView* fModelName;
+    std::vector<ActivityGraphView*> fCoreGraphs;
 
     BStringView* fSpeedValue;
     BStringView* fProcessesValue;

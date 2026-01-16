@@ -32,19 +32,60 @@ CPUView::CPUView()
 
 void CPUView::CreateLayout()
 {
-    // Create graph view
-    fGraphView = new ActivityGraphView("cpu_graph", {0, 150, 0, 255}, B_SUCCESS_COLOR);
-    fGraphView->SetExplicitMinSize(BSize(200, 150));
+    // Initialize system info
+    system_info sysInfo;
+    if (get_system_info(&sysInfo) != B_OK) {
+        return;
+    }
+    fPreviousSysInfo = sysInfo;
+    fCpuCount = sysInfo.cpu_count;
+
+    // Header
+    BStringView* cpuLabel = new BStringView("cpu_header", "CPU");
+    BFont headerFont(be_bold_font);
+    headerFont.SetSize(headerFont.Size() * 1.5);
+    cpuLabel->SetFont(&headerFont);
+
+    fModelName = new BStringView("model_name", "Processor");
+    fModelName->SetAlignment(B_ALIGN_RIGHT);
+
+    // Utilization Header
+    BStringView* utilLabel = new BStringView("util_label", B_TRANSLATE("% Utilisation"));
+    BStringView* maxUtilLabel = new BStringView("max_util", "100%");
+    maxUtilLabel->SetAlignment(B_ALIGN_RIGHT);
+
+    // Core Graphs Grid
+    BGridLayout* graphGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+
+    if (fCpuCount > 0) {
+        fPreviousIdleTime = new(std::nothrow) bigtime_t[fCpuCount];
+        fPerCoreUsage.resize(fCpuCount, 0.0f);
+
+        int cols = ceil(sqrt((double)fCpuCount));
+        if (cols < 1) cols = 1;
+
+        for (uint32 i = 0; i < fCpuCount; ++i) {
+            ActivityGraphView* graph = new ActivityGraphView("core_graph", {0, 150, 0, 255}, B_SUCCESS_COLOR);
+            graph->SetExplicitMinSize(BSize(50, 40));
+            fCoreGraphs.push_back(graph);
+
+            graphGrid->AddView(graph, i % cols, i / cols);
+
+            cpu_info info;
+            if (get_cpu_info(i, 1, &info) == B_OK)
+                fPreviousIdleTime[i] = info.active_time;
+            else
+                fPreviousIdleTime[i] = 0;
+        }
+    }
 
     // Info Grid
     BGridLayout* infoGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
     infoGrid->SetInsets(0, B_USE_DEFAULT_SPACING, 0, 0);
 
-    // Row 0 Labels
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Utilization")), 0, 0);
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Speed")), 1, 0);
-    
-    // Row 1 Values
+
     fOverallUsageValue = new BStringView("overall_value", "0.0%");
     BFont bigFont(be_bold_font);
     bigFont.SetSize(bigFont.Size() * 1.2);
@@ -55,11 +96,9 @@ void CPUView::CreateLayout()
     fSpeedValue->SetFont(&bigFont);
     infoGrid->AddView(fSpeedValue, 1, 1);
 
-    // Row 2 Labels
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Processes")), 0, 2);
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Threads")), 1, 2);
 
-    // Row 3 Values
     fProcessesValue = new BStringView("procs", "0");
     fProcessesValue->SetFont(&bigFont);
     infoGrid->AddView(fProcessesValue, 0, 3);
@@ -68,10 +107,8 @@ void CPUView::CreateLayout()
     fThreadsValue->SetFont(&bigFont);
     infoGrid->AddView(fThreadsValue, 1, 3);
 
-    // Row 4 Labels
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Up time")), 1, 4);
 
-    // Row 5 Values
     fUptimeValue = new BStringView("uptime", "0:00:00:00");
     fUptimeValue->SetFont(&bigFont);
     infoGrid->AddView(fUptimeValue, 1, 5);
@@ -82,36 +119,19 @@ void CPUView::CreateLayout()
     // Main layout
     BLayoutBuilder::Group<>(this, B_VERTICAL)
         .SetInsets(B_USE_DEFAULT_SPACING)
-        .Add(fGraphView)
+        .AddGroup(B_HORIZONTAL)
+            .Add(cpuLabel)
+            .AddGlue()
+            .Add(fModelName)
+        .End()
+        .AddGroup(B_HORIZONTAL)
+            .Add(utilLabel)
+            .AddGlue()
+            .Add(maxUtilLabel)
+        .End()
+        .Add(graphGrid)
         .Add(infoGrid)
         .AddGlue();
-
-    // Initialize system info
-    system_info sysInfo;
-    if (get_system_info(&sysInfo) != B_OK) {
-        fOverallUsageValue->SetText(B_TRANSLATE("Error fetching CPU info"));
-        return;
-    }
-
-    fPreviousSysInfo = sysInfo;
-    fCpuCount = sysInfo.cpu_count;
-
-    if (fCpuCount > 0) {
-        fPreviousIdleTime = new(std::nothrow) bigtime_t[fCpuCount];
-        if (!fPreviousIdleTime) {
-            fOverallUsageValue->SetText(B_TRANSLATE("Memory allocation failed"));
-            return;
-        }
-        for (uint32 i = 0; i < fCpuCount; ++i) {
-            cpu_info info;
-            if (get_cpu_info(i, 1, &info) == B_OK)
-                fPreviousIdleTime[i] = info.active_time;
-            else
-                fPreviousIdleTime[i] = 0;
-        }
-    } else {
-        fOverallUsageValue->SetText(B_TRANSLATE("No CPU data"));
-    }
 }
 
 CPUView::~CPUView() {
@@ -156,6 +176,13 @@ void CPUView::GetCPUUsage(float& overallUsage)
         if (get_cpu_info(i, 1, &info) == B_OK) {
             bigtime_t delta = info.active_time - fPreviousIdleTime[i];
             if (delta < 0) delta = 0; // Handle time rollover
+
+            float coreUsage = (float)delta / elapsedWallTime * 100.0f;
+            if (coreUsage < 0.0f) coreUsage = 0.0f;
+            if (coreUsage > 100.0f) coreUsage = 100.0f;
+            if (i < fPerCoreUsage.size())
+                fPerCoreUsage[i] = coreUsage;
+
             totalDeltaActiveTime += delta;
             fPreviousIdleTime[i] = info.active_time;
         }
@@ -182,8 +209,13 @@ void CPUView::UpdateData()
         fOverallUsageValue->SetText("N/A");
     }
 
-    if (fGraphView && overallUsage >= 0)
-        fGraphView->AddValue(system_time(), overallUsage);
+    // Update core graphs
+    bigtime_t now = system_time();
+    for (size_t i = 0; i < fCoreGraphs.size(); ++i) {
+        if (i < fPerCoreUsage.size()) {
+            fCoreGraphs[i]->AddValue(now, fPerCoreUsage[i]);
+        }
+    }
 
     // Update Info
     system_info sysInfo;

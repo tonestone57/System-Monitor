@@ -13,91 +13,82 @@
 #define B_TRANSLATION_CONTEXT "GPUView"
 
 GPUView::GPUView()
-    : BView("GPUView", B_WILL_DRAW)
+    : BView("GPUView", B_WILL_DRAW | B_PULSE_NEEDED)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+    CreateLayout();
+}
 
-    BBox* monitorBox = new BBox("MonitorInfoBox");
-    monitorBox->SetLabel(B_TRANSLATE("Monitor Information"));
+void GPUView::CreateLayout()
+{
+    // Header
+    BStringView* gpuLabel = new BStringView("gpu_header", "GPU 0");
+    BFont headerFont(be_bold_font);
+    headerFont.SetSize(headerFont.Size() * 1.5);
+    gpuLabel->SetFont(&headerFont);
 
-    BGridLayout* monitorGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+    fCardNameValue = new BStringView("card_name", "Unknown GPU");
+    fCardNameValue->SetAlignment(B_ALIGN_RIGHT);
 
-    fMonitorNameLabel = new BStringView("monitor_name_label", B_TRANSLATE("Name:"));
-    fMonitorNameValue = new BStringView("monitor_name_value", "N/A");
-    fResolutionLabel = new BStringView("monitor_res_label", B_TRANSLATE("Resolution:"));
-    fResolutionValue = new BStringView("monitor_res_value", "N/A");
-    fColorDepthLabel = new BStringView("monitor_color_label", B_TRANSLATE("Color Depth:"));
-    fColorDepthValue = new BStringView("monitor_color_value", "N/A");
-    fRefreshRateLabel = new BStringView("monitor_refresh_label", B_TRANSLATE("Refresh Rate:"));
-    fRefreshRateValue = new BStringView("monitor_refresh_value", "N/A");
+    // Graph Grid (4 graphs)
+    BGridLayout* graphGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+    const char* titles[] = {"3D", "Copy", "Video Encode", "Video Decode"};
 
-    BLayoutBuilder::Grid<>(monitorGrid)
-        .SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
-        .Add(fMonitorNameLabel, 0, 0)
-        .Add(fMonitorNameValue, 1, 0)
-        .Add(BSpaceLayoutItem::CreateGlue(), 2, 0)
+    for (int i = 0; i < 4; i++) {
+        BView* container = new BView("graph_container", B_WILL_DRAW);
+        container->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
-        .Add(fResolutionLabel, 0, 1)
-        .Add(fResolutionValue, 1, 1)
-        .Add(BSpaceLayoutItem::CreateGlue(), 2, 1)
+        ActivityGraphView* graph = new ActivityGraphView("gpu_graph", {0, 0, 0, 0}, B_FAILURE_COLOR);
+        graph->SetExplicitMinSize(BSize(100, 60));
+        fGpuGraphs.push_back(graph);
 
-        .Add(fColorDepthLabel, 0, 2)
-        .Add(fColorDepthValue, 1, 2)
-        .Add(BSpaceLayoutItem::CreateGlue(), 2, 2)
+        BLayoutBuilder::Group<>(container, B_VERTICAL, 0)
+            .Add(new BStringView(NULL, titles[i]))
+            .Add(graph)
+            .End();
 
-        .Add(fRefreshRateLabel, 0, 3)
-        .Add(fRefreshRateValue, 1, 3)
-        .Add(BSpaceLayoutItem::CreateGlue(), 2, 3);
+        graphGrid->AddView(container, i % 2, i / 2);
+    }
 
-    monitorGrid->SetColumnWeight(2, 1.0f);
-    monitorBox->SetLayout(monitorGrid);
+    // Info Grid
+    BGridLayout* infoGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+    infoGrid->SetInsets(0, B_USE_DEFAULT_SPACING, 0, 0);
 
-    BBox* infoBox = new BBox("GPUInfoBox");
-    infoBox->SetLabel(B_TRANSLATE("Graphics Card Information"));
+    infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Utilization")), 0, 0);
+    infoGrid->AddView(new BStringView(NULL, "0%"), 0, 1);
 
-    BGridLayout* grid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    
-    fCardNameLabel = new BStringView("gpu_name_label", B_TRANSLATE("Card Name:"));
-    fCardNameValue = new BStringView("gpu_name_value", "N/A");
-    fChipsetLabel = new BStringView("gpu_chipset_label", B_TRANSLATE("Chipset:"));
-    fChipsetValue = new BStringView("gpu_chipset_value", "N/A");
-    fMemorySizeLabel = new BStringView("gpu_mem_label", B_TRANSLATE("Memory Size:"));
-    fMemorySizeValue = new BStringView("gpu_mem_value", "N/A");
-    fDacSpeedLabel = new BStringView("gpu_dac_label", B_TRANSLATE("DAC Speed:"));
-    fDacSpeedValue = new BStringView("gpu_dac_value", "N/A");
-    fDriverVersionLabel = new BStringView("gpu_driver_label", B_TRANSLATE("Driver API Version:"));
-    fDriverVersionValue = new BStringView("gpu_driver_value", "N/A");
+    infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("GPU Memory")), 1, 0);
+    fMemorySizeValue = new BStringView("mem_val", "N/A");
+    infoGrid->AddView(fMemorySizeValue, 1, 1);
 
-    BLayoutBuilder::Grid<>(grid)
-        .SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
-        .Add(fCardNameLabel, 0, 0)
-        .Add(fCardNameValue, 1, 0)
-        .Add(BSpaceLayoutItem::CreateGlue(), 2, 0)
+    infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Driver Version")), 0, 2);
+    fDriverVersionValue = new BStringView("driver_val", "N/A");
+    infoGrid->AddView(fDriverVersionValue, 0, 3);
 
-        .Add(fChipsetLabel, 0, 1)
-        .Add(fChipsetValue, 1, 1)
-        .Add(BSpaceLayoutItem::CreateGlue(), 2, 1)
+    infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Resolution")), 1, 2);
+    fResolutionValue = new BStringView("res_val", "N/A");
+    infoGrid->AddView(fResolutionValue, 1, 3);
 
-        .Add(fMemorySizeLabel, 0, 2)
-        .Add(fMemorySizeValue, 1, 2)
-        .Add(BSpaceLayoutItem::CreateGlue(), 2, 2)
+    infoGrid->SetColumnWeight(0, 1.0f);
+    infoGrid->SetColumnWeight(1, 1.0f);
 
-        .Add(fDacSpeedLabel, 0, 3)
-        .Add(fDacSpeedValue, 1, 3)
-        .Add(BSpaceLayoutItem::CreateGlue(), 2, 3)
-
-        .Add(fDriverVersionLabel, 0, 4)
-        .Add(fDriverVersionValue, 1, 4)
-        .Add(BSpaceLayoutItem::CreateGlue(), 2, 4);
-
-    grid->SetColumnWeight(2, 1.0f);
-    infoBox->SetLayout(grid);
-
-    BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
+    BLayoutBuilder::Group<>(this, B_VERTICAL)
         .SetInsets(B_USE_DEFAULT_SPACING)
-        .Add(monitorBox)
-        .Add(infoBox)
+        .AddGroup(B_HORIZONTAL)
+            .Add(gpuLabel)
+            .AddGlue()
+            .Add(fCardNameValue)
+        .End()
+        .Add(graphGrid)
+        .Add(infoGrid)
         .AddGlue();
+}
+
+void GPUView::Pulse() {
+    bigtime_t now = system_time();
+    for (auto* graph : fGpuGraphs) {
+        graph->AddValue(now, 0);
+    }
 }
 
 GPUView::~GPUView()
@@ -122,13 +113,7 @@ void GPUView::UpdateData()
     accelerant_device_info deviceInfo;
     if (screen.GetDeviceInfo(&deviceInfo) == B_OK) {
         fCardNameValue->SetText(deviceInfo.name);
-        fChipsetValue->SetText(deviceInfo.chipset);
         fMemorySizeValue->SetText(::FormatBytes(deviceInfo.memory));
-
-        char dacSpeedStr[32];
-        snprintf(dacSpeedStr, sizeof(dacSpeedStr), "%u MHz", 
-                 static_cast<unsigned int>(deviceInfo.dac_speed / 1000));
-        fDacSpeedValue->SetText(dacSpeedStr);
 
         char versionStr[32];
         snprintf(versionStr, sizeof(versionStr), "%u", 
@@ -136,10 +121,8 @@ void GPUView::UpdateData()
         fDriverVersionValue->SetText(versionStr);
 
     } else {
-        fCardNameValue->SetText(B_TRANSLATE("Error: Could not get device info"));
-        fChipsetValue->SetText("-");
+        fCardNameValue->SetText(B_TRANSLATE("Unknown"));
         fMemorySizeValue->SetText("-");
-        fDacSpeedValue->SetText("-");
         fDriverVersionValue->SetText("-");
     }
 
@@ -148,63 +131,7 @@ void GPUView::UpdateData()
         BString resStr;
         resStr.SetToFormat("%dx%d", mode.virtual_width, mode.virtual_height);
         fResolutionValue->SetText(resStr);
-
-        int32 bitsPerPixel = 0;
-        switch (mode.space) {
-            case B_RGB32:
-            case B_RGBA32:
-            case B_RGB32_BIG:
-            case B_RGBA32_BIG:
-                bitsPerPixel = 32;
-                break;
-            case B_RGB24:
-            case B_RGB24_BIG:
-                bitsPerPixel = 24;
-                break;
-            case B_RGB16:
-            case B_RGB16_BIG:
-                bitsPerPixel = 16;
-                break;
-            case B_RGB15:
-            case B_RGBA15:
-            case B_RGB15_BIG:
-            case B_RGBA15_BIG:
-                bitsPerPixel = 15;
-                break;
-            case B_CMAP8:
-                bitsPerPixel = 8;
-                break;
-            default:
-                bitsPerPixel = 0; // Unknown
-                break;
-        }
-        if (bitsPerPixel > 0) {
-            BString colorStr;
-            colorStr.SetToFormat("%d-bit", bitsPerPixel);
-            fColorDepthValue->SetText(colorStr);
-        } else {
-            fColorDepthValue->SetText("N/A");
-        }
-
-        if (mode.timing.h_total > 0 && mode.timing.v_total > 0) {
-            double refresh = (double)mode.timing.pixel_clock * 1000.0
-                / (mode.timing.h_total * mode.timing.v_total);
-            char refreshStr[16];
-            snprintf(refreshStr, sizeof(refreshStr), "%.2f Hz", refresh);
-            fRefreshRateValue->SetText(refreshStr);
-        } else {
-            fRefreshRateValue->SetText("N/A");
-        }
     } else {
         fResolutionValue->SetText("N/A");
-        fColorDepthValue->SetText("N/A");
-        fRefreshRateValue->SetText("N/A");
-    }
-
-    monitor_info monInfo;
-    if (screen.GetMonitorInfo(&monInfo) == B_OK) {
-        fMonitorNameValue->SetText(monInfo.name);
-    } else {
-        fMonitorNameValue->SetText("N/A");
     }
 }
