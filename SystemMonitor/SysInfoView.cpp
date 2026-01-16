@@ -231,7 +231,12 @@ void SysInfoView::LoadData() {
     // Memory Info
     infoText << B_TRANSLATE("MEMORY") << "\n\n";
     infoText << B_TRANSLATE("Physical RAM:") << " " << ::FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n";
-    infoText << B_TRANSLATE("Virtual RAM:") << " " << ::FormatBytes((uint64)sysInfo.max_swap_pages * B_PAGE_SIZE) << "\n\n\n";
+
+    uint64 swapBytes = 0;
+    if (sysInfo.max_swap_pages > sysInfo.max_pages)
+        swapBytes = (uint64)(sysInfo.max_swap_pages - sysInfo.max_pages) * B_PAGE_SIZE;
+
+    infoText << B_TRANSLATE("Swap Memory:") << " " << ::FormatBytes(swapBytes) << "\n\n\n";
 
     // Disk Info
     infoText << B_TRANSLATE("DISK VOLUMES") << "\n\n";
