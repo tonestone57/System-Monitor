@@ -106,6 +106,11 @@ enum {
 };
 
 const uint32 MSG_KILL_PROCESS = 'kill';
+const uint32 MSG_SUSPEND_PROCESS = 'susp';
+const uint32 MSG_RESUME_PROCESS = 'resm';
+const uint32 MSG_PRIORITY_LOW = 'pril';
+const uint32 MSG_PRIORITY_NORMAL = 'prin';
+const uint32 MSG_PRIORITY_HIGH = 'prih';
 
 ProcessView::ProcessView()
     : BView("ProcessView", B_WILL_DRAW),
@@ -150,6 +155,15 @@ ProcessView::ProcessView()
 
     fContextMenu = new BPopUpMenu("ProcessContext", false, false);
     fContextMenu->AddItem(new BMenuItem(B_TRANSLATE("Kill Process"), new BMessage(MSG_KILL_PROCESS)));
+    fContextMenu->AddSeparatorItem();
+    fContextMenu->AddItem(new BMenuItem(B_TRANSLATE("Suspend"), new BMessage(MSG_SUSPEND_PROCESS)));
+    fContextMenu->AddItem(new BMenuItem(B_TRANSLATE("Resume"), new BMessage(MSG_RESUME_PROCESS)));
+
+    BMenu* priorityMenu = new BMenu(B_TRANSLATE("Set Priority"));
+    priorityMenu->AddItem(new BMenuItem(B_TRANSLATE("Low"), new BMessage(MSG_PRIORITY_LOW)));
+    priorityMenu->AddItem(new BMenuItem(B_TRANSLATE("Normal"), new BMessage(MSG_PRIORITY_NORMAL)));
+    priorityMenu->AddItem(new BMenuItem(B_TRANSLATE("High"), new BMessage(MSG_PRIORITY_HIGH)));
+    fContextMenu->AddItem(priorityMenu);
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
         .SetInsets(0)
@@ -201,6 +215,21 @@ void ProcessView::MessageReceived(BMessage* message)
     switch (message->what) {
         case MSG_KILL_PROCESS:
             KillSelectedProcess();
+            break;
+        case MSG_SUSPEND_PROCESS:
+            SuspendSelectedProcess();
+            break;
+        case MSG_RESUME_PROCESS:
+            ResumeSelectedProcess();
+            break;
+        case MSG_PRIORITY_LOW:
+            SetSelectedProcessPriority(B_LOW_PRIORITY);
+            break;
+        case MSG_PRIORITY_NORMAL:
+            SetSelectedProcessPriority(B_NORMAL_PRIORITY);
+            break;
+        case MSG_PRIORITY_HIGH:
+            SetSelectedProcessPriority(B_URGENT_DISPLAY_PRIORITY);
             break;
         case MSG_PROCESS_DATA_UPDATE:
             Update(message);
@@ -259,6 +288,38 @@ void ProcessView::KillSelectedProcess() {
                                           NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
             errAlert.Go();
         }
+    }
+}
+
+void ProcessView::SuspendSelectedProcess() {
+    BRow* selectedRow = fProcessListView->CurrentSelection();
+    if (!selectedRow) return;
+    BIntegerField* pidField = static_cast<BIntegerField*>(selectedRow->GetField(kPIDColumn));
+    if (!pidField) return;
+    team_id team = pidField->Value();
+    send_signal(team, SIGSTOP);
+}
+
+void ProcessView::ResumeSelectedProcess() {
+    BRow* selectedRow = fProcessListView->CurrentSelection();
+    if (!selectedRow) return;
+    BIntegerField* pidField = static_cast<BIntegerField*>(selectedRow->GetField(kPIDColumn));
+    if (!pidField) return;
+    team_id team = pidField->Value();
+    send_signal(team, SIGCONT);
+}
+
+void ProcessView::SetSelectedProcessPriority(int32 priority) {
+    BRow* selectedRow = fProcessListView->CurrentSelection();
+    if (!selectedRow) return;
+    BIntegerField* pidField = static_cast<BIntegerField*>(selectedRow->GetField(kPIDColumn));
+    if (!pidField) return;
+    team_id team = pidField->Value();
+
+    thread_info tInfo;
+    int32 cookie = 0;
+    while (get_next_thread_info(team, &cookie, &tInfo) == B_OK) {
+        set_thread_priority(tInfo.thread, priority);
     }
 }
 

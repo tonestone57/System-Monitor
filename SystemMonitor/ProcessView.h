@@ -53,6 +53,9 @@ private:
     void Update(BMessage* message);
 
     void KillSelectedProcess();
+    void SuspendSelectedProcess();
+    void ResumeSelectedProcess();
+    void SetSelectedProcessPriority(int32 priority);
     void ShowContextMenu(BPoint screenPoint);
     BString FormatBytes(uint64 bytes);
     BString GetUserName(uid_t uid);
