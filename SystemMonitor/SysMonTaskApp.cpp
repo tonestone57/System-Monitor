@@ -233,6 +233,10 @@ const uint32 MSG_SWITCH_TO_PERFORMANCE = 'perf';
 const uint32 MSG_SWITCH_TO_PROCESSES = 'proc';
 const uint32 MSG_SWITCH_TO_SYSTEM = 'syst';
 
+const uint32 MSG_REFRESH_SPEED_HIGH = 'rfsH';
+const uint32 MSG_REFRESH_SPEED_NORMAL = 'rfsN';
+const uint32 MSG_REFRESH_SPEED_LOW = 'rfsL';
+
 class MainWindow : public BWindow {
 public:
     MainWindow(BRect frame);
@@ -270,6 +274,15 @@ MainWindow::MainWindow(BRect frame)
     appMenu->AddSeparatorItem();
     appMenu->AddItem(new BMenuItem(B_TRANSLATE("Quit"), new BMessage(B_QUIT_REQUESTED), 'Q'));
     menuBar->AddItem(appMenu);
+
+    BMenu* viewMenu = new BMenu(B_TRANSLATE("View"));
+    BMenu* speedMenu = new BMenu(B_TRANSLATE("Refresh Speed"));
+    speedMenu->AddItem(new BMenuItem(B_TRANSLATE("High (0.5s)"), new BMessage(MSG_REFRESH_SPEED_HIGH)));
+    speedMenu->AddItem(new BMenuItem(B_TRANSLATE("Normal (1s)"), new BMessage(MSG_REFRESH_SPEED_NORMAL)));
+    speedMenu->AddItem(new BMenuItem(B_TRANSLATE("Low (2s)"), new BMessage(MSG_REFRESH_SPEED_LOW)));
+    speedMenu->SetRadioMode(true);
+    viewMenu->AddItem(speedMenu);
+    menuBar->AddItem(viewMenu);
 
     // Create button bar
     fPerformanceButton = new BButton("Performance", B_TRANSLATE("Performance"), new BMessage(MSG_SWITCH_TO_PERFORMANCE));
@@ -352,6 +365,16 @@ void MainWindow::MessageReceived(BMessage* message) {
                 about->Show();
             }
             break;
+
+        case MSG_REFRESH_SPEED_HIGH:
+            SetPulseRate(500000);
+            break;
+        case MSG_REFRESH_SPEED_NORMAL:
+            SetPulseRate(1000000);
+            break;
+        case MSG_REFRESH_SPEED_LOW:
+            SetPulseRate(2000000);
+            break;
             
         default:
             BWindow::MessageReceived(message);
@@ -386,6 +409,7 @@ void MainWindow::SaveSettings() {
                 fPerformanceView->SaveState(settings);
 
             settings.AddRect("window_frame", Frame());
+            settings.AddInt64("pulse_rate", PulseRate());
 
             settings.Flatten(&file);
         }
@@ -410,8 +434,23 @@ void MainWindow::LoadSettings() {
                     fProcessView->LoadState(settings);
                 if (fPerformanceView)
                     fPerformanceView->LoadState(settings);
+
+                bigtime_t rate;
+                if (settings.FindInt64("pulse_rate", &rate) == B_OK)
+                    SetPulseRate(rate);
             }
         }
+    }
+
+    // Update Menu Selection
+    bigtime_t currentRate = PulseRate();
+    uint32 command = MSG_REFRESH_SPEED_NORMAL;
+    if (currentRate <= 500000) command = MSG_REFRESH_SPEED_HIGH;
+    else if (currentRate >= 2000000) command = MSG_REFRESH_SPEED_LOW;
+
+    if (KeyMenuBar()) {
+        BMenuItem* item = KeyMenuBar()->FindItem(command);
+        if (item) item->SetMarked(true);
     }
 }
 

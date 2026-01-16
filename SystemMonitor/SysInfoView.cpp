@@ -170,7 +170,12 @@ void SysInfoView::LoadData() {
     archStr = B_TRANSLATE("Unknown");
 #endif
     infoText << B_TRANSLATE("CPU Architecture:") << " " << archStr << "\n";
-    infoText << B_TRANSLATE("System Uptime:") << " " << ::FormatUptime(system_time()) << "\n\n\n";
+    infoText << B_TRANSLATE("System Uptime:") << " " << ::FormatUptime(system_time()) << "\n";
+
+    infoText << B_TRANSLATE("Teams:") << " " << sysInfo.used_teams << " / " << sysInfo.max_teams << "\n";
+    infoText << B_TRANSLATE("Threads:") << " " << sysInfo.used_threads << " / " << sysInfo.max_threads << "\n";
+    infoText << B_TRANSLATE("Ports:") << " " << sysInfo.used_ports << " / " << sysInfo.max_ports << "\n";
+    infoText << B_TRANSLATE("Semaphores:") << " " << sysInfo.used_semaphores << " / " << sysInfo.max_semaphores << "\n\n\n";
 
     // CPU Info
     infoText << B_TRANSLATE("PROCESSOR") << "\n\n";
