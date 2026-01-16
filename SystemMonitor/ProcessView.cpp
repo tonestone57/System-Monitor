@@ -22,6 +22,8 @@
 #define B_TRANSLATION_CONTEXT "ProcessView"
 
 
+namespace {
+
 class BCPUColumn : public BStringColumn {
 public:
     BCPUColumn(const char* title, float width, float minWidth, float maxWidth,
@@ -91,6 +93,8 @@ private:
     bool fSortInverse;
 };
 
+} // namespace
+
 enum {
     kPIDColumn,
     kProcessNameColumn,
@@ -142,7 +146,7 @@ ProcessView::ProcessView()
     fUserColumn = new BStringColumn(B_TRANSLATE("User"), 80, 40, 150, B_TRUNCATE_END);
     fProcessListView->AddColumn(fUserColumn, kUserNameColumn);
 
-    ((ProcessListView*)fProcessListView)->SetSortColumn(fCPUColumn, false, false);
+    fProcessListView->SetSortColumn(fCPUColumn, false, false);
 
     fContextMenu = new BPopUpMenu("ProcessContext", false, false);
     fContextMenu->AddItem(new BMenuItem(B_TRANSLATE("Kill Process"), new BMessage(MSG_KILL_PROCESS)));
