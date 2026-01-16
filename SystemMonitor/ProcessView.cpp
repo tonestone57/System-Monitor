@@ -131,9 +131,6 @@ ProcessView::ProcessView()
     fNameColumn = new BStringColumn(B_TRANSLATE("Name"), 180, 50, 500, B_TRUNCATE_END);
     fProcessListView->AddColumn(fNameColumn, kProcessNameColumn);
 
-    fStateColumn = new BStringColumn(B_TRANSLATE("State"), 80, 40, 150, B_TRUNCATE_END);
-    fProcessListView->AddColumn(fStateColumn, kStateColumn);
-
     fCPUColumn = new BCPUColumn(B_TRANSLATE("CPU %"), 90, 50, 120, B_TRUNCATE_END, B_ALIGN_RIGHT);
     fProcessListView->AddColumn(fCPUColumn, kCPUUsageColumn);
 
@@ -142,6 +139,9 @@ ProcessView::ProcessView()
 
     fThreadsColumn = new BIntegerColumn(B_TRANSLATE("Threads"), 80, 40, 120, B_ALIGN_RIGHT);
     fProcessListView->AddColumn(fThreadsColumn, kThreadCountColumn);
+
+    fStateColumn = new BStringColumn(B_TRANSLATE("State"), 80, 40, 150, B_TRUNCATE_END);
+    fProcessListView->AddColumn(fStateColumn, kStateColumn);
 
     fUserColumn = new BStringColumn(B_TRANSLATE("User"), 80, 40, 150, B_TRUNCATE_END);
     fProcessListView->AddColumn(fUserColumn, kUserNameColumn);
@@ -351,7 +351,7 @@ int32 ProcessView::UpdateThread(void* data)
 
         system_info sysInfo;
         get_system_info(&sysInfo);
-        float totalPossibleCoreTime = sysInfo.cpu_count * systemTimeDelta;
+        float totalPossibleCoreTime = systemTimeDelta;
         if (totalPossibleCoreTime <= 0) totalPossibleCoreTime = 1.0f;
 
         int32 cookie = 0;
