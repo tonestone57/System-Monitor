@@ -269,7 +269,7 @@ void ProcessView::Update(BMessage* message)
                 fTeamRowMap[info->id] = row;
             } else { // Existing process
                 row = fTeamRowMap[info->id];
-                if (!fProcessListView->HasRow(row)) {
+                if (fProcessListView->IndexOf(row) < 0) {
                      fProcessListView->AddRow(row);
                 }
 
@@ -291,7 +291,7 @@ void ProcessView::Update(BMessage* message)
 
         if (!presentInPulse) {
 			BRow* row = it->second;
-            if (fProcessListView->HasRow(row))
+            if (fProcessListView->IndexOf(row) >= 0)
 			    fProcessListView->RemoveRow(row);
 
 			delete row;

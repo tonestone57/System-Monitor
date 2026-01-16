@@ -117,8 +117,6 @@ void NetworkView::UpdateData()
             typeStr = B_TRANSLATE("Loopback");
         } else if (interface.Flags() & IFF_POINTOPOINT) {
             typeStr = B_TRANSLATE("Point-to-Point");
-        } else if (interface.IsWireless()) {
-             typeStr = B_TRANSLATE("Wireless");
         }
 
         BString addressStr = "N/A";

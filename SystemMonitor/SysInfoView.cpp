@@ -167,7 +167,7 @@ void SysInfoView::LoadData() {
     // CPU Info
     infoText << B_TRANSLATE("PROCESSOR") << "\n\n";
     BString cpuBrand = GetCPUBrandString();
-    infoText << B_TRANSLATE("Model:") << " " << (cpuBrand.IsEmpty() ? B_TRANSLATE("Unknown CPU") : cpuBrand) << "\n";
+    infoText << B_TRANSLATE("Model:") << " " << (cpuBrand.IsEmpty() ? B_TRANSLATE("Unknown CPU") : cpuBrand.String()) << "\n";
     infoText << B_TRANSLATE("Cores:") << " " << sysInfo.cpu_count << "\n";
     infoText << B_TRANSLATE("Features:") << " " << _GetCPUFeaturesString() << "\n";
     cpu_topology_node_info* topology = NULL;
