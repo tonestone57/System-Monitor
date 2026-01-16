@@ -139,6 +139,9 @@ public:
     virtual void AttachedToWindow();
     virtual void Pulse();
 
+    void SaveState(BMessage& state);
+    void LoadState(const BMessage& state);
+
 private:
     BSplitView* fSplitView;
     SummaryView* fSummaryView;
@@ -207,6 +210,22 @@ void PerformanceView::Pulse()
     fStats.memoryUsage = fMemView->GetCurrentUsage();
     fStats.uploadSpeed = fNetworkView->GetUploadSpeed();
     fStats.downloadSpeed = fNetworkView->GetDownloadSpeed();
+}
+
+void PerformanceView::SaveState(BMessage& state)
+{
+    if (fSplitView) {
+        float weight = fSplitView->ItemWeight(0);
+        state.AddFloat("perf_split_weight", weight);
+    }
+}
+
+void PerformanceView::LoadState(const BMessage& state)
+{
+    float weight;
+    if (fSplitView && state.FindFloat("perf_split_weight", &weight) == B_OK) {
+        fSplitView->SetItemWeight(0, weight, false);
+    }
 }
 
 // Message constants for button switching
@@ -363,6 +382,11 @@ void MainWindow::SaveSettings() {
             BMessage settings;
             if (fProcessView)
                 fProcessView->SaveState(settings);
+            if (fPerformanceView)
+                fPerformanceView->SaveState(settings);
+
+            settings.AddRect("window_frame", Frame());
+
             settings.Flatten(&file);
         }
     }
@@ -376,8 +400,16 @@ void MainWindow::LoadSettings() {
         if (file.InitCheck() == B_OK) {
             BMessage settings;
             if (settings.Unflatten(&file) == B_OK) {
+                BRect frame;
+                if (settings.FindRect("window_frame", &frame) == B_OK) {
+                    MoveTo(frame.LeftTop());
+                    ResizeTo(frame.Width(), frame.Height());
+                }
+
                 if (fProcessView)
                     fProcessView->LoadState(settings);
+                if (fPerformanceView)
+                    fPerformanceView->LoadState(settings);
             }
         }
     }
