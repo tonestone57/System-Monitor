@@ -34,10 +34,10 @@ public:
 
 	status_t SetSize(size_t size)
 	{
-		MakeEmpty();
-
 		if (fSize == size)
 			return B_OK;
+
+		MakeEmpty();
 
 		fSize = size;
 		fBuffer = (Type*)malloc(fSize * sizeof(Type));
@@ -91,6 +91,9 @@ public:
 	}
 
 private:
+	CircularBuffer(const CircularBuffer& other);
+	CircularBuffer& operator=(const CircularBuffer& other);
+
 	uint32		fFirst;
 	uint32		fIn;
 	uint32		fSize;

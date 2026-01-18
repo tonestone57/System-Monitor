@@ -2,6 +2,7 @@
 #define ACTIVITYGRAPHVIEW_H
 
 #include <View.h>
+#include <vector>
 #include "DataHistory.h"
 
 class BBitmap;
@@ -29,6 +30,7 @@ private:
 	BBitmap*			fOffscreen;
 	DataHistory*		fHistory;
 	bigtime_t			fResolution;
+	std::vector<BPoint>	fPoints;
 };
 
 #endif // ACTIVITYGRAPHVIEW_H

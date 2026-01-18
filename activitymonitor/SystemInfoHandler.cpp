@@ -162,7 +162,6 @@ SystemInfoHandler::MessageReceived(BMessage* message)
 			fMediaBuffers--;
 			break;
 		default:
-			message->PrintToStream();
 			BHandler::MessageReceived(message);
 	}
 }

@@ -598,6 +598,7 @@ ActivityView::ActivityView(BMessage* archive)
 
 ActivityView::~ActivityView()
 {
+	RemoveAllDataSources();
 	delete fOffscreen;
 	delete fSystemInfoHandler;
 }
@@ -867,6 +868,8 @@ ActivityView::RemoveDataSource(const DataSource* remove)
 		delete source;
 		DataHistory* values = fValues.RemoveItemAt(index);
 		delete values;
+		ViewHistory* viewValues = fViewValues.RemoveItemAt(index);
+		delete viewValues;
 		removed = true;
 	}
 
@@ -882,8 +885,17 @@ ActivityView::RemoveAllDataSources()
 {
 	BAutolock _(fSourcesLock);
 
+	for (int32 i = 0; i < fSources.CountItems(); i++)
+		delete static_cast<DataSource*>(fSources.ItemAt(i));
 	fSources.MakeEmpty();
+
+	for (int32 i = 0; i < fValues.CountItems(); i++)
+		delete static_cast<DataHistory*>(fValues.ItemAt(i));
 	fValues.MakeEmpty();
+
+	for (int32 i = 0; i < fViewValues.CountItems(); i++)
+		delete static_cast<ViewHistory*>(fViewValues.ItemAt(i));
+	fViewValues.MakeEmpty();
 }
 
 
