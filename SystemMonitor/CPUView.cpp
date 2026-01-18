@@ -102,6 +102,28 @@ void CPUView::CreateLayout()
     fSpeedValue->SetFont(&bigFont);
     infoGrid->AddView(fSpeedValue, 1, 1);
 
+    // Get CPU Speed (static)
+    cpu_topology_node_info* topology = NULL;
+    uint32_t topologyNodeCount = 0;
+    if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
+         topology = new(std::nothrow) cpu_topology_node_info[topologyNodeCount];
+         if (topology) {
+             uint32_t actualCount = topologyNodeCount;
+             if (get_cpu_topology_info(topology, &actualCount) == B_OK) {
+                 uint64 maxFreq = 0;
+                 for (uint32 i = 0; i < actualCount; i++) {
+                     if (topology[i].type == B_TOPOLOGY_CORE) {
+                         if (topology[i].data.core.default_frequency > maxFreq)
+                             maxFreq = topology[i].data.core.default_frequency;
+                     }
+                 }
+                 if (maxFreq > 0)
+                     fSpeedValue->SetText(::FormatHertz(maxFreq).String());
+             }
+             delete[] topology;
+         }
+    }
+
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Processes")), 0, 2);
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Threads")), 1, 2);
 
@@ -239,28 +261,6 @@ void CPUView::UpdateData()
         fThreadsValue->SetText(threadStr.String());
 
         fUptimeValue->SetText(::FormatUptime(system_time()).String());
-
-        // Speed
-        cpu_topology_node_info* topology = NULL;
-        uint32_t topologyNodeCount = 0;
-        if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
-             topology = new(std::nothrow) cpu_topology_node_info[topologyNodeCount];
-             if (topology) {
-                 uint32_t actualCount = topologyNodeCount;
-                 if (get_cpu_topology_info(topology, &actualCount) == B_OK) {
-                     uint64 maxFreq = 0;
-                     for (uint32 i = 0; i < actualCount; i++) {
-                         if (topology[i].type == B_TOPOLOGY_CORE) {
-                             if (topology[i].data.core.default_frequency > maxFreq)
-                                 maxFreq = topology[i].data.core.default_frequency;
-                         }
-                     }
-                     if (maxFreq > 0)
-                         fSpeedValue->SetText(::FormatHertz(maxFreq).String());
-                 }
-                 delete[] topology;
-             }
-        }
     }
 
     fCurrentUsage = overallUsage;

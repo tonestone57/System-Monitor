@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <MenuItem.h>
 #include <Font.h>
+#include <vector>
 #include <unordered_set>
 #include <Window.h>
 #include <Catalog.h>
@@ -338,76 +339,80 @@ void ProcessView::SetSelectedProcessPriority(int32 priority) {
 void ProcessView::Update(BMessage* message)
 {
     std::unordered_set<team_id> activePIDsThisPulse;
-    const ProcessInfo* info;
-    ssize_t size;
+    std::vector<ProcessInfo>* procList = NULL;
+    if (message->FindPointer("proc_list", (void**)&procList) != B_OK || procList == NULL) {
+        return;
+    }
 
     const char* searchText = fSearchControl->Text();
     bool filtering = (searchText != NULL && strlen(searchText) > 0);
 
-    for (int i = 0; message->FindData("proc_info", B_RAW_TYPE, i, (const void**)&info, &size) == B_OK; i++) {
+    for (const auto& info : *procList) {
         
         bool match = true;
         if (filtering) {
-            BString name(info->name);
-            BString idStr; idStr << info->id;
+            BString name(info.name);
+            BString idStr; idStr << info.id;
             if (name.IFindFirst(searchText) == B_ERROR && idStr.IFindFirst(searchText) == B_ERROR) {
                 match = false;
             }
         }
 
         if (match)
-            activePIDsThisPulse.insert(info->id);
+            activePIDsThisPulse.insert(info.id);
 
         if (match) {
             BRow* row;
-            if (fTeamRowMap.find(info->id) == fTeamRowMap.end()) {
+            if (fTeamRowMap.find(info.id) == fTeamRowMap.end()) {
                 row = new BRow();
-                row->SetField(new BIntegerField(info->id), kPIDColumn);
-                row->SetField(new BStringField(info->name), kProcessNameColumn);
-                row->SetField(new BStringField(B_TRANSLATE(info->state)), kStateColumn);
+                row->SetField(new BIntegerField(info.id), kPIDColumn);
+                row->SetField(new BStringField(info.name), kProcessNameColumn);
+                row->SetField(new BStringField(B_TRANSLATE(info.state)), kStateColumn);
                 char cpuStr[16];
-                snprintf(cpuStr, sizeof(cpuStr), "%.1f", info->cpuUsage);
+                snprintf(cpuStr, sizeof(cpuStr), "%.1f", info.cpuUsage);
                 row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
-                row->SetField(new BStringField(::FormatBytes(info->memoryUsageBytes)), kMemoryUsageColumn);
-                row->SetField(new BIntegerField(info->threadCount), kThreadCountColumn);
-                row->SetField(new BStringField(info->userName), kUserNameColumn);
+                row->SetField(new BStringField(::FormatBytes(info.memoryUsageBytes)), kMemoryUsageColumn);
+                row->SetField(new BIntegerField(info.threadCount), kThreadCountColumn);
+                row->SetField(new BStringField(info.userName), kUserNameColumn);
                 fProcessListView->AddRow(row);
-                fTeamRowMap[info->id] = row;
+                fTeamRowMap[info.id] = row;
             } else { // Existing process
-                row = fTeamRowMap[info->id];
+                row = fTeamRowMap[info.id];
 
                 BStringField* nameField = static_cast<BStringField*>(row->GetField(kProcessNameColumn));
-                if (strcmp(nameField->String(), info->name) != 0)
-                    nameField->SetString(info->name);
+                if (strcmp(nameField->String(), info.name) != 0)
+                    nameField->SetString(info.name);
 
                 BStringField* stateField = static_cast<BStringField*>(row->GetField(kStateColumn));
-                BString stateStr = B_TRANSLATE(info->state);
+                BString stateStr = B_TRANSLATE(info.state);
                 if (strcmp(stateField->String(), stateStr.String()) != 0)
                     stateField->SetString(stateStr);
 
                 char cpuStr[16];
-                snprintf(cpuStr, sizeof(cpuStr), "%.1f", info->cpuUsage);
+                snprintf(cpuStr, sizeof(cpuStr), "%.1f", info.cpuUsage);
                 BStringField* cpuField = static_cast<BStringField*>(row->GetField(kCPUUsageColumn));
                 if (strcmp(cpuField->String(), cpuStr) != 0)
                     cpuField->SetString(cpuStr);
 
-                BString memStr = ::FormatBytes(info->memoryUsageBytes);
+                BString memStr = ::FormatBytes(info.memoryUsageBytes);
                 BStringField* memField = static_cast<BStringField*>(row->GetField(kMemoryUsageColumn));
                 if (strcmp(memField->String(), memStr.String()) != 0)
                     memField->SetString(memStr);
 
                 BIntegerField* threadsField = static_cast<BIntegerField*>(row->GetField(kThreadCountColumn));
-                if (threadsField->Value() != (int32)info->threadCount)
-                    threadsField->SetValue(info->threadCount);
+                if (threadsField->Value() != (int32)info.threadCount)
+                    threadsField->SetValue(info.threadCount);
 
                 BStringField* userField = static_cast<BStringField*>(row->GetField(kUserNameColumn));
-                if (strcmp(userField->String(), info->userName) != 0)
-                    userField->SetString(info->userName);
+                if (strcmp(userField->String(), info.userName) != 0)
+                    userField->SetString(info.userName);
 
                 fProcessListView->UpdateRow(row);
             }
         }
     }
+
+    delete procList;
 
 	for (auto it = fTeamRowMap.begin(); it != fTeamRowMap.end();) {
         bool presentInPulse = (activePIDsThisPulse.find(it->first) != activePIDsThisPulse.end());
@@ -431,7 +436,9 @@ int32 ProcessView::UpdateThread(void* data)
 
     while (!view->fTerminated) {
 		activeThreads.clear();
+        std::vector<ProcessInfo>* procList = new std::vector<ProcessInfo>();
         BMessage msg(MSG_PROCESS_DATA_UPDATE);
+        msg.AddPointer("proc_list", procList);
 
         bigtime_t currentSystemTime = system_time();
         bigtime_t systemTimeDelta = currentSystemTime - view->fLastSystemTime;
@@ -453,19 +460,19 @@ int32 ProcessView::UpdateThread(void* data)
             int32 imgCookie = 0;
             if (get_next_image_info(teamInfo.team, &imgCookie, &imgInfo) == B_OK) {
                 BPath path(imgInfo.name);
-				strncpy(currentProc.name, path.Leaf(), B_OS_NAME_LENGTH);
-				strncpy(currentProc.path, imgInfo.name, B_PATH_NAME_LENGTH);
+				strlcpy(currentProc.name, path.Leaf(), B_OS_NAME_LENGTH);
+				strlcpy(currentProc.path, imgInfo.name, B_PATH_NAME_LENGTH);
             } else {
-				strncpy(currentProc.name, teamInfo.args, B_OS_NAME_LENGTH);
+				strlcpy(currentProc.name, teamInfo.args, B_OS_NAME_LENGTH);
                 if (strlen(currentProc.name) == 0)
-                    strncpy(currentProc.name, "system_daemon", B_OS_NAME_LENGTH);
+                    strlcpy(currentProc.name, "system_daemon", B_OS_NAME_LENGTH);
             }
 
             currentProc.threadCount = teamInfo.thread_count;
             currentProc.areaCount = teamInfo.area_count;
             currentProc.userID = teamInfo.uid;
 			const BString& userName = view->GetUserName(currentProc.userID);
-			strncpy(currentProc.userName, userName.String(), B_OS_NAME_LENGTH);
+			strlcpy(currentProc.userName, userName.String(), B_OS_NAME_LENGTH);
 
             int32 threadCookie = 0;
             thread_info tInfo;
@@ -492,9 +499,9 @@ int32 ProcessView::UpdateThread(void* data)
                 view->fThreadTimeMap[tInfo.thread] = threadTime;
             }
 
-            if (isRunning) strncpy(currentProc.state, "Running", sizeof(currentProc.state));
-            else if (isReady) strncpy(currentProc.state, "Ready", sizeof(currentProc.state));
-            else strncpy(currentProc.state, "Sleeping", sizeof(currentProc.state));
+            if (isRunning) strlcpy(currentProc.state, "Running", sizeof(currentProc.state));
+            else if (isReady) strlcpy(currentProc.state, "Ready", sizeof(currentProc.state));
+            else strlcpy(currentProc.state, "Sleeping", sizeof(currentProc.state));
 
             float teamCpuPercent = (float)teamActiveTimeDelta / totalPossibleCoreTime * 100.0f;
             if (teamCpuPercent < 0.0f) teamCpuPercent = 0.0f;
@@ -508,7 +515,7 @@ int32 ProcessView::UpdateThread(void* data)
                 currentProc.memoryUsageBytes += areaInfo.ram_size;
             }
 
-            msg.AddData("proc_info", B_RAW_TYPE, &currentProc, sizeof(ProcessInfo));
+            procList->push_back(currentProc);
         }
 
 		// Prune dead threads from the map
@@ -519,8 +526,12 @@ int32 ProcessView::UpdateThread(void* data)
 				++it;
 		}
 
+        status_t status = B_ERROR;
         if (view->Window())
-            view->Window()->PostMessage(&msg, view);
+            status = view->Window()->PostMessage(&msg, view);
+
+        if (status != B_OK)
+            delete procList;
 
         acquire_sem_etc(view->fQuitSem, 1, B_RELATIVE_TIMEOUT, 1000000);
     }
