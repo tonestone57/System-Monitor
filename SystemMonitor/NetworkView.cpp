@@ -176,12 +176,42 @@ void NetworkView::UpdateData()
 			fInterfaceRowMap[name.String()] = row;
 		} else {
 			row = fInterfaceRowMap[name.String()];
-			row->SetField(new BStringField(typeStr), kInterfaceTypeColumn);
-			row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
-			row->SetField(new BStringField(::FormatBytes(currentSent)), kBytesSentColumn);
-			row->SetField(new BStringField(::FormatBytes(currentReceived)), kBytesRecvColumn);
-			row->SetField(new BStringField(sendSpeed), kSendSpeedColumn);
-			row->SetField(new BStringField(recvSpeed), kRecvSpeedColumn);
+			BStringField* field = static_cast<BStringField*>(row->GetField(kInterfaceTypeColumn));
+			if (field != NULL)
+				field->SetString(typeStr);
+			else
+				row->SetField(new BStringField(typeStr), kInterfaceTypeColumn);
+
+			field = static_cast<BStringField*>(row->GetField(kInterfaceAddressColumn));
+			if (field != NULL)
+				field->SetString(addressStr);
+			else
+				row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
+
+			field = static_cast<BStringField*>(row->GetField(kBytesSentColumn));
+			if (field != NULL)
+				field->SetString(::FormatBytes(currentSent));
+			else
+				row->SetField(new BStringField(::FormatBytes(currentSent)), kBytesSentColumn);
+
+			field = static_cast<BStringField*>(row->GetField(kBytesRecvColumn));
+			if (field != NULL)
+				field->SetString(::FormatBytes(currentReceived));
+			else
+				row->SetField(new BStringField(::FormatBytes(currentReceived)), kBytesRecvColumn);
+
+			field = static_cast<BStringField*>(row->GetField(kSendSpeedColumn));
+			if (field != NULL)
+				field->SetString(sendSpeed);
+			else
+				row->SetField(new BStringField(sendSpeed), kSendSpeedColumn);
+
+			field = static_cast<BStringField*>(row->GetField(kRecvSpeedColumn));
+			if (field != NULL)
+				field->SetString(recvSpeed);
+			else
+				row->SetField(new BStringField(recvSpeed), kRecvSpeedColumn);
+
 			fInterfaceListView->UpdateRow(row);
 		}
     }
