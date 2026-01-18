@@ -18,19 +18,30 @@ struct InterfaceStatsRecord {
     bigtime_t lastUpdateTime = 0;
 };
 
+struct NetworkInfo {
+    char name[B_OS_NAME_LENGTH];
+    char typeStr[64];
+    char addressStr[128];
+    uint64 bytesSent;
+    uint64 bytesReceived;
+};
+
 class NetworkView : public BView {
 public:
     NetworkView();
     virtual ~NetworkView();
     
     virtual void AttachedToWindow();
+    virtual void DetachedFromWindow();
+    virtual void MessageReceived(BMessage* message);
     virtual void Pulse();
 
     float GetUploadSpeed();
     float GetDownloadSpeed();
 
 private:
-    void UpdateData();
+    static int32 UpdateThread(void* data);
+    void UpdateData(BMessage* message);
     BString FormatBytes(uint64 bytes);
     BString FormatSpeed(uint64 bytesDelta, bigtime_t microSecondsDelta);
     
@@ -43,6 +54,10 @@ private:
     std::map<std::string, BRow*> fInterfaceRowMap;
     float fUploadSpeed;
     float fDownloadSpeed;
+
+    thread_id fUpdateThread;
+    sem_id fScanSem;
+    volatile bool fTerminated;
 };
 
 #endif // NETWORKVIEW_H
