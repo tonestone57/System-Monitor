@@ -9,6 +9,7 @@
 #include <Message.h>
 #include <map>
 #include <vector>
+#include <unordered_map>
 #include <kernel/OS.h>
 
 class BColumnListView;
@@ -72,9 +73,8 @@ private:
     BColumn* fThreadsColumn;
     BColumn* fUserColumn;
     
-    std::map<thread_id, bigtime_t> fThreadTimeMap;
-    std::map<uid_t, BString> fUserNameCache;
-	std::map<team_id, BRow*> fTeamRowMap;
+    std::unordered_map<thread_id, bigtime_t> fThreadTimeMap;
+	std::unordered_map<team_id, BRow*> fTeamRowMap;
     bigtime_t fLastSystemTime;
     
     thread_id fUpdateThread;
