@@ -1315,22 +1315,13 @@ ActivityView::_LegendColorFrameAt(BRect frame, int32 index) const
 
 float
 ActivityView::_PositionForValue(DataSource* source, DataHistory* values,
-	int64 value)
+	int64 value, float height, int64 min, int64 max)
 {
-	int64 min = source->Minimum();
-	int64 max = source->Maximum();
-	if (source->AdaptiveScale()) {
-		int64 adaptiveMax = int64(values->MaximumValue() * 1.2);
-		if (adaptiveMax < max)
-			max = adaptiveMax;
-	}
-
 	if (value > max)
 		value = max;
 	if (value < min)
 		value = min;
 
-	float height = _HistoryFrame().Height();
 	return height - (value - min) * height / (max - min);
 }
 
@@ -1347,6 +1338,7 @@ ActivityView::_DrawHistory()
 	}
 
 	BRect frame = _HistoryFrame();
+    float height = frame.Height();
 	BRect outerFrame = frame.InsetByCopy(-2, -2);
 
 	// draw the outer frame
@@ -1422,9 +1414,17 @@ ActivityView::_DrawHistory()
 
 			BPoint prev;
 
+			int64 min = source->Minimum();
+			int64 max = source->Maximum();
+			if (source->AdaptiveScale()) {
+				int64 adaptiveMax = int64(values->MaximumValue() * 1.2);
+				if (adaptiveMax < max)
+					max = adaptiveMax;
+			}
+
 			for (uint32 j = viewValues->Start(); j < steps; x += step, j++) {
 				float y = _PositionForValue(source, values,
-					viewValues->ValueAt(j));
+					viewValues->ValueAt(j), height, min, max);
 
 				if (first) {
 					first = false;
@@ -1439,13 +1439,21 @@ ActivityView::_DrawHistory()
 			// We try to draw using the slower but less memory
 			// consuming solution using StrokeLine.
 
+			int64 min = source->Minimum();
+			int64 max = source->Maximum();
+			if (source->AdaptiveScale()) {
+				int64 adaptiveMax = int64(values->MaximumValue() * 1.2);
+				if (adaptiveMax < max)
+					max = adaptiveMax;
+			}
+
 			x = viewValues->Start() * step;
 			first = true;
 			BPoint prev;
 
 			for (uint32 j = viewValues->Start(); j < steps; x += step, j++) {
 				float y = _PositionForValue(source, values,
-					viewValues->ValueAt(j));
+					viewValues->ValueAt(j), height, min, max);
 
 				if (first) {
 					first = false;
