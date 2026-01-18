@@ -247,13 +247,19 @@ void ProcessView::MessageReceived(BMessage* message)
 }
 
 BString ProcessView::GetUserName(uid_t uid) {
-    struct passwd* pw = getpwuid(uid);
-    if (pw) {
-        return BString(pw->pw_name);
+    if (fUserNameCache.count(uid) > 0) {
+        return fUserNameCache[uid];
     }
-    BString idStr;
-    idStr << uid;
-    return idStr;
+
+    struct passwd* pw = getpwuid(uid);
+    BString name;
+    if (pw) {
+        name = pw->pw_name;
+    } else {
+        name << uid;
+    }
+    fUserNameCache[uid] = name;
+    return name;
 }
 
 void ProcessView::ShowContextMenu(BPoint screenPoint) {
