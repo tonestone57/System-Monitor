@@ -75,9 +75,12 @@ static const char *kAMDExtFeatures[32] = {
 
 #include <InterfaceDefs.h>
 
+static const uint32 kMsgUpdateInfo = 'UPDT';
+
 SysInfoView::SysInfoView()
     : BView("SysInfoView", B_WILL_DRAW),
-      fInfoTextView(NULL)
+      fInfoTextView(NULL),
+      fLoadThread(-1)
 {
     SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
     CreateLayout();
@@ -86,6 +89,9 @@ SysInfoView::SysInfoView()
 SysInfoView::~SysInfoView()
 {
     // Child views are automatically deleted
+    if (fLoadThread >= 0) {
+        wait_for_thread(fLoadThread, NULL);
+    }
 }
 
 void SysInfoView::CreateLayout()
@@ -109,7 +115,49 @@ void SysInfoView::CreateLayout()
 void SysInfoView::AttachedToWindow()
 {
     BView::AttachedToWindow();
-    LoadData();
+
+    // Spawn thread to load data
+    BMessenger* messenger = new BMessenger(this);
+    fLoadThread = spawn_thread(_LoadDataThread, "sysinfo_loader", B_NORMAL_PRIORITY, messenger);
+    if (fLoadThread >= 0) {
+        resume_thread(fLoadThread);
+    } else {
+        delete messenger;
+    }
+}
+
+void SysInfoView::MessageReceived(BMessage* message)
+{
+    switch (message->what) {
+        case kMsgUpdateInfo: {
+            BString infoText;
+            if (message->FindString("text", &infoText) == B_OK) {
+                fInfoTextView->SetText(infoText.String());
+
+                // Styling
+                BFont font;
+                fInfoTextView->GetFont(&font);
+                BFont boldFont(be_bold_font);
+
+                auto boldHeader = [&](const char* key) {
+                    BString str = B_TRANSLATE(key);
+                    int32 pos = infoText.FindFirst(str);
+                    if (pos >= 0) {
+                        fInfoTextView->SetFontAndColor(pos, pos + str.Length(), &boldFont);
+                    }
+                };
+
+                boldHeader("OPERATING SYSTEM");
+                boldHeader("PROCESSOR");
+                boldHeader("GRAPHICS");
+                boldHeader("MEMORY");
+                boldHeader("DISK VOLUMES");
+            }
+            break;
+        }
+        default:
+            BView::MessageReceived(message);
+    }
 }
 
 BString SysInfoView::GetCPUBrandString()
@@ -129,182 +177,192 @@ BString SysInfoView::GetCPUBrandString()
 #endif
 }
 
-void SysInfoView::LoadData() {
+// Wrapper to use global functions or reimplement if needed
+BString SysInfoView::FormatBytes(uint64 bytes, int precision) {
+    return ::FormatBytes(bytes, precision);
+}
+
+BString SysInfoView::FormatHertz(uint64 hertz) {
+    return ::FormatHertz(hertz);
+}
+
+BString SysInfoView::FormatUptime(bigtime_t bootTime) {
+    return ::FormatUptime(bootTime);
+}
+
+int32 SysInfoView::_LoadDataThread(void* data) {
+    BMessenger* messenger = static_cast<BMessenger*>(data);
+    if (!messenger) return B_BAD_VALUE;
+
     BString infoText;
 
     system_info sysInfo;
     if (get_system_info(&sysInfo) != B_OK) {
         infoText << B_TRANSLATE("Error fetching system info");
-        fInfoTextView->SetText(infoText.String());
-        return;
-    }
-
-    // OS Info
-    infoText << B_TRANSLATE("OPERATING SYSTEM") << "\n\n";
-    struct utsname unameInfo;
-    if (uname(&unameInfo) == 0) {
-        BString kernelVer;
-        kernelVer.SetToFormat("%s %s %s hrev%" B_PRId64 " %s %s",
-                              unameInfo.sysname, unameInfo.nodename, unameInfo.version,
-                              sysInfo.kernel_version, unameInfo.machine, unameInfo.machine);
-        infoText << B_TRANSLATE("Kernel:") << " " << kernelVer << "\n";
-    }
-    BString archStr;
-#if defined(__x86_64__)
-    archStr = "x86_64";
-#elif defined(__i386__) || defined(__INTEL__)
-    archStr = "x86 (32-bit)";
-#elif defined(__aarch64__)
-    archStr = "ARM64";
-#elif defined(__arm__)
-    archStr = "ARM (32-bit)";
-#elif defined(__riscv)
-    archStr = "RISC-V";
-#elif defined(__sparc__)
-    archStr = "SPARC";
-#elif defined(__powerpc__)
-    archStr = "PowerPC";
-#elif defined(__m68k__)
-    archStr = "m68k";
-#else
-    archStr = B_TRANSLATE("Unknown");
-#endif
-    infoText << B_TRANSLATE("CPU Architecture:") << " " << archStr << "\n";
-    infoText << B_TRANSLATE("System Uptime:") << " " << ::FormatUptime(system_time()) << "\n";
-
-    infoText << B_TRANSLATE("Teams:") << " " << sysInfo.used_teams << " / " << sysInfo.max_teams << "\n";
-    infoText << B_TRANSLATE("Threads:") << " " << sysInfo.used_threads << " / " << sysInfo.max_threads << "\n";
-    infoText << B_TRANSLATE("Ports:") << " " << sysInfo.used_ports << " / " << sysInfo.max_ports << "\n";
-    infoText << B_TRANSLATE("Semaphores:") << " " << sysInfo.used_semaphores << " / " << sysInfo.max_semaphores << "\n\n\n";
-
-    // CPU Info
-    infoText << B_TRANSLATE("PROCESSOR") << "\n\n";
-    BString cpuBrand = GetCPUBrandString();
-    infoText << B_TRANSLATE("Model:") << " " << (cpuBrand.IsEmpty() ? B_TRANSLATE("Unknown CPU") : cpuBrand.String()) << "\n";
-    infoText << B_TRANSLATE("Cores:") << " " << sysInfo.cpu_count << "\n";
-    infoText << B_TRANSLATE("Features:") << " " << _GetCPUFeaturesString() << "\n";
-    cpu_topology_node_info* topology = NULL;
-    uint32_t topologyNodeCount = 0;
-    if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
-        topology = new cpu_topology_node_info[topologyNodeCount];
-        if (topology != NULL) {
-            uint32_t actualNodeCount = topologyNodeCount;
-            if (get_cpu_topology_info(topology, &actualNodeCount) == B_OK) {
-                uint64_t max_freq = 0;
-                for (uint32_t i = 0; i < actualNodeCount; i++) {
-                    if (topology[i].type == B_TOPOLOGY_CORE) {
-                        if (topology[i].data.core.default_frequency > max_freq)
-                            max_freq = topology[i].data.core.default_frequency;
-                    }
-                }
-                if (max_freq > 0)
-                    infoText << B_TRANSLATE("Clock Speed:") << " " << ::FormatHertz(max_freq) << "\n";
-            }
-            delete[] topology;
-        }
-    }
-    infoText << "\n\n";
-
-    // Graphics Info
-    infoText << B_TRANSLATE("GRAPHICS") << "\n\n";
-    BScreen screen(B_MAIN_SCREEN_ID);
-    if (screen.IsValid()) {
-        accelerant_device_info deviceInfo;
-        if (screen.GetDeviceInfo(&deviceInfo) == B_OK) {
-            infoText << B_TRANSLATE("GPU Type:") << " " << deviceInfo.name << "\n";
-            infoText << B_TRANSLATE("Driver:") << " " << deviceInfo.version << "\n";
-			if (deviceInfo.memory > 0)
-				infoText << B_TRANSLATE("VRAM:") << " " << ::FormatBytes(deviceInfo.memory) << "\n";
-			else
-				infoText << B_TRANSLATE("VRAM:") << " N/A\n";
-        } else {
-            infoText << B_TRANSLATE("GPU Type:") << " " << B_TRANSLATE("Error getting GPU info") << "\n";
-        }
-        display_mode mode;
-        if (screen.GetMode(&mode) == B_OK) {
-            BString resStr;
-            resStr.SetToFormat("%dx%d", mode.virtual_width, mode.virtual_height);
-            infoText << B_TRANSLATE("Resolution:") << " " << resStr << "\n";
-        } else {
-            infoText << B_TRANSLATE("Resolution:") << " N/A\n";
-        }
     } else {
-        infoText << B_TRANSLATE("GPU Type:") << " " << B_TRANSLATE("Error: Invalid screen object") << "\n";
-    }
-    infoText << "\n\n";
+        // OS Info
+        infoText << B_TRANSLATE("OPERATING SYSTEM") << "\n\n";
+        struct utsname unameInfo;
+        if (uname(&unameInfo) == 0) {
+            BString kernelVer;
+            kernelVer.SetToFormat("%s %s %s hrev%" B_PRId64 " %s %s",
+                                  unameInfo.sysname, unameInfo.nodename, unameInfo.version,
+                                  sysInfo.kernel_version, unameInfo.machine, unameInfo.machine);
+            infoText << B_TRANSLATE("Kernel:") << " " << kernelVer << "\n";
+        }
+        BString archStr;
+    #if defined(__x86_64__)
+        archStr = "x86_64";
+    #elif defined(__i386__) || defined(__INTEL__)
+        archStr = "x86 (32-bit)";
+    #elif defined(__aarch64__)
+        archStr = "ARM64";
+    #elif defined(__arm__)
+        archStr = "ARM (32-bit)";
+    #elif defined(__riscv)
+        archStr = "RISC-V";
+    #elif defined(__sparc__)
+        archStr = "SPARC";
+    #elif defined(__powerpc__)
+        archStr = "PowerPC";
+    #elif defined(__m68k__)
+        archStr = "m68k";
+    #else
+        archStr = B_TRANSLATE("Unknown");
+    #endif
+        infoText << B_TRANSLATE("CPU Architecture:") << " " << archStr << "\n";
+        infoText << B_TRANSLATE("System Uptime:") << " " << FormatUptime(system_time()) << "\n";
 
-    // Memory Info
-    infoText << B_TRANSLATE("MEMORY") << "\n\n";
-    infoText << B_TRANSLATE("Physical RAM:") << " " << ::FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n";
+        infoText << B_TRANSLATE("Teams:") << " " << sysInfo.used_teams << " / " << sysInfo.max_teams << "\n";
+        infoText << B_TRANSLATE("Threads:") << " " << sysInfo.used_threads << " / " << sysInfo.max_threads << "\n";
+        infoText << B_TRANSLATE("Ports:") << " " << sysInfo.used_ports << " / " << sysInfo.max_ports << "\n";
+        infoText << B_TRANSLATE("Semaphores:") << " " << sysInfo.used_semaphores << " / " << sysInfo.max_semaphores << "\n\n\n";
 
-    uint64 swapBytes = 0;
-    if (sysInfo.max_swap_pages > sysInfo.max_pages)
-        swapBytes = (uint64)(sysInfo.max_swap_pages - sysInfo.max_pages) * B_PAGE_SIZE;
+        // CPU Info
+        infoText << B_TRANSLATE("PROCESSOR") << "\n\n";
+        BString cpuBrand = GetCPUBrandString();
+        infoText << B_TRANSLATE("Model:") << " " << (cpuBrand.IsEmpty() ? B_TRANSLATE("Unknown CPU") : cpuBrand.String()) << "\n";
 
-    infoText << B_TRANSLATE("Swap Memory:") << " " << ::FormatBytes(swapBytes) << "\n\n\n";
-
-    // Disk Info
-    infoText << B_TRANSLATE("DISK VOLUMES") << "\n\n";
-    BVolume volume;
-    BVolumeRoster volRoster;
-    volRoster.Rewind();
-    int diskCount = 0;
-    while (volRoster.GetNextVolume(&volume) == B_OK) {
-        if (volume.Capacity() <= 0) continue;
-        diskCount++;
-
-        fs_info fsInfo;
-        if (fs_stat_dev(volume.Device(), &fsInfo) == B_OK) {
-            if (diskCount > 1)
-                infoText << "\n---\n";
-            infoText << B_TRANSLATE("Volume Name:") << " " << fsInfo.volume_name << "\n";
-
-            BDirectory rootDir;
-            if (volume.GetRootDirectory(&rootDir) == B_OK) {
-                BEntry entry;
-                if (rootDir.GetEntry(&entry) == B_OK) {
-                    BPath path;
-                    if (entry.GetPath(&path) == B_OK) {
-                        infoText << B_TRANSLATE("Mount Point:") << " " << path.Path() << "\n";
-                    }
+        // Microcode Reading (New feature added asynchronously)
+        int fd = open("/dev/microcode_info", O_RDONLY);
+        if (fd >= 0) {
+            char buffer[64] = {};
+            ssize_t len = read(fd, buffer, sizeof(buffer) - 1);
+            close(fd);
+            if (len > 0) {
+                BString microcode(buffer);
+                microcode.Trim();
+                if (!microcode.IsEmpty()) {
+                    infoText << B_TRANSLATE("Microcode:") << " " << microcode << "\n";
                 }
             }
-            infoText << B_TRANSLATE("File System:") << " " << fsInfo.fsh_name << "\n";
-            infoText << B_TRANSLATE("Total Size:") << " " << ::FormatBytes(fsInfo.total_blocks * fsInfo.block_size).String() << "\n";
-            infoText << B_TRANSLATE("Free Size:") << " " << ::FormatBytes(fsInfo.free_blocks * fsInfo.block_size).String() << "\n";
+        }
+
+        infoText << B_TRANSLATE("Cores:") << " " << sysInfo.cpu_count << "\n";
+        infoText << B_TRANSLATE("Features:") << " " << _GetCPUFeaturesString() << "\n";
+        cpu_topology_node_info* topology = NULL;
+        uint32_t topologyNodeCount = 0;
+        if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
+            topology = new cpu_topology_node_info[topologyNodeCount];
+            if (topology != NULL) {
+                uint32_t actualNodeCount = topologyNodeCount;
+                if (get_cpu_topology_info(topology, &actualNodeCount) == B_OK) {
+                    uint64_t max_freq = 0;
+                    for (uint32_t i = 0; i < actualNodeCount; i++) {
+                        if (topology[i].type == B_TOPOLOGY_CORE) {
+                            if (topology[i].data.core.default_frequency > max_freq)
+                                max_freq = topology[i].data.core.default_frequency;
+                        }
+                    }
+                    if (max_freq > 0)
+                        infoText << B_TRANSLATE("Clock Speed:") << " " << FormatHertz(max_freq) << "\n";
+                }
+                delete[] topology;
+            }
+        }
+        infoText << "\n\n";
+
+        // Graphics Info
+        infoText << B_TRANSLATE("GRAPHICS") << "\n\n";
+        BScreen screen(B_MAIN_SCREEN_ID);
+        if (screen.IsValid()) {
+            accelerant_device_info deviceInfo;
+            if (screen.GetDeviceInfo(&deviceInfo) == B_OK) {
+                infoText << B_TRANSLATE("GPU Type:") << " " << deviceInfo.name << "\n";
+                infoText << B_TRANSLATE("Driver:") << " " << deviceInfo.version << "\n";
+                if (deviceInfo.memory > 0)
+                    infoText << B_TRANSLATE("VRAM:") << " " << FormatBytes(deviceInfo.memory) << "\n";
+                else
+                    infoText << B_TRANSLATE("VRAM:") << " N/A\n";
+            } else {
+                infoText << B_TRANSLATE("GPU Type:") << " " << B_TRANSLATE("Error getting GPU info") << "\n";
+            }
+            display_mode mode;
+            if (screen.GetMode(&mode) == B_OK) {
+                BString resStr;
+                resStr.SetToFormat("%dx%d", mode.virtual_width, mode.virtual_height);
+                infoText << B_TRANSLATE("Resolution:") << " " << resStr << "\n";
+            } else {
+                infoText << B_TRANSLATE("Resolution:") << " N/A\n";
+            }
+        } else {
+            infoText << B_TRANSLATE("GPU Type:") << " " << B_TRANSLATE("Error: Invalid screen object") << "\n";
+        }
+        infoText << "\n\n";
+
+        // Memory Info
+        infoText << B_TRANSLATE("MEMORY") << "\n\n";
+        infoText << B_TRANSLATE("Physical RAM:") << " " << FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n";
+
+        uint64 swapBytes = 0;
+        if (sysInfo.max_swap_pages > sysInfo.max_pages)
+            swapBytes = (uint64)(sysInfo.max_swap_pages - sysInfo.max_pages) * B_PAGE_SIZE;
+
+        infoText << B_TRANSLATE("Swap Memory:") << " " << FormatBytes(swapBytes) << "\n\n\n";
+
+        // Disk Info
+        infoText << B_TRANSLATE("DISK VOLUMES") << "\n\n";
+        BVolume volume;
+        BVolumeRoster volRoster;
+        volRoster.Rewind();
+        int diskCount = 0;
+        while (volRoster.GetNextVolume(&volume) == B_OK) {
+            if (volume.Capacity() <= 0) continue;
+            diskCount++;
+
+            fs_info fsInfo;
+            if (fs_stat_dev(volume.Device(), &fsInfo) == B_OK) {
+                if (diskCount > 1)
+                    infoText << "\n---\n";
+                infoText << B_TRANSLATE("Volume Name:") << " " << fsInfo.volume_name << "\n";
+
+                BDirectory rootDir;
+                if (volume.GetRootDirectory(&rootDir) == B_OK) {
+                    BEntry entry;
+                    if (rootDir.GetEntry(&entry) == B_OK) {
+                        BPath path;
+                        if (entry.GetPath(&path) == B_OK) {
+                            infoText << B_TRANSLATE("Mount Point:") << " " << path.Path() << "\n";
+                        }
+                    }
+                }
+                infoText << B_TRANSLATE("File System:") << " " << fsInfo.fsh_name << "\n";
+                infoText << B_TRANSLATE("Total Size:") << " " << FormatBytes(fsInfo.total_blocks * fsInfo.block_size).String() << "\n";
+                infoText << B_TRANSLATE("Free Size:") << " " << FormatBytes(fsInfo.free_blocks * fsInfo.block_size).String() << "\n";
+            }
+        }
+
+        if (diskCount == 0) {
+            infoText << B_TRANSLATE("No disk volumes found or accessible.");
         }
     }
 
-    if (diskCount == 0) {
-        infoText << B_TRANSLATE("No disk volumes found or accessible.");
-    }
+    BMessage reply(kMsgUpdateInfo);
+    reply.AddString("text", infoText);
+    messenger->SendMessage(&reply);
+    delete messenger;
 
-    fInfoTextView->SetText(infoText.String());
-
-    BFont font;
-    fInfoTextView->GetFont(&font);
-    BFont boldFont(be_bold_font);
-
-    // Note: Applying styles based on localized strings is fragile if the translation changes the order or string.
-    // However, for this task, I'll update the search strings to match the B_TRANSLATE keys.
-    // A better approach would be to insert text in chunks and apply style, but that requires refactoring LoadData.
-    // I will try to match the localized string.
-    // Since B_TRANSLATE returns the translated string, I can search for it.
-
-    // Helper to bold a section header
-    auto boldHeader = [&](const char* key) {
-        BString str = B_TRANSLATE(key);
-        int32 pos = infoText.FindFirst(str);
-        if (pos >= 0) {
-            fInfoTextView->SetFontAndColor(pos, pos + str.Length(), &boldFont);
-        }
-    };
-
-    boldHeader("OPERATING SYSTEM");
-    boldHeader("PROCESSOR");
-    boldHeader("GRAPHICS");
-    boldHeader("MEMORY");
-    boldHeader("DISK VOLUMES");
+    return B_OK;
 }
 
 BString

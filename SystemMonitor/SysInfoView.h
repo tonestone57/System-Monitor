@@ -5,6 +5,7 @@
 #include <StringView.h>
 #include <String.h>
 #include <kernel/OS.h>
+#include <Messenger.h>
 
 class BBox;
 class BTextView;
@@ -16,19 +17,22 @@ public:
     virtual ~SysInfoView();
     
     virtual void AttachedToWindow();
+    virtual void MessageReceived(BMessage* message);
 
 private:
     void CreateLayout();
-    void LoadData();
+    static int32 _LoadDataThread(void* data);
     
-    BString FormatBytes(uint64 bytes, int precision = 2);
-    BString FormatHertz(uint64 hertz);
-    BString FormatUptime(bigtime_t bootTime);
-    BString GetCPUBrandString();
-    BString _GetCPUFeaturesString();
-    void GetCPUInfo(system_info* sysInfo);
+    // Static helpers to be used by the thread
+    static BString FormatBytes(uint64 bytes, int precision = 2);
+    static BString FormatHertz(uint64 hertz);
+    static BString FormatUptime(bigtime_t bootTime);
+    static BString GetCPUBrandString();
+    static BString _GetCPUFeaturesString();
+    static void GetCPUInfo(system_info* sysInfo);
     
     BTextView* fInfoTextView;
+    thread_id fLoadThread;
 };
 
 #endif // SYSINFOVIEW_H
