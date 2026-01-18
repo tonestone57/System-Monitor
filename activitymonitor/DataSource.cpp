@@ -931,15 +931,14 @@ CPUFrequencyDataSource::_SetCPU(int32 cpu)
 	}
 
 	const rgb_color kColors[] = {
-		// TODO: find some better defaults...
-		{200, 0, 200},
-		{0, 200, 200},
-		{80, 80, 80},
-		{230, 150, 50},
-		{255, 0, 0},
-		{0, 255, 0},
-		{0, 0, 255},
-		{0, 150, 230}
+		{51, 102, 204},
+		{220, 57, 18},
+		{255, 153, 0},
+		{16, 150, 24},
+		{153, 0, 153},
+		{0, 153, 198},
+		{221, 68, 119},
+		{102, 170, 0}
 	};
 	const uint32 kNumColors = B_COUNT_OF(kColors);
 
@@ -1087,15 +1086,14 @@ CPUUsageDataSource::_SetCPU(int32 cpu)
 	}
 
 	const rgb_color kColors[] = {
-		// TODO: find some better defaults...
-		{200, 0, 200},
-		{0, 200, 200},
-		{80, 80, 80},
-		{230, 150, 50},
-		{255, 0, 0},
-		{0, 255, 0},
-		{0, 0, 255},
-		{0, 150, 230}
+		{51, 102, 204},
+		{220, 57, 18},
+		{255, 153, 0},
+		{16, 150, 24},
+		{153, 0, 153},
+		{0, 153, 198},
+		{221, 68, 119},
+		{102, 170, 0}
 	};
 	const uint32 kNumColors = B_COUNT_OF(kColors);
 
