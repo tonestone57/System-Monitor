@@ -7,6 +7,7 @@
 
 
 #include <stdlib.h>
+#include <new>
 
 #include <OS.h>
 
@@ -22,9 +23,44 @@ public:
 		SetSize(size);
 	}
 
+	CircularBuffer(const CircularBuffer& other)
+		:
+		fSize(0),
+		fBuffer(NULL)
+	{
+		*this = other;
+	}
+
 	~CircularBuffer()
 	{
-		free(fBuffer);
+		delete[] fBuffer;
+	}
+
+	CircularBuffer& operator=(const CircularBuffer& other)
+	{
+		if (this == &other)
+			return *this;
+
+		Type* newBuffer = new(std::nothrow) Type[other.fSize];
+		if (newBuffer == NULL && other.fSize > 0) {
+			// Allocation failed, and we needed a buffer.
+			// Retain old state.
+			return *this;
+		}
+
+		// Copy data from other to newBuffer
+		if (newBuffer != NULL) {
+			for (size_t i = 0; i < other.fSize; i++)
+				newBuffer[i] = other.fBuffer[i];
+		}
+
+		delete[] fBuffer;
+		fBuffer = newBuffer;
+		fSize = other.fSize;
+		fFirst = other.fFirst;
+		fIn = other.fIn;
+
+		return *this;
 	}
 
 	status_t InitCheck() const
@@ -37,14 +73,33 @@ public:
 		if (fSize == size)
 			return B_OK;
 
-		MakeEmpty();
-
-		fSize = size;
-		fBuffer = (Type*)malloc(fSize * sizeof(Type));
-		if (fBuffer == NULL) {
-			fSize = 0;
+		Type* newBuffer = new(std::nothrow) Type[size];
+		if (newBuffer == NULL)
 			return B_NO_MEMORY;
+
+		if (fBuffer != NULL) {
+			// Preserve existing data
+			uint32 itemsToCopy = (fIn < size) ? fIn : size;
+			uint32 sourceIndex = fFirst;
+			// If we are shrinking and have more items than new size, we drop oldest
+			if (fIn > size) {
+				sourceIndex = (fFirst + (fIn - size)) % fSize;
+			}
+
+			for (uint32 i = 0; i < itemsToCopy; i++) {
+				newBuffer[i] = fBuffer[(sourceIndex + i) % fSize];
+			}
+
+			fFirst = 0;
+			fIn = itemsToCopy;
+		} else {
+			fFirst = 0;
+			fIn = 0;
 		}
+
+		delete[] fBuffer;
+		fBuffer = newBuffer;
+		fSize = size;
 
 		return B_OK;
 	}
@@ -76,10 +131,12 @@ public:
 	void AddItem(const Type& item)
 	{
 		uint32 index;
-		if (fIn < fSize)
+		if (fIn < fSize) {
 			index = fFirst + fIn++;
-		else
-			index = fFirst++;
+		} else {
+			index = fFirst;
+			fFirst = (fFirst + 1) % fSize;
+		}
 
 		if (fBuffer != NULL)
 			fBuffer[index % fSize] = item;
@@ -91,9 +148,6 @@ public:
 	}
 
 private:
-	CircularBuffer(const CircularBuffer& other);
-	CircularBuffer& operator=(const CircularBuffer& other);
-
 	uint32		fFirst;
 	uint32		fIn;
 	uint32		fSize;

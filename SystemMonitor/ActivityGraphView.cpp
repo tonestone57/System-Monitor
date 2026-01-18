@@ -193,11 +193,17 @@ ActivityGraphView::_DrawHistory()
             view->SetHighColor(drawColor);
             view->SetPenSize(1.5);
 
-            view->BeginLineArray(steps - 1);
-            for (uint32 i = 0; i < steps - 1; i++) {
-                view->AddLine(points[i+1], points[i+2], drawColor);
+            try {
+                view->BeginLineArray(steps - 1);
+                for (uint32 i = 0; i < steps - 1; i++) {
+                    view->AddLine(points[i+1], points[i+2], drawColor);
+                }
+                view->EndLineArray();
+            } catch (const std::bad_alloc&) {
+                for (uint32 i = 0; i < steps - 1; i++) {
+                    view->StrokeLine(points[i+1], points[i+2]);
+                }
             }
-            view->EndLineArray();
 		}
 		view->Sync();
 		fOffscreen->Unlock();
