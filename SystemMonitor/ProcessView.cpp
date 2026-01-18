@@ -246,20 +246,26 @@ void ProcessView::MessageReceived(BMessage* message)
     }
 }
 
-BString ProcessView::GetUserName(uid_t uid) {
-    if (fUserNameCache.count(uid) > 0) {
-        return fUserNameCache[uid];
+const BString& ProcessView::GetUserName(uid_t uid) {
+    auto it = fUserNameCache.find(uid);
+    if (it != fUserNameCache.end()) {
+        return it->second;
     }
 
-    struct passwd* pw = getpwuid(uid);
+    struct passwd pwd;
+    struct passwd* result = NULL;
+    long bufSize = sysconf(_SC_GETPW_R_SIZE_MAX);
+    if (bufSize == -1) bufSize = 16384;
+    char buffer[bufSize];
+
     BString name;
-    if (pw) {
-        name = pw->pw_name;
+    if (getpwuid_r(uid, &pwd, buffer, sizeof(buffer), &result) == 0 && result != NULL) {
+        name = result->pw_name;
     } else {
         name << uid;
     }
-    fUserNameCache[uid] = name;
-    return name;
+
+    return fUserNameCache.emplace(uid, name).first->second;
 }
 
 void ProcessView::ShowContextMenu(BPoint screenPoint) {
@@ -438,7 +444,7 @@ int32 ProcessView::UpdateThread(void* data)
             currentProc.threadCount = teamInfo.thread_count;
             currentProc.areaCount = teamInfo.area_count;
             currentProc.userID = teamInfo.uid;
-			BString userName = view->GetUserName(currentProc.userID);
+			const BString& userName = view->GetUserName(currentProc.userID);
 			strncpy(currentProc.userName, userName.String(), B_OS_NAME_LENGTH);
 
             int32 threadCookie = 0;
