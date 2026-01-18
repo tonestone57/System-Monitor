@@ -59,7 +59,7 @@ private:
     void SetSelectedProcessPriority(int32 priority);
     void ShowContextMenu(BPoint screenPoint);
     BString FormatBytes(uint64 bytes);
-    BString GetUserName(uid_t uid);
+    const BString& GetUserName(uid_t uid);
     
     BColumnListView* fProcessListView;
     BPopUpMenu* fContextMenu;
