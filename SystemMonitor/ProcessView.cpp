@@ -14,7 +14,7 @@
 #include <cstdio>
 #include <MenuItem.h>
 #include <Font.h>
-#include <set>
+#include <unordered_set>
 #include <Window.h>
 #include <Catalog.h>
 
@@ -247,13 +247,19 @@ void ProcessView::MessageReceived(BMessage* message)
 }
 
 BString ProcessView::GetUserName(uid_t uid) {
-    struct passwd* pw = getpwuid(uid);
-    if (pw) {
-        return BString(pw->pw_name);
+    if (fUserNameCache.count(uid) > 0) {
+        return fUserNameCache[uid];
     }
-    BString idStr;
-    idStr << uid;
-    return idStr;
+
+    struct passwd* pw = getpwuid(uid);
+    BString name;
+    if (pw) {
+        name = pw->pw_name;
+    } else {
+        name << uid;
+    }
+    fUserNameCache[uid] = name;
+    return name;
 }
 
 void ProcessView::ShowContextMenu(BPoint screenPoint) {
@@ -325,7 +331,7 @@ void ProcessView::SetSelectedProcessPriority(int32 priority) {
 
 void ProcessView::Update(BMessage* message)
 {
-    std::set<team_id> activePIDsThisPulse;
+    std::unordered_set<team_id> activePIDsThisPulse;
     const ProcessInfo* info;
     ssize_t size;
 
@@ -363,9 +369,6 @@ void ProcessView::Update(BMessage* message)
                 fTeamRowMap[info->id] = row;
             } else { // Existing process
                 row = fTeamRowMap[info->id];
-                if (fProcessListView->IndexOf(row) < 0) {
-                     fProcessListView->AddRow(row);
-                }
 
                 row->SetField(new BStringField(info->name), kProcessNameColumn);
                 row->SetField(new BStringField(B_TRANSLATE(info->state)), kStateColumn);
@@ -385,8 +388,7 @@ void ProcessView::Update(BMessage* message)
 
         if (!presentInPulse) {
 			BRow* row = it->second;
-            if (fProcessListView->IndexOf(row) >= 0)
-			    fProcessListView->RemoveRow(row);
+			fProcessListView->RemoveRow(row);
 
 			delete row;
 			it = fTeamRowMap.erase(it);
@@ -399,7 +401,7 @@ void ProcessView::Update(BMessage* message)
 int32 ProcessView::UpdateThread(void* data)
 {
     ProcessView* view = static_cast<ProcessView*>(data);
-	std::set<thread_id> activeThreads;
+	std::unordered_set<thread_id> activeThreads;
 
     while (!view->fTerminated) {
 		activeThreads.clear();
