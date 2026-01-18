@@ -1424,8 +1424,24 @@ ActivityView::_DrawHistory()
 
 		} catch (std::bad_alloc&) {
 			// Not enough memory to allocate the line array.
-			// TODO we could try to draw using the slower but less memory
+			// We try to draw using the slower but less memory
 			// consuming solution using StrokeLine.
+
+			x = viewValues->Start() * step;
+			first = true;
+			BPoint prev;
+
+			for (uint32 j = viewValues->Start(); j < steps; x += step, j++) {
+				float y = _PositionForValue(source, values,
+					viewValues->ValueAt(j));
+
+				if (first) {
+					first = false;
+				} else
+					view->StrokeLine(prev, BPoint(x, y));
+
+				prev.Set(x, y);
+			}
 		}
 
 		view->EndLineArray();
