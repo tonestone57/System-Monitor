@@ -15,12 +15,17 @@
 #include <Input.h>
 #include <List.h>
 #include <MediaRoster.h>
+#include <MessageRunner.h>
 #include <Messenger.h>
 #include <Roster.h>
 
 
+const uint32 kMsgAppResync = 'apsy';
+
+
 SystemInfoHandler::SystemInfoHandler()
-	: BHandler("SystemInfoHandler")
+	: BHandler("SystemInfoHandler"),
+	fAppSyncRunner(NULL)
 {
 	fRunningApps = 0;
 	fClipboardSize = 0;
@@ -57,14 +62,14 @@ SystemInfoHandler::StartWatching()
 	fMediaBuffers = 0;
 
 	// running applications count
-	BList teamList;
 	if (be_roster) {
 		be_roster->StartWatching(BMessenger(this),
 			B_REQUEST_LAUNCHED | B_REQUEST_QUIT);
-		be_roster->GetAppList(&teamList);
-		fRunningApps = teamList.CountItems();
-		teamList.MakeEmpty();
+		_UpdateRunningApps();
 	}
+
+	BMessage resyncMsg(kMsgAppResync);
+	fAppSyncRunner = new BMessageRunner(BMessenger(this), &resyncMsg, 5000000LL);
 
 	// useless clipboard size
 	if (be_clipboard) {
@@ -102,6 +107,10 @@ void
 SystemInfoHandler::StopWatching()
 {
 	status_t status;
+
+	delete fAppSyncRunner;
+	fAppSyncRunner = NULL;
+
 	watch_input_devices(BMessenger(this), false);
 	if (BMediaRoster::Roster(&status) && (status >= B_OK)) {
 		BMediaRoster::Roster()->StopWatching(BMessenger(this), B_MEDIA_NODE_CREATED);
@@ -122,13 +131,14 @@ void
 SystemInfoHandler::MessageReceived(BMessage* message)
 {
 	switch (message->what) {
+		case kMsgAppResync:
+			_UpdateRunningApps();
+			break;
 		case B_SOME_APP_LAUNCHED:
 			fRunningApps++;
-			// TODO: maybe resync periodically in case we miss one
 			break;
 		case B_SOME_APP_QUIT:
 			fRunningApps--;
-			// TODO: maybe resync periodically in case we miss one
 			break;
 		case B_CLIPBOARD_CHANGED:
 			_UpdateClipboardData();
@@ -197,6 +207,18 @@ uint32
 SystemInfoHandler::MediaBuffers() const
 {
 	return fMediaBuffers;
+}
+
+
+void
+SystemInfoHandler::_UpdateRunningApps()
+{
+	if (!be_roster)
+		return;
+
+	BList teamList;
+	be_roster->GetAppList(&teamList);
+	fRunningApps = teamList.CountItems();
 }
 
 
