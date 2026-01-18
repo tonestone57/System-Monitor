@@ -356,8 +356,14 @@ void
 ActivityWindow::_MessageDropped(BMessage* message)
 {
 	entry_ref ref;
-	if (message->FindRef("refs", &ref) != B_OK) {
-		// TODO: If app, then launch it, and add ActivityView for this one?
+	for (int32 i = 0; message->FindRef("refs", i, &ref) == B_OK; i++) {
+		// Launch the app (or open the document)
+		be_roster->Launch(&ref);
+
+		// Note: Adding a specific ActivityView for the launched process
+		// is not implemented because the current DataSource architecture
+		// in ActivityMonitor supports only system-wide or per-CPU stats,
+		// not per-process monitoring.
 	}
 }
 
