@@ -9,6 +9,8 @@
 #include <Handler.h>
 
 
+class BMessageRunner;
+
 class SystemInfoHandler : public BHandler {
 public:
 						SystemInfoHandler();
@@ -30,6 +32,9 @@ public:
 
 private:
 			void		_UpdateClipboardData();
+			void		_UpdateRunningApps();
+
+	BMessageRunner*		fAppSyncRunner;
 
 	uint32				fRunningApps;
 	uint32				fClipboardSize;
