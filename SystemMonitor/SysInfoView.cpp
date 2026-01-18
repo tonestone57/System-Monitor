@@ -242,21 +242,7 @@ int32 SysInfoView::_LoadDataThread(void* data) {
         infoText << B_TRANSLATE("PROCESSOR") << "\n\n";
         BString cpuBrand = GetCPUBrandString();
         infoText << B_TRANSLATE("Model:") << " " << (cpuBrand.IsEmpty() ? B_TRANSLATE("Unknown CPU") : cpuBrand.String()) << "\n";
-
-        // Microcode Reading (New feature added asynchronously)
-        int fd = open("/dev/microcode_info", O_RDONLY);
-        if (fd >= 0) {
-            char buffer[64] = {};
-            ssize_t len = read(fd, buffer, sizeof(buffer) - 1);
-            close(fd);
-            if (len > 0) {
-                BString microcode(buffer);
-                microcode.Trim();
-                if (!microcode.IsEmpty()) {
-                    infoText << B_TRANSLATE("Microcode:") << " " << microcode << "\n";
-                }
-            }
-        }
+        int32 splitPoint = infoText.Length();
 
         infoText << B_TRANSLATE("Cores:") << " " << sysInfo.cpu_count << "\n";
         infoText << B_TRANSLATE("Features:") << " " << _GetCPUFeaturesString() << "\n";
@@ -360,8 +346,29 @@ int32 SysInfoView::_LoadDataThread(void* data) {
     BMessage reply(kMsgUpdateInfo);
     reply.AddString("text", infoText);
     messenger->SendMessage(&reply);
-    delete messenger;
 
+    // Microcode Reading (Deferred to prevent blocking initial display)
+    int fd = open("/dev/microcode_info", O_RDONLY);
+    if (fd >= 0) {
+        char buffer[64] = {};
+        ssize_t len = read(fd, buffer, sizeof(buffer) - 1);
+        close(fd);
+        if (len > 0) {
+            BString microcode(buffer);
+            microcode.Trim();
+            if (!microcode.IsEmpty()) {
+                BString label = B_TRANSLATE("Microcode:");
+                label << " " << microcode << "\n";
+                infoText.Insert(label, splitPoint);
+
+                BMessage reply2(kMsgUpdateInfo);
+                reply2.AddString("text", infoText);
+                messenger->SendMessage(&reply2);
+            }
+        }
+    }
+
+    delete messenger;
     return B_OK;
 }
 
