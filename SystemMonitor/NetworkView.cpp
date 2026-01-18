@@ -173,20 +173,28 @@ void NetworkView::UpdateData()
 			fInterfaceRowMap[name.String()] = row;
 		} else {
 			row = rowIt->second;
+            bool changed = false;
+
 			BStringField* field = static_cast<BStringField*>(row->GetField(kInterfaceTypeColumn));
 			if (field != NULL) {
-				if (strcmp(field->String(), typeStr.String()) != 0)
+				if (strcmp(field->String(), typeStr.String()) != 0) {
 					field->SetString(typeStr);
+                    changed = true;
+                }
 			} else {
 				row->SetField(new BStringField(typeStr), kInterfaceTypeColumn);
+                changed = true;
 			}
 
 			field = static_cast<BStringField*>(row->GetField(kInterfaceAddressColumn));
 			if (field != NULL) {
-				if (strcmp(field->String(), addressStr.String()) != 0)
+				if (strcmp(field->String(), addressStr.String()) != 0) {
 					field->SetString(addressStr);
+                    changed = true;
+                }
 			} else {
 				row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
+                changed = true;
 			}
 
 			field = static_cast<BStringField*>(row->GetField(kBytesSentColumn));
@@ -194,11 +202,14 @@ void NetworkView::UpdateData()
                 // Optimize: Only format and update if value changed numerically
                 if (currentSent != rec.bytesSent) {
                     BString sentStr = ::FormatBytes(currentSent);
-                    if (strcmp(field->String(), sentStr.String()) != 0)
+                    if (strcmp(field->String(), sentStr.String()) != 0) {
                         field->SetString(sentStr);
+                        changed = true;
+                    }
                 }
 			} else {
 				row->SetField(new BStringField(::FormatBytes(currentSent)), kBytesSentColumn);
+                changed = true;
 			}
 
 			field = static_cast<BStringField*>(row->GetField(kBytesRecvColumn));
@@ -206,30 +217,40 @@ void NetworkView::UpdateData()
                 // Optimize: Only format and update if value changed numerically
                 if (currentReceived != rec.bytesReceived) {
                     BString recvStr = ::FormatBytes(currentReceived);
-                    if (strcmp(field->String(), recvStr.String()) != 0)
+                    if (strcmp(field->String(), recvStr.String()) != 0) {
                         field->SetString(recvStr);
+                        changed = true;
+                    }
                 }
 			} else {
 				row->SetField(new BStringField(::FormatBytes(currentReceived)), kBytesRecvColumn);
+                changed = true;
 			}
 
 			field = static_cast<BStringField*>(row->GetField(kSendSpeedColumn));
 			if (field != NULL) {
-				if (strcmp(field->String(), sendSpeed.String()) != 0)
+				if (strcmp(field->String(), sendSpeed.String()) != 0) {
 					field->SetString(sendSpeed);
+                    changed = true;
+                }
 			} else {
 				row->SetField(new BStringField(sendSpeed), kSendSpeedColumn);
+                changed = true;
 			}
 
 			field = static_cast<BStringField*>(row->GetField(kRecvSpeedColumn));
 			if (field != NULL) {
-				if (strcmp(field->String(), recvSpeed.String()) != 0)
+				if (strcmp(field->String(), recvSpeed.String()) != 0) {
 					field->SetString(recvSpeed);
+                    changed = true;
+                }
 			} else {
 				row->SetField(new BStringField(recvSpeed), kRecvSpeedColumn);
+                changed = true;
 			}
 
-			fInterfaceListView->UpdateRow(row);
+			if (changed)
+                fInterfaceListView->UpdateRow(row);
 		}
 
         rec.bytesSent = currentSent;

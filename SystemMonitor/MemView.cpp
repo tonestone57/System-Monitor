@@ -80,6 +80,16 @@ MemView::~MemView()
 void MemView::AttachedToWindow()
 {
     BView::AttachedToWindow();
+
+    // Set static values (Total Memory) once
+    system_info sysInfo;
+    if (get_system_info(&sysInfo) == B_OK) {
+        uint64 totalBytes = (uint64)sysInfo.max_pages * B_PAGE_SIZE;
+        fTotalMemValue->SetText(::FormatBytes(totalBytes));
+    } else {
+        fTotalMemValue->SetText(B_TRANSLATE("Error"));
+    }
+
     UpdateData();
 }
 
@@ -99,7 +109,7 @@ void MemView::UpdateData()
         uint64 freeBytes = totalBytes - usedBytes;
         uint64 cachedBytes = ((uint64)sysInfo.cached_pages + (uint64)sysInfo.block_cache_pages) * B_PAGE_SIZE;
 
-        fTotalMemValue->SetText(::FormatBytes(totalBytes));
+        // Total memory is set in AttachedToWindow
         fUsedMemValue->SetText(::FormatBytes(usedBytes));
         fFreeMemValue->SetText(::FormatBytes(freeBytes));
         fCachedMemValue->SetText(::FormatBytes(cachedBytes));
@@ -117,7 +127,7 @@ void MemView::UpdateData()
         }
 
     } else {
-        fTotalMemValue->SetText(B_TRANSLATE("Error"));
+        // fTotalMemValue is handled in AttachedToWindow or stays as is
         fUsedMemValue->SetText(B_TRANSLATE("Error"));
         fFreeMemValue->SetText(B_TRANSLATE("Error"));
         fCachedMemValue->SetText(B_TRANSLATE("Error"));
