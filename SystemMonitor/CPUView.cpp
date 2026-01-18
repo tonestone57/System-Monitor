@@ -170,7 +170,7 @@ void CPUView::GetCPUUsage(float& overallUsage)
     if (fPreviousTimeSnapshot == 0) {
         fPreviousTimeSnapshot = currentTimeSnapshot;
         // Also update previous idle time to avoid spikes on first update
-        if (fCpuInfos && get_cpu_info(0, fCpuCount, fCpuInfos) == B_OK) {
+        if (get_cpu_info(0, fCpuCount, fCpuInfos) == B_OK) {
              for (uint32 i = 0; i < fCpuCount; ++i)
                  fPreviousIdleTime[i] = fCpuInfos[i].active_time;
         }
@@ -184,10 +184,9 @@ void CPUView::GetCPUUsage(float& overallUsage)
     }
 
     float totalDeltaActiveTime = 0;
-    cpu_info* infos = fCpuInfos;
-    if (infos && get_cpu_info(0, fCpuCount, infos) == B_OK) {
+    if (get_cpu_info(0, fCpuCount, fCpuInfos) == B_OK) {
         for (uint32 i = 0; i < fCpuCount; ++i) {
-            bigtime_t delta = infos[i].active_time - fPreviousIdleTime[i];
+            bigtime_t delta = fCpuInfos[i].active_time - fPreviousIdleTime[i];
             if (delta < 0) delta = 0; // Handle time rollover
 
             float coreUsage = (float)delta / elapsedWallTime * 100.0f;
@@ -197,7 +196,7 @@ void CPUView::GetCPUUsage(float& overallUsage)
                 fPerCoreUsage[i] = coreUsage;
 
             totalDeltaActiveTime += delta;
-            fPreviousIdleTime[i] = infos[i].active_time;
+            fPreviousIdleTime[i] = fCpuInfos[i].active_time;
         }
     }
 
