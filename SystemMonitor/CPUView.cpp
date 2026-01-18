@@ -159,8 +159,16 @@ void CPUView::GetCPUUsage(float& overallUsage)
     }
 
     bigtime_t currentTimeSnapshot = system_time();
-    if (fPreviousTimeSnapshot == 0)
+    if (fPreviousTimeSnapshot == 0) {
         fPreviousTimeSnapshot = currentTimeSnapshot;
+        // Also update previous idle time to avoid spikes on first update
+        cpu_info* infos = new(std::nothrow) cpu_info[fCpuCount];
+        if (infos && get_cpu_info(0, fCpuCount, infos) == B_OK) {
+             for (uint32 i = 0; i < fCpuCount; ++i)
+                 fPreviousIdleTime[i] = infos[i].active_time;
+        }
+        delete[] infos;
+    }
     bigtime_t elapsedWallTime = currentTimeSnapshot - fPreviousTimeSnapshot;
     fPreviousTimeSnapshot = currentTimeSnapshot;
 
@@ -170,11 +178,10 @@ void CPUView::GetCPUUsage(float& overallUsage)
     }
 
     float totalDeltaActiveTime = 0;
-
-    for (uint32 i = 0; i < fCpuCount; ++i) {
-        cpu_info info;
-        if (get_cpu_info(i, 1, &info) == B_OK) {
-            bigtime_t delta = info.active_time - fPreviousIdleTime[i];
+    cpu_info* infos = new(std::nothrow) cpu_info[fCpuCount];
+    if (infos && get_cpu_info(0, fCpuCount, infos) == B_OK) {
+        for (uint32 i = 0; i < fCpuCount; ++i) {
+            bigtime_t delta = infos[i].active_time - fPreviousIdleTime[i];
             if (delta < 0) delta = 0; // Handle time rollover
 
             float coreUsage = (float)delta / elapsedWallTime * 100.0f;
@@ -184,9 +191,10 @@ void CPUView::GetCPUUsage(float& overallUsage)
                 fPerCoreUsage[i] = coreUsage;
 
             totalDeltaActiveTime += delta;
-            fPreviousIdleTime[i] = info.active_time;
+            fPreviousIdleTime[i] = infos[i].active_time;
         }
     }
+    delete[] infos;
 
     overallUsage = (float)totalDeltaActiveTime / (elapsedWallTime * fCpuCount) * 100.0f;
 
