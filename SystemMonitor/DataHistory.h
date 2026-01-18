@@ -32,6 +32,7 @@ private:
 	int64				fMinimumValue;
 	int64				fMaximumValue;
 	bigtime_t			fRefreshInterval;
+	bigtime_t			fMemorizeTime;
 	int32				fLastIndex;
 };
 

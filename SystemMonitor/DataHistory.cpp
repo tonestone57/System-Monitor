@@ -6,6 +6,7 @@ DataHistory::DataHistory(bigtime_t memorize, bigtime_t interval)
 	fMinimumValue(0),
 	fMaximumValue(0),
 	fRefreshInterval(interval),
+	fMemorizeTime(memorize),
 	fLastIndex(-1)
 {
 }
@@ -118,7 +119,14 @@ DataHistory::End() const
 void
 DataHistory::SetRefreshInterval(bigtime_t interval)
 {
-	// TODO: adjust buffer size
+	if (interval <= 0 || interval == fRefreshInterval)
+		return;
+
+	fRefreshInterval = interval;
+	size_t newSize = fMemorizeTime / interval;
+	if (newSize < 10) newSize = 10;
+
+	fBuffer.SetSize(newSize);
 }
 
 

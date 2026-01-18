@@ -12,7 +12,8 @@ ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_wh
 	fOffscreen(NULL),
 	fResolution(1000000)
 {
-	fHistory = new DataHistory(10 * 60000000LL, 1000000);
+	// Store 4 hours of history to support zooming out
+	fHistory = new DataHistory(4 * 60 * 60000000LL, 1000000);
 }
 
 
