@@ -75,6 +75,7 @@ private:
     
     std::unordered_map<thread_id, bigtime_t> fThreadTimeMap;
 	std::unordered_map<team_id, BRow*> fTeamRowMap;
+    std::unordered_map<uid_t, BString> fUserNameCache;
     bigtime_t fLastSystemTime;
     
     thread_id fUpdateThread;
