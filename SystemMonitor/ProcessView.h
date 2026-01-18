@@ -73,6 +73,7 @@ private:
     BColumn* fUserColumn;
     
     std::map<thread_id, bigtime_t> fThreadTimeMap;
+    std::map<uid_t, BString> fUserNameCache;
 	std::map<team_id, BRow*> fTeamRowMap;
     bigtime_t fLastSystemTime;
     
