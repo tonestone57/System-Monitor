@@ -158,10 +158,6 @@ void NetworkView::UpdateData()
             }
         }
 
-        rec.bytesSent = currentSent;
-        rec.bytesReceived = currentReceived;
-        rec.lastUpdateTime = currentTime;
-
 		BRow* row;
 		auto rowIt = fInterfaceRowMap.find(name.String());
 		if (rowIt == fInterfaceRowMap.end()) {
@@ -195,18 +191,24 @@ void NetworkView::UpdateData()
 
 			field = static_cast<BStringField*>(row->GetField(kBytesSentColumn));
 			if (field != NULL) {
-				BString sentStr = ::FormatBytes(currentSent);
-				if (strcmp(field->String(), sentStr.String()) != 0)
-					field->SetString(sentStr);
+                // Optimize: Only format and update if value changed numerically
+                if (currentSent != rec.bytesSent) {
+                    BString sentStr = ::FormatBytes(currentSent);
+                    if (strcmp(field->String(), sentStr.String()) != 0)
+                        field->SetString(sentStr);
+                }
 			} else {
 				row->SetField(new BStringField(::FormatBytes(currentSent)), kBytesSentColumn);
 			}
 
 			field = static_cast<BStringField*>(row->GetField(kBytesRecvColumn));
 			if (field != NULL) {
-				BString recvStr = ::FormatBytes(currentReceived);
-				if (strcmp(field->String(), recvStr.String()) != 0)
-					field->SetString(recvStr);
+                // Optimize: Only format and update if value changed numerically
+                if (currentReceived != rec.bytesReceived) {
+                    BString recvStr = ::FormatBytes(currentReceived);
+                    if (strcmp(field->String(), recvStr.String()) != 0)
+                        field->SetString(recvStr);
+                }
 			} else {
 				row->SetField(new BStringField(::FormatBytes(currentReceived)), kBytesRecvColumn);
 			}
@@ -229,6 +231,10 @@ void NetworkView::UpdateData()
 
 			fInterfaceListView->UpdateRow(row);
 		}
+
+        rec.bytesSent = currentSent;
+        rec.bytesReceived = currentReceived;
+        rec.lastUpdateTime = currentTime;
     }
 
 	// Prune dead interfaces from the map
