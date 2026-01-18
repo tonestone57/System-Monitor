@@ -370,14 +370,34 @@ void ProcessView::Update(BMessage* message)
             } else { // Existing process
                 row = fTeamRowMap[info->id];
 
-                row->SetField(new BStringField(info->name), kProcessNameColumn);
-                row->SetField(new BStringField(B_TRANSLATE(info->state)), kStateColumn);
+                BStringField* nameField = static_cast<BStringField*>(row->GetField(kProcessNameColumn));
+                if (strcmp(nameField->String(), info->name) != 0)
+                    nameField->SetString(info->name);
+
+                BStringField* stateField = static_cast<BStringField*>(row->GetField(kStateColumn));
+                BString stateStr = B_TRANSLATE(info->state);
+                if (strcmp(stateField->String(), stateStr.String()) != 0)
+                    stateField->SetString(stateStr);
+
                 char cpuStr[16];
                 snprintf(cpuStr, sizeof(cpuStr), "%.1f", info->cpuUsage);
-                row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
-                row->SetField(new BStringField(::FormatBytes(info->memoryUsageBytes)), kMemoryUsageColumn);
-                row->SetField(new BIntegerField(info->threadCount), kThreadCountColumn);
-                row->SetField(new BStringField(info->userName), kUserNameColumn);
+                BStringField* cpuField = static_cast<BStringField*>(row->GetField(kCPUUsageColumn));
+                if (strcmp(cpuField->String(), cpuStr) != 0)
+                    cpuField->SetString(cpuStr);
+
+                BString memStr = ::FormatBytes(info->memoryUsageBytes);
+                BStringField* memField = static_cast<BStringField*>(row->GetField(kMemoryUsageColumn));
+                if (strcmp(memField->String(), memStr.String()) != 0)
+                    memField->SetString(memStr);
+
+                BIntegerField* threadsField = static_cast<BIntegerField*>(row->GetField(kThreadCountColumn));
+                if (threadsField->Value() != (int32)info->threadCount)
+                    threadsField->SetValue(info->threadCount);
+
+                BStringField* userField = static_cast<BStringField*>(row->GetField(kUserNameColumn));
+                if (strcmp(userField->String(), info->userName) != 0)
+                    userField->SetString(info->userName);
+
                 fProcessListView->UpdateRow(row);
             }
         }
