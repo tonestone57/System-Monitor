@@ -38,15 +38,44 @@ public:
 		if (fSize == size)
 			return B_OK;
 
-		MakeEmpty();
+		Type* newBuffer = new(std::nothrow) Type[size];
+		if (newBuffer == NULL)
+			return B_NO_MEMORY;
+
+		if (fBuffer != NULL) {
+			// Copy existing items
+			uint32 count = fIn;
+			if (count > size)
+				count = size;
+
+			for (uint32 i = 0; i < count; i++) {
+				// We want the newest items if shrinking, or all if growing
+				// But CircularBuffer logic usually appends.
+				// If we shrink, we likely want the *latest* N items.
+				// ItemAt(0) is the oldest. ItemAt(count-1) is the newest.
+				// If we have 100 items and resize to 50, we want items 50..99.
+
+				int32 sourceIndex;
+				if (fIn > size)
+					sourceIndex = i + (fIn - size); // Skip oldest
+				else
+					sourceIndex = i;
+
+				Type* item = ItemAt(sourceIndex);
+				if (item)
+					newBuffer[i] = *item;
+			}
+
+			fIn = count;
+			fFirst = 0;
+		} else {
+			fIn = 0;
+			fFirst = 0;
+		}
 
 		delete[] fBuffer;
 		fSize = size;
-		fBuffer = new(std::nothrow) Type[fSize];
-		if (fBuffer == NULL) {
-			fSize = 0;
-			return B_NO_MEMORY;
-		}
+		fBuffer = newBuffer;
 
 		return B_OK;
 	}

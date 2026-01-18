@@ -370,14 +370,37 @@ void ProcessView::Update(BMessage* message)
             } else { // Existing process
                 row = fTeamRowMap[info->id];
 
-                row->SetField(new BStringField(info->name), kProcessNameColumn);
-                row->SetField(new BStringField(B_TRANSLATE(info->state)), kStateColumn);
+                BStringField* nameField = static_cast<BStringField*>(row->GetField(kProcessNameColumn));
+                if (nameField) nameField->SetString(info->name);
+                else row->SetField(new BStringField(info->name), kProcessNameColumn);
+
+                BStringField* stateField = static_cast<BStringField*>(row->GetField(kStateColumn));
+                if (stateField) stateField->SetString(B_TRANSLATE(info->state));
+                else row->SetField(new BStringField(B_TRANSLATE(info->state)), kStateColumn);
+
                 char cpuStr[16];
                 snprintf(cpuStr, sizeof(cpuStr), "%.1f", info->cpuUsage);
-                row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
-                row->SetField(new BStringField(::FormatBytes(info->memoryUsageBytes)), kMemoryUsageColumn);
-                row->SetField(new BIntegerField(info->threadCount), kThreadCountColumn);
-                row->SetField(new BStringField(info->userName), kUserNameColumn);
+                BStringField* cpuField = static_cast<BStringField*>(row->GetField(kCPUUsageColumn));
+                if (cpuField) cpuField->SetString(cpuStr);
+                else row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
+
+                BString memStr = ::FormatBytes(info->memoryUsageBytes);
+                BStringField* memField = static_cast<BStringField*>(row->GetField(kMemoryUsageColumn));
+                if (memField) memField->SetString(memStr);
+                else row->SetField(new BStringField(memStr), kMemoryUsageColumn);
+
+                // Note: BIntegerField usually lacks SetValue() in public API, skipping optimization to be safe
+                // or replacing if necessary. However, since integers change less frequently than CPU/Mem strings,
+                // we can prioritize string fields.
+                // But let's check if the value actually changed to avoid allocation churn.
+                BIntegerField* threadsField = static_cast<BIntegerField*>(row->GetField(kThreadCountColumn));
+                if (!threadsField || threadsField->Value() != info->threadCount)
+                    row->SetField(new BIntegerField(info->threadCount), kThreadCountColumn);
+
+                BStringField* userField = static_cast<BStringField*>(row->GetField(kUserNameColumn));
+                if (userField) userField->SetString(info->userName);
+                else row->SetField(new BStringField(info->userName), kUserNameColumn);
+
                 fProcessListView->UpdateRow(row);
             }
         }

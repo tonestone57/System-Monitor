@@ -44,6 +44,7 @@ private:
     BLocker fLocker;
     bigtime_t fPreviousTimeSnapshot;
     float fCurrentUsage;
+    uint64 fMaxFrequency;
 };
 
 #endif // CPUVIEW_H

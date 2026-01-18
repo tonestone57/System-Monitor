@@ -162,43 +162,40 @@ ActivityGraphView::_DrawHistory()
 			int64 range = max - min;
 
             // Calculate points
-            int32 pointCount = steps + 2;
-            BPoint* points = new(std::nothrow) BPoint[pointCount];
+            size_t pointCount = steps + 2;
+            if (fPoints.size() != pointCount)
+                fPoints.resize(pointCount);
 
-            if (points) {
-                points[0] = BPoint(frame.left, frame.bottom);
+            fPoints[0] = BPoint(frame.left, frame.bottom);
 
-                for (uint32 i = 0; i < steps; i++) {
-                    int64 value = fHistory->ValueAt(now - (steps - 1 - i) * timeStep);
-                    float y;
-                    if (range == 0)
-                        y = frame.Height() / 2;
-                    else
-                        y = frame.Height() - (value - min) * frame.Height() / range;
-                    points[i+1] = BPoint(i, y);
-                }
-                points[pointCount-1] = BPoint(frame.right, frame.bottom);
-
-                // Fill
-                view->SetDrawingMode(B_OP_ALPHA);
-                rgb_color fillColor = drawColor;
-                fillColor.alpha = 100;
-                view->SetHighColor(fillColor);
-                view->FillPolygon(points, pointCount);
-
-                // Stroke Line
-                view->SetDrawingMode(B_OP_COPY);
-                view->SetHighColor(drawColor);
-                view->SetPenSize(1.5);
-
-                view->BeginLineArray(steps - 1);
-                for (uint32 i = 0; i < steps - 1; i++) {
-                    view->AddLine(points[i+1], points[i+2], drawColor);
-                }
-                view->EndLineArray();
-
-                delete[] points;
+            for (uint32 i = 0; i < steps; i++) {
+                int64 value = fHistory->ValueAt(now - (steps - 1 - i) * timeStep);
+                float y;
+                if (range == 0)
+                    y = frame.Height() / 2;
+                else
+                    y = frame.Height() - (value - min) * frame.Height() / range;
+                fPoints[i+1] = BPoint(i, y);
             }
+            fPoints[pointCount-1] = BPoint(frame.right, frame.bottom);
+
+            // Fill
+            view->SetDrawingMode(B_OP_ALPHA);
+            rgb_color fillColor = drawColor;
+            fillColor.alpha = 100;
+            view->SetHighColor(fillColor);
+            view->FillPolygon(fPoints.data(), pointCount);
+
+            // Stroke Line
+            view->SetDrawingMode(B_OP_COPY);
+            view->SetHighColor(drawColor);
+            view->SetPenSize(1.5);
+
+            view->BeginLineArray(steps - 1);
+            for (uint32 i = 0; i < steps - 1; i++) {
+                view->AddLine(fPoints[i+1], fPoints[i+2], drawColor);
+            }
+            view->EndLineArray();
 		}
 		view->Sync();
 		fOffscreen->Unlock();
