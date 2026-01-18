@@ -368,12 +368,15 @@ void MainWindow::MessageReceived(BMessage* message) {
 
         case MSG_REFRESH_SPEED_HIGH:
             SetPulseRate(500000);
+            if (fProcessView) fProcessView->SetRefreshInterval(500000);
             break;
         case MSG_REFRESH_SPEED_NORMAL:
             SetPulseRate(1000000);
+            if (fProcessView) fProcessView->SetRefreshInterval(1000000);
             break;
         case MSG_REFRESH_SPEED_LOW:
             SetPulseRate(2000000);
+            if (fProcessView) fProcessView->SetRefreshInterval(2000000);
             break;
             
         default:
@@ -436,8 +439,10 @@ void MainWindow::LoadSettings() {
                     fPerformanceView->LoadState(settings);
 
                 bigtime_t rate;
-                if (settings.FindInt64("pulse_rate", &rate) == B_OK)
+                if (settings.FindInt64("pulse_rate", &rate) == B_OK) {
                     SetPulseRate(rate);
+                    if (fProcessView) fProcessView->SetRefreshInterval(rate);
+                }
             }
         }
     }

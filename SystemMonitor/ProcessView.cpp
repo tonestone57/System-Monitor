@@ -116,7 +116,8 @@ ProcessView::ProcessView()
     : BView("ProcessView", B_WILL_DRAW),
       fLastSystemTime(0),
       fUpdateThread(B_ERROR),
-      fTerminated(false)
+      fTerminated(false),
+      fRefreshInterval(1000000)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -519,10 +520,15 @@ int32 ProcessView::UpdateThread(void* data)
         if (view->Window())
             view->Window()->PostMessage(&msg, view);
 
-        acquire_sem_etc(view->fQuitSem, 1, B_RELATIVE_TIMEOUT, 1000000);
+        acquire_sem_etc(view->fQuitSem, 1, B_RELATIVE_TIMEOUT, view->fRefreshInterval);
     }
 
     return B_OK;
+}
+
+void ProcessView::SetRefreshInterval(bigtime_t interval)
+{
+    fRefreshInterval = interval;
 }
 
 void ProcessView::SaveState(BMessage& state)

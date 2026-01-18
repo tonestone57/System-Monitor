@@ -29,10 +29,16 @@ enum {
     kUsagePercentageColumn
 };
 
+const uint32 kMsgDiskDataUpdate = 'dskd';
+
 DiskView::DiskView()
-    : BView("DiskView", B_WILL_DRAW | B_PULSE_NEEDED)
+    : BView("DiskView", B_WILL_DRAW | B_PULSE_NEEDED),
+      fUpdateThread(-1),
+      fScanSem(-1),
+      fTerminated(false)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+    fScanSem = create_sem(0, "disk scan sem");
 
     fDiskInfoBox = new BBox("DiskInfoBox");
     fDiskInfoBox->SetLabel(B_TRANSLATE("Disk Volumes"));
@@ -86,17 +92,50 @@ DiskView::DiskView()
 
 DiskView::~DiskView()
 {
+    fTerminated = true;
+    if (fScanSem >= 0) delete_sem(fScanSem);
+    if (fUpdateThread >= 0) {
+        status_t dummy;
+        wait_for_thread(fUpdateThread, &dummy);
+    }
 }
 
 void DiskView::AttachedToWindow()
 {
     BView::AttachedToWindow();
-    UpdateData();
+    fUpdateThread = spawn_thread(UpdateThread, "DiskView Update", B_NORMAL_PRIORITY, this);
+    if (fUpdateThread >= 0)
+        resume_thread(fUpdateThread);
+}
+
+void DiskView::DetachedFromWindow()
+{
+    fTerminated = true;
+    if (fScanSem >= 0) {
+        delete_sem(fScanSem);
+        fScanSem = -1;
+    }
+    if (fUpdateThread >= 0) {
+        status_t dummy;
+        wait_for_thread(fUpdateThread, &dummy);
+        fUpdateThread = -1;
+    }
+    BView::DetachedFromWindow();
+}
+
+void DiskView::MessageReceived(BMessage* message)
+{
+    if (message->what == kMsgDiskDataUpdate) {
+        UpdateData(message);
+    } else {
+        BView::MessageReceived(message);
+    }
 }
 
 void DiskView::Pulse()
 {
-    UpdateData();
+    // Trigger update in thread
+    if (fScanSem >= 0) release_sem(fScanSem);
 }
 
 status_t DiskView::GetDiskInfo(BVolume& volume, DiskInfo& info) {
@@ -109,7 +148,7 @@ status_t DiskView::GetDiskInfo(BVolume& volume, DiskInfo& info) {
 	info.deviceID = fsInfo.dev;
     info.totalSize = fsInfo.total_blocks * fsInfo.block_size;
     info.freeSize = fsInfo.free_blocks * fsInfo.block_size;
-    info.fileSystemType = fsInfo.fsh_name;
+    strncpy(info.fileSystemType, fsInfo.fsh_name, sizeof(info.fileSystemType));
 
     // Get mount point
     BDirectory mountDir;
@@ -127,19 +166,19 @@ status_t DiskView::GetDiskInfo(BVolume& volume, DiskInfo& info) {
     if (status != B_OK) {
         return status;
     }
-    info.mountPoint = mountPath.Path();
+    strncpy(info.mountPoint, mountPath.Path(), sizeof(info.mountPoint));
 
     // Use volume name if available, otherwise device name
     char volumeName[B_FILE_NAME_LENGTH];
     if (volume.GetName(volumeName) == B_OK && strlen(volumeName) > 0) {
-        info.deviceName = volumeName;
+        strncpy(info.deviceName, volumeName, sizeof(info.deviceName));
     } else {
-        info.deviceName = fsInfo.device_name;
+        strncpy(info.deviceName, fsInfo.device_name, sizeof(info.deviceName));
     }
     return B_OK;
 }
 
-void DiskView::UpdateData()
+void DiskView::UpdateData(BMessage* message)
 {
     fLocker.Lock();
 
@@ -149,75 +188,74 @@ void DiskView::UpdateData()
     }
 
 	std::set<dev_t> activeDevices;
-    BVolumeRoster volRoster;
-    BVolume volume;
-    volRoster.Rewind();
 
-    while (volRoster.GetNextVolume(&volume) == B_OK) {
-        if (volume.Capacity() <= 0) continue;
+    // Process message data
+    int32 count = 0;
+    type_code type;
+    message->GetInfo("disk_info", &type, &count);
 
-        DiskInfo currentDiskInfo;
-        if (GetDiskInfo(volume, currentDiskInfo) != B_OK) {
-            continue;
+    for (int32 i = 0; i < count; i++) {
+        const DiskInfo* info;
+        ssize_t size;
+        if (message->FindData("disk_info", B_RAW_TYPE, i, (const void**)&info, &size) == B_OK) {
+            DiskInfo currentDiskInfo = *info;
+            activeDevices.insert(currentDiskInfo.deviceID);
+
+            uint64 usedSize = currentDiskInfo.totalSize - currentDiskInfo.freeSize;
+            double usagePercent = 0.0;
+            if (currentDiskInfo.totalSize > 0) {
+                usagePercent = (double)usedSize / currentDiskInfo.totalSize * 100.0;
+            }
+            char percentStr[16];
+            snprintf(percentStr, sizeof(percentStr), "%.1f%%", usagePercent);
+
+            BRow* row;
+            if (fDeviceRowMap.find(currentDiskInfo.deviceID) == fDeviceRowMap.end()) {
+                // New device, create a new row
+                row = new BRow();
+                row->SetField(new BStringField(currentDiskInfo.deviceName), kDeviceColumn);
+                row->SetField(new BStringField(currentDiskInfo.mountPoint), kMountPointColumn);
+                row->SetField(new BStringField(currentDiskInfo.fileSystemType), kFSTypeColumn);
+                row->SetField(new BStringField(::FormatBytes(currentDiskInfo.totalSize)), kTotalSizeColumn);
+                row->SetField(new BStringField(::FormatBytes(usedSize)), kUsedSizeColumn);
+                row->SetField(new BStringField(::FormatBytes(currentDiskInfo.freeSize)), kFreeSizeColumn);
+                row->SetField(new BStringField(percentStr), kUsagePercentageColumn);
+                fDiskListView->AddRow(row);
+                fDeviceRowMap[currentDiskInfo.deviceID] = row;
+            } else {
+                // Existing device, update the row
+                row = fDeviceRowMap[currentDiskInfo.deviceID];
+
+                BStringField* devField = static_cast<BStringField*>(row->GetField(kDeviceColumn));
+                if (devField && strcmp(devField->String(), currentDiskInfo.deviceName.String()) != 0)
+                    devField->SetString(currentDiskInfo.deviceName);
+
+                BStringField* mntField = static_cast<BStringField*>(row->GetField(kMountPointColumn));
+                if (mntField && strcmp(mntField->String(), currentDiskInfo.mountPoint.String()) != 0)
+                    mntField->SetString(currentDiskInfo.mountPoint);
+
+                BStringField* fsField = static_cast<BStringField*>(row->GetField(kFSTypeColumn));
+                if (fsField && strcmp(fsField->String(), currentDiskInfo.fileSystemType.String()) != 0)
+                    fsField->SetString(currentDiskInfo.fileSystemType);
+
+                BString totalStr = ::FormatBytes(currentDiskInfo.totalSize);
+                BStringField* totalField = static_cast<BStringField*>(row->GetField(kTotalSizeColumn));
+                if (totalField) totalField->SetString(totalStr);
+
+                BString usedStr = ::FormatBytes(usedSize);
+                BStringField* usedField = static_cast<BStringField*>(row->GetField(kUsedSizeColumn));
+                if (usedField) usedField->SetString(usedStr);
+
+                BString freeStr = ::FormatBytes(currentDiskInfo.freeSize);
+                BStringField* freeField = static_cast<BStringField*>(row->GetField(kFreeSizeColumn));
+                if (freeField) freeField->SetString(freeStr);
+
+                BStringField* pctField = static_cast<BStringField*>(row->GetField(kUsagePercentageColumn));
+                if (pctField) pctField->SetString(percentStr);
+
+                fDiskListView->UpdateRow(row);
+            }
         }
-		activeDevices.insert(currentDiskInfo.deviceID);
-
-        if (currentDiskInfo.totalSize == 0) continue;
-
-        uint64 usedSize = currentDiskInfo.totalSize - currentDiskInfo.freeSize;
-        double usagePercent = 0.0;
-        if (currentDiskInfo.totalSize > 0) {
-            usagePercent = (double)usedSize / currentDiskInfo.totalSize * 100.0;
-        }
-        char percentStr[16];
-        snprintf(percentStr, sizeof(percentStr), "%.1f%%", usagePercent);
-
-		BRow* row;
-		if (fDeviceRowMap.find(currentDiskInfo.deviceID) == fDeviceRowMap.end()) {
-			// New device, create a new row
-			row = new BRow();
-			row->SetField(new BStringField(currentDiskInfo.deviceName), kDeviceColumn);
-			row->SetField(new BStringField(currentDiskInfo.mountPoint), kMountPointColumn);
-			row->SetField(new BStringField(currentDiskInfo.fileSystemType), kFSTypeColumn);
-			row->SetField(new BStringField(::FormatBytes(currentDiskInfo.totalSize)), kTotalSizeColumn);
-			row->SetField(new BStringField(::FormatBytes(usedSize)), kUsedSizeColumn);
-			row->SetField(new BStringField(::FormatBytes(currentDiskInfo.freeSize)), kFreeSizeColumn);
-			row->SetField(new BStringField(percentStr), kUsagePercentageColumn);
-			fDiskListView->AddRow(row);
-			fDeviceRowMap[currentDiskInfo.deviceID] = row;
-		} else {
-			// Existing device, update the row
-			row = fDeviceRowMap[currentDiskInfo.deviceID];
-
-            BStringField* devField = static_cast<BStringField*>(row->GetField(kDeviceColumn));
-            if (devField && strcmp(devField->String(), currentDiskInfo.deviceName.String()) != 0)
-                devField->SetString(currentDiskInfo.deviceName);
-
-            BStringField* mntField = static_cast<BStringField*>(row->GetField(kMountPointColumn));
-            if (mntField && strcmp(mntField->String(), currentDiskInfo.mountPoint.String()) != 0)
-                mntField->SetString(currentDiskInfo.mountPoint);
-
-            BStringField* fsField = static_cast<BStringField*>(row->GetField(kFSTypeColumn));
-            if (fsField && strcmp(fsField->String(), currentDiskInfo.fileSystemType.String()) != 0)
-                fsField->SetString(currentDiskInfo.fileSystemType);
-
-            BString totalStr = ::FormatBytes(currentDiskInfo.totalSize);
-            BStringField* totalField = static_cast<BStringField*>(row->GetField(kTotalSizeColumn));
-            if (totalField) totalField->SetString(totalStr);
-
-            BString usedStr = ::FormatBytes(usedSize);
-            BStringField* usedField = static_cast<BStringField*>(row->GetField(kUsedSizeColumn));
-            if (usedField) usedField->SetString(usedStr);
-
-            BString freeStr = ::FormatBytes(currentDiskInfo.freeSize);
-            BStringField* freeField = static_cast<BStringField*>(row->GetField(kFreeSizeColumn));
-            if (freeField) freeField->SetString(freeStr);
-
-            BStringField* pctField = static_cast<BStringField*>(row->GetField(kUsagePercentageColumn));
-            if (pctField) pctField->SetString(percentStr);
-
-			fDiskListView->UpdateRow(row);
-		}
     }
 
 	// Remove devices that are no longer present
@@ -233,6 +271,35 @@ void DiskView::UpdateData()
 	}
 
     fLocker.Unlock();
+}
+
+int32 DiskView::UpdateThread(void* data)
+{
+    DiskView* view = static_cast<DiskView*>(data);
+
+    while (!view->fTerminated) {
+        acquire_sem(view->fScanSem);
+        if (view->fTerminated) break;
+
+        BMessage updateMsg(kMsgDiskDataUpdate);
+        BVolumeRoster volRoster;
+        BVolume volume;
+        volRoster.Rewind();
+
+        while (volRoster.GetNextVolume(&volume) == B_OK) {
+            if (volume.Capacity() <= 0) continue;
+
+            DiskInfo currentDiskInfo;
+            if (GetDiskInfo(volume, currentDiskInfo) == B_OK) {
+                updateMsg.AddData("disk_info", B_RAW_TYPE, &currentDiskInfo, sizeof(DiskInfo));
+            }
+        }
+
+        if (view->Window()) {
+            view->Window()->PostMessage(&updateMsg, view);
+        }
+    }
+    return B_OK;
 }
 
 void DiskView::Draw(BRect updateRect)

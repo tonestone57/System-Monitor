@@ -49,6 +49,8 @@ public:
     void SaveState(BMessage& state);
     void LoadState(const BMessage& state);
 
+    void SetRefreshInterval(bigtime_t interval);
+
 private:
     static int32 UpdateThread(void* data);
     void Update(BMessage* message);
@@ -81,6 +83,7 @@ private:
     thread_id fUpdateThread;
     sem_id fQuitSem;
     volatile bool fTerminated;
+    bigtime_t fRefreshInterval;
 };
 
 #endif // PROCESSVIEW_H
