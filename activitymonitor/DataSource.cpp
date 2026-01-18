@@ -1156,8 +1156,8 @@ CPUCombinedUsageDataSource::NextValue(SystemInfo& info)
 
 	for (uint32 cpu = 0; cpu < info.CPUCount(); cpu++) {
 		active += info.CPUActiveTime(cpu);
-		running++;
-			// TODO: take disabled CPUs into account
+		if (info.IsCPUEnabled(cpu))
+			running++;
 	}
 
 	int64 percent = int64(1000.0 * (active - fPreviousActive)
