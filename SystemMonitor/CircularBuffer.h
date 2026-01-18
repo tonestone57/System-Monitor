@@ -1,0 +1,108 @@
+/*
+ * Copyright 2008-2013, Axel Dörfler, axeld@pinc-software.de.
+ * Distributed under the terms of the MIT License.
+ */
+#ifndef CIRCULAR_BUFFER_H
+#define CIRCULAR_BUFFER_H
+
+
+#include <stdlib.h>
+#include <new>
+
+#include <OS.h>
+
+
+template<typename Type>
+class CircularBuffer {
+public:
+	CircularBuffer(size_t size)
+		:
+		fSize(0),
+		fBuffer(NULL)
+	{
+		SetSize(size);
+	}
+
+	~CircularBuffer()
+	{
+		delete[] fBuffer;
+	}
+
+	status_t InitCheck() const
+	{
+		return fBuffer != NULL ? B_OK : B_NO_MEMORY;
+	}
+
+	status_t SetSize(size_t size)
+	{
+		if (fSize == size)
+			return B_OK;
+
+		MakeEmpty();
+
+		delete[] fBuffer;
+		fSize = size;
+		fBuffer = new(std::nothrow) Type[fSize];
+		if (fBuffer == NULL) {
+			fSize = 0;
+			return B_NO_MEMORY;
+		}
+
+		return B_OK;
+	}
+
+	void MakeEmpty()
+	{
+		fIn = 0;
+		fFirst = 0;
+	}
+
+	bool IsEmpty() const
+	{
+		return fIn == 0;
+	}
+
+	int32 CountItems() const
+	{
+		return fIn;
+	}
+
+	Type* ItemAt(int32 index) const
+	{
+		if (index >= (int32)fIn || index < 0 || fBuffer == NULL)
+			return NULL;
+
+		return &fBuffer[(fFirst + index) % fSize];
+	}
+
+	void AddItem(const Type& item)
+	{
+		uint32 index;
+		if (fIn < fSize) {
+			index = fFirst + fIn++;
+		} else {
+			index = fFirst;
+			fFirst = (fFirst + 1) % fSize;
+		}
+
+		if (fBuffer != NULL)
+			fBuffer[index % fSize] = item;
+	}
+
+	size_t Size() const
+	{
+		return fSize;
+	}
+
+private:
+	CircularBuffer(const CircularBuffer& other);
+	CircularBuffer& operator=(const CircularBuffer& other);
+
+	uint32		fFirst;
+	uint32		fIn;
+	uint32		fSize;
+	Type*		fBuffer;
+};
+
+
+#endif	// CIRCULAR_BUFFER_H

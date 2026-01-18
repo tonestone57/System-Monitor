@@ -5,7 +5,7 @@
 #include <StringView.h>
 #include <Locker.h>
 #include <vector>
-#include "LiveGraphView.h"
+#include "ActivityGraphView.h"
 
 class BBox;
 
@@ -18,22 +18,31 @@ public:
     virtual void Pulse();
     virtual void Draw(BRect updateRect);
 
+    float GetCurrentUsage();
+
 private:
     void CreateLayout();
     void UpdateData();
-    void GetCPUUsage(float* overallUsage);
+    void GetCPUUsage(float& overallUsage);
     
     BStringView* fOverallUsageValue;
-    LiveGraphView* fGraphView;
+    BStringView* fModelName;
+    std::vector<ActivityGraphView*> fCoreGraphs;
+
+    BStringView* fSpeedValue;
+    BStringView* fProcessesValue;
+    BStringView* fThreadsValue;
+    BStringView* fUptimeValue;
     
     bigtime_t* fPreviousIdleTime;
     uint32 fCpuCount;
     system_info fPreviousSysInfo;
-    bool fFirstTime;
     
     std::vector<float> fPerCoreUsage;
     
     BLocker fLocker;
+    bigtime_t fPreviousTimeSnapshot;
+    float fCurrentUsage;
 };
 
 #endif // CPUVIEW_H

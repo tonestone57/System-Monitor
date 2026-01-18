@@ -1,7 +1,7 @@
 ## Haiku Generic Makefile ##
 
 # The name of the binary
-NAME = System Monitor
+NAME = SysMonTask
 
 # The type of binary (APP, SHARED, STATIC, DRIVER)
 TYPE = APP
@@ -18,7 +18,10 @@ SRCS = \
 	NetworkView.cpp \
 	ProcessView.cpp \
 	GPUView.cpp \
-	SysInfoView.cpp
+	SysInfoView.cpp \
+	DataHistory.cpp \
+	ActivityGraphView.cpp \
+	Utils.cpp
 
 # Resource definition files
 # RDEFS = SysMonTask.rdef
@@ -33,13 +36,13 @@ LIBS = be tracker columnlistview network bnetapi localestub $(STDCPPLIBS)
 EXTRA_OBJS =
 
 # Additional directories with source files
-EXTRA_INCLUDES =
+EXTRA_INCLUDES = /boot/system/develop/headers/os
 
 # Additional linker flags
 LDFLAGS =
 
 # Specify the level of optimization
-OPTIMIZE := FULL
+OPTIMIZE := NONE
 
 # Specify the level of localization
 LOCALES =
@@ -57,9 +60,9 @@ SYMBOLS :=
 DEBUGGER := FALSE
 
 # Target-specific flags
-TARGET_CFLAGS =-O2 -march=pentium -mtune=generic
-TARGET_CPPFLAGS =-O2 -march=pentium -mtune=generic
-TARGET_LDFLAGS =-s
+TARGET_CFLAGS =-Og -g
+TARGET_CPPFLAGS =-Og -g
+TARGET_LDFLAGS =
 
 ## Include the Haiku makefile system rules
 include $(BUILDHOME)/etc/makefile-engine

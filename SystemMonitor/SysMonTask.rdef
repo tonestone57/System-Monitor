@@ -2,7 +2,7 @@
 
 resource app_signature "application/x-vnd.HaikuSysMonTask";
 
-resource app_version {
+resource(1) version_info {
 	major  = 1,
 	middle = 0,
 	minor  = 0,
@@ -16,10 +16,4 @@ resource app_flags B_MULTIPLE_LAUNCH | B_ARGV_ONLY;
 
 resource file_types message {
 	"types" = "application/x-vnd.HaikuSysMonTask"
-};
-
-resource vector_icon {
-	$"6E636966080500020006023E49240000000000003CAAAA4940004A30007700FF"
-	$"FFFBFFFFFF0004040A060100023F4924000000000000003E00004000004000FF"
-	$"FF7F00000000044000FF"
 };

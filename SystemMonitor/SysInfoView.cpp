@@ -1,4 +1,5 @@
 #include "SysInfoView.h"
+#include "Utils.h"
 #include <kernel/OS.h>
 #include <Screen.h>
 #include <GraphicsDefs.h>
@@ -22,80 +23,63 @@
 #include <Entry.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/utsname.h>
+#include <Catalog.h>
+
+#undef B_TRANSLATION_CONTEXT
+#define B_TRANSLATION_CONTEXT "SysInfoView"
 
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
 #include <cstring>
+#include <private/shared/cpu_type.h>
 
-bool checkXCR0(unsigned int mask) {
-    unsigned int eax, edx;
-    asm volatile("xgetbv" : "=a"(eax), "=d"(edx) : "c"(0));
-    return (eax & mask) == mask;
-}
+/* CPU Features */
+static const char *kFeatures[32] = {
+	"FPU", "VME", "DE", "PSE",
+	"TSC", "MSR", "PAE", "MCE",
+	"CX8", "APIC", NULL, "SEP",
+	"MTRR", "PGE", "MCA", "CMOV",
+	"PAT", "PSE36", "PSN", "CFLUSH",
+	NULL, "DS", "ACPI", "MMX",
+	"FXSTR", "SSE", "SSE2", "SS",
+	"HTT", "TM", "IA64", "PBE",
+};
 
-bool hasSSE()    { unsigned int a,b,c,d; return __get_cpuid(1,&a,&b,&c,&d) && (d & bit_SSE); }
-bool hasSSE2()   { unsigned int a,b,c,d; return __get_cpuid(1,&a,&b,&c,&d) && (d & bit_SSE2); }
-bool hasSSE3()   { unsigned int a,b,c,d; return __get_cpuid(1,&a,&b,&c,&d) && (c & bit_SSE3); }
-bool hasSSSE3()  { unsigned int a,b,c,d; return __get_cpuid(1,&a,&b,&c,&d) && (c & (1 << 9)); }
-bool hasSSE41()  { unsigned int a,b,c,d; return __get_cpuid(1,&a,&b,&c,&d) && (c & (1 << 19)); }
-bool hasSSE42()  { unsigned int a,b,c,d; return __get_cpuid(1,&a,&b,&c,&d) && (c & (1 << 20)); }
+/* CPU Extended features */
+static const char *kExtendedFeatures[32] = {
+    "SSE3", "PCLMULDQ", "DTES64", "MONITOR", "DS-CPL", "VMX", "SMX", "EST",
+    "TM2", "SSSE3", "CNTXT-ID", "SDBG", "FMA", "CX16", "xTPR", "PDCM",
+    NULL, "PCID", "DCA", "SSE4.1", "SSE4.2", "x2APIC", "MOVEB", "POPCNT",
+    "TSC-DEADLINE", "AES", "XSAVE", "OSXSAVE", "AVX", "F16C", "RDRND",
+    "HYPERVISOR"
+};
 
-bool hasAVX() {
-    unsigned int a,b,c,d;
-    if (__get_cpuid(1, &a, &b, &c, &d)) {
-        bool avx = c & bit_AVX;
-        bool osxsave = c & bit_OSXSAVE;
-        return avx && osxsave && checkXCR0(0x6);
-    }
-    return false;
-}
+/* Leaf 7, subleaf 0, EBX */
+static const char *kLeaf7Features[32] = {
+    "FSGSBASE", NULL, NULL, "BMI1", NULL, "AVX2", NULL, "SMEP",
+    "BMI2", "ERMS", "INVPCID", NULL, NULL, NULL, NULL, NULL,
+    "AVX512F", "AVX512DQ", "RDSEED", "ADX", "SMAP", NULL, NULL, "CLFLUSHOPT",
+    NULL, NULL, NULL, NULL, "AVX512CD", "SHA", "AVX512BW", "AVX512VL"
+};
 
-bool hasAVX2() {
-    unsigned int a,b,c,d;
-    if (__get_cpuid_count(7, 0, &a, &b, &c, &d)) {
-        return (b & (1 << 5)) && hasAVX();
-    }
-    return false;
-}
+/* AMD Extended features leaf 0x80000001 */
+static const char *kAMDExtFeatures[32] = {
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, "SCE", NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, "MP", "NX", NULL, "AMD-MMX", NULL,
+	"FXSR", "FFXSR", "GBPAGES", "RDTSCP", NULL, "64", "3DNow+", "3DNow!"
+};
 
-bool hasAVX512() {
-    unsigned int a,b,c,d;
-    if (__get_cpuid_count(7, 0, &a, &b, &c, &d)) {
-        bool avx512f = b & (1 << 16);
-        return avx512f && checkXCR0(0xE6);
-    }
-    return false;
-}
+#endif
 
-bool hasAES() {
-    unsigned int eax, ebx, ecx, edx;
-    return __get_cpuid(1, &eax, &ebx, &ecx, &edx) && (ecx & bit_AES);
-}
+#include <InterfaceDefs.h>
 
-#endif // __x86_64__ || __i386__
-
-// Helper to add a labeled string view to a grid layout
-static void AddInfoRow(BGridLayout* grid, int32& row, const char* labelText, BStringView*& valueView) {
-    BStringView* labelView = new BStringView(NULL, labelText);
-    labelView->SetAlignment(B_ALIGN_RIGHT);
-    grid->AddView(labelView, 0, row);
-    valueView = new BStringView(NULL, "N/A");
-    grid->AddView(valueView, 1, row);
-    grid->AddItem(BSpaceLayoutItem::CreateHorizontalStrut(5), 2, row);
-    row++;
-}
-
-SysInfoView::SysInfoView(BRect frame)
-    : BView(frame, "SysInfoView", B_FOLLOW_ALL_SIDES, B_WILL_DRAW),
-      fDiskInfoTextView(NULL), fDiskInfoScrollView(NULL), fMainSectionsBox(NULL),
-      fKernelNameValue(NULL), fKernelVersionValue(NULL), fKernelBuildValue(NULL),
-      fCPUArchValue(NULL), fUptimeValue(NULL), fCPUModelValue(NULL),
-      fMicrocodeValue(NULL), fCPUCoresValue(NULL), fCPUClockSpeedValue(NULL),
-      fL1CacheValue(NULL), fL2CacheValue(NULL), fL3CacheValue(NULL),
-      fCPUFeaturesValue(NULL), fGPUTypeValue(NULL), fGPUDriverValue(NULL),
-      fGPUVRAMValue(NULL), fScreenResolutionValue(NULL), fTotalRAMValue(NULL)
+SysInfoView::SysInfoView()
+    : BView("SysInfoView", B_WILL_DRAW),
+      fInfoTextView(NULL)
 {
-    SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+    SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
     CreateLayout();
 }
 
@@ -106,164 +90,26 @@ SysInfoView::~SysInfoView()
 
 void SysInfoView::CreateLayout()
 {
-    fMainSectionsBox = new BBox(Bounds(), "mainSysInfoBox", B_FOLLOW_ALL_SIDES,
-                                 B_WILL_DRAW | B_FRAME_EVENTS, B_PLAIN_BORDER);
-    fMainSectionsBox->SetLabel("System Information");
+    fInfoTextView = new BTextView("info_text_view");
+    fInfoTextView->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
+    fInfoTextView->SetStylable(true);
+    fInfoTextView->MakeEditable(false);
+	fInfoTextView->SetWordWrap(true);
 
-    // --- OS Section ---
-    BBox* osBox = new BBox("OSInfo");
-    osBox->SetLabel("Operating System");
-    BGridLayout* osGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    osGrid->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING,
-                      B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    int32 row = 0;
-    AddInfoRow(osGrid, row, "Kernel Name:", fKernelNameValue);
-    AddInfoRow(osGrid, row, "Kernel Version:", fKernelVersionValue);
-    AddInfoRow(osGrid, row, "Build Date/Time:", fKernelBuildValue);
-    AddInfoRow(osGrid, row, "CPU Architecture:", fCPUArchValue);
-    AddInfoRow(osGrid, row, "System Uptime:", fUptimeValue);
-    osBox->SetLayout(osGrid);
-
-    // --- CPU Section ---
-    BBox* cpuBox = new BBox("CPUInfo");
-    cpuBox->SetLabel("Processor");
-    BGridLayout* cpuGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    cpuGrid->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING,
-                       B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    row = 0;
-    AddInfoRow(cpuGrid, row, "Model:", fCPUModelValue);
-    AddInfoRow(cpuGrid, row, "Microcode:", fMicrocodeValue);
-    AddInfoRow(cpuGrid, row, "Cores:", fCPUCoresValue);
-    AddInfoRow(cpuGrid, row, "Clock Speed:", fCPUClockSpeedValue);
-    AddInfoRow(cpuGrid, row, "L1 Cache (I/D):", fL1CacheValue);
-    AddInfoRow(cpuGrid, row, "L2 Cache:", fL2CacheValue);
-    AddInfoRow(cpuGrid, row, "L3 Cache:", fL3CacheValue);
-    AddInfoRow(cpuGrid, row, "Features:", fCPUFeaturesValue);
-    fCPUFeaturesValue->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
-    cpuBox->SetLayout(cpuGrid);
-
-    // --- Graphics Section ---
-    BBox* graphicsBox = new BBox("GraphicsInfo");
-    graphicsBox->SetLabel("Graphics");
-    BGridLayout* graphicsGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    graphicsGrid->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING,
-                            B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    row = 0;
-    AddInfoRow(graphicsGrid, row, "GPU Type:", fGPUTypeValue);
-    AddInfoRow(graphicsGrid, row, "Driver:", fGPUDriverValue);
-    AddInfoRow(graphicsGrid, row, "VRAM:", fGPUVRAMValue);
-    AddInfoRow(graphicsGrid, row, "Resolution:", fScreenResolutionValue);
-    graphicsBox->SetLayout(graphicsGrid);
-
-    // --- Memory Section ---
-    BBox* memoryBox = new BBox("MemoryInfo");
-    memoryBox->SetLabel("Memory");
-    BGridLayout* memoryGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    memoryGrid->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING,
-                          B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    row = 0;
-    AddInfoRow(memoryGrid, row, "Total RAM:", fTotalRAMValue);
-    memoryBox->SetLayout(memoryGrid);
-
-    // --- Disk Section ---
-    BBox* diskBox = new BBox("DiskInfo");
-    diskBox->SetLabel("Disk Volumes");
-    fDiskInfoTextView = new BTextView("diskInfoTextView");
-    fDiskInfoTextView->SetWordWrap(false);
-    fDiskInfoTextView->MakeEditable(false);
-    fDiskInfoTextView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
-    fDiskInfoScrollView = new BScrollView("diskInfoScroller", fDiskInfoTextView,
-        B_FOLLOW_LEFT_RIGHT | B_FOLLOW_TOP_BOTTOM, 0, false, true, B_PLAIN_BORDER);
-    fDiskInfoScrollView->SetExplicitMinSize(BSize(0, 80));
-    BLayoutBuilder::Group<>(diskBox, B_VERTICAL, 0)
-        .SetInsets(B_USE_DEFAULT_SPACING)
-        .Add(fDiskInfoScrollView);
-
-    // --- Main Layout ---
-    BGroupLayout* mainGroupLayout = new BGroupLayout(B_VERTICAL, B_USE_DEFAULT_SPACING);
-    fMainSectionsBox->SetLayout(mainGroupLayout);
-    font_height fh;
-    fMainSectionsBox->GetFontHeight(&fh);
-    mainGroupLayout->SetInsets(B_USE_DEFAULT_SPACING,
-                               fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING,
-                               B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    mainGroupLayout->AddView(osBox);
-    mainGroupLayout->AddView(cpuBox);
-    mainGroupLayout->AddView(graphicsBox);
-    mainGroupLayout->AddView(memoryBox);
-    mainGroupLayout->AddView(diskBox);
-    BLayoutBuilder::Group<>(mainGroupLayout).AddGlue();
-
-    BScrollView* viewScroller = new BScrollView("sysInfoScroller", fMainSectionsBox,
-        B_FOLLOW_ALL_SIDES, 0, false, true, B_NO_BORDER);
+    BScrollView* scrollView = new BScrollView("sysInfoScroller", fInfoTextView,
+        false, true, B_PLAIN_BORDER);
+    scrollView->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH, B_ALIGN_USE_FULL_HEIGHT));
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
-        .SetInsets(0)
-        .Add(viewScroller)
+        .Add(scrollView)
     .End();
 }
+
 
 void SysInfoView::AttachedToWindow()
 {
     BView::AttachedToWindow();
     LoadData();
-}
-
-BString SysInfoView::FormatBytes(uint64 bytes, int precision) {
-    BString str;
-    double kb = bytes / 1024.0;
-    double mb = kb / 1024.0;
-    double gb = mb / 1024.0;
-
-    if (gb >= 1.0) {
-        str.SetToFormat("%.*f GiB", precision, gb);
-    } else if (mb >= 1.0) {
-        str.SetToFormat("%.*f MiB", precision, mb);
-    } else if (kb >= 1.0) {
-        str.SetToFormat("%.*f KiB", precision, kb);
-    } else {
-        str.SetToFormat("%" B_PRIu64 " Bytes", bytes);
-    }
-    return str;
-}
-
-BString SysInfoView::FormatHertz(uint64 hertz) {
-    BString str;
-    double ghz = hertz / 1000000000.0;
-    double mhz = hertz / 1000000.0;
-    double khz = hertz / 1000.0;
-
-    if (ghz >= 1.0) {
-        str.SetToFormat("%.2f GHz", ghz);
-    } else if (mhz >= 1.0) {
-        str.SetToFormat("%.0f MHz", mhz);
-    } else if (khz >= 1.0) {
-        str.SetToFormat("%.0f KHz", khz);
-    } else {
-        str.SetToFormat("%" B_PRIu64 " Hz", hertz);
-    }
-    return str;
-}
-
-BString SysInfoView::FormatUptime(bigtime_t bootTime) {
-    bigtime_t now = system_time();
-    bigtime_t uptimeMicros = now - bootTime;
-    uint32 seconds = uptimeMicros / 1000000;
-
-    uint32 days = seconds / (24 * 3600);
-    seconds %= (24 * 3600);
-    uint32 hours = seconds / 3600;
-    seconds %= 3600;
-    uint32 minutes = seconds / 60;
-    seconds %= 60;
-
-    BString uptimeStr;
-    if (days > 0) {
-        uptimeStr.SetToFormat("%u days, %02u:%02u:%02u", days, hours, minutes, seconds);
-    } else {
-        uptimeStr.SetToFormat("%02u:%02u:%02u", hours, minutes, seconds);
-    }
-    return uptimeStr;
 }
 
 BString SysInfoView::GetCPUBrandString()
@@ -279,112 +125,30 @@ BString SysInfoView::GetCPUBrandString()
     }
     return BString(brand).Trim();
 #else
-    return BString("Unknown CPU");
+    return BString(B_TRANSLATE("Unknown CPU"));
 #endif
-}
-
-BString SysInfoView::GetCPUFeatureFlags()
-{
-    BString info;
-
-    system_info sysInfo;
-    if (get_system_info(&sysInfo) == B_OK) {
-        info.SetToFormat("CPU count: %" B_PRId32 "\n", sysInfo.cpu_count);
-    }
-
-#if defined(__x86_64__) || defined(__i386__)
-    info += "Architecture: x86\n";
-
-    BString brand = GetCPUBrandString();
-    if (!brand.IsEmpty()) {
-        info += BString("CPU: ") << brand << "\n";
-    }
-
-    BString features;
-    if (hasSSE())     features += "SSE ";
-    if (hasSSE2())    features += "SSE2 ";
-    if (hasSSE3())    features += "SSE3 ";
-    if (hasSSSE3())   features += "SSSE3 ";
-    if (hasSSE41())   features += "SSE4.1 ";
-    if (hasSSE42())   features += "SSE4.2 ";
-    if (hasAVX())     features += "AVX ";
-    if (hasAVX2())    features += "AVX2 ";
-    if (hasAVX512())  features += "AVX-512 ";
-    if (hasAES())     features += "AES-NI ";
-    info += BString("Features: ") << (features.IsEmpty() ? "None detected" : features) << "\n";
-
-    unsigned int eax, ebx, ecx, edx;
-    if (__get_cpuid(1, &eax, &ebx, &ecx, &edx)) {
-        int logicalProcessors = (ebx >> 16) & 0xff;
-        info += BString().SetToFormat("Logical Processors: %d\n", logicalProcessors);
-    }
-
-    for (int i = 0; ; ++i) {
-        if (!__get_cpuid_count(4, i, &eax, &ebx, &ecx, &edx)) break;
-        if ((eax & 0x1F) == 0) break;
-
-        int level = (eax >> 5) & 0x7;
-        int lineSize = (ebx & 0xFFF) + 1;
-        int partitions = ((ebx >> 12) & 0x3FF) + 1;
-        int ways = ((ebx >> 22) & 0x3FF) + 1;
-        int sets = ecx + 1;
-        int sizeKB = (ways * partitions * lineSize * sets) / 1024;
-
-        info += BString().SetToFormat("L%d Cache: %d KB\n", level, sizeKB);
-    }
-
-#elif defined(__aarch64__)
-    info += "Architecture: ARM64\n";
-    info += "Feature detection not implemented.\n";
-
-#elif defined(__arm__)
-    info += "Architecture: ARM (32-bit)\n";
-    info += "Feature detection not implemented.\n";
-
-#elif defined(__riscv)
-    info += "Architecture: RISC-V\n";
-    info += "Feature detection not implemented.\n";
-
-#elif defined(__sparc__)
-    info += "Architecture: SPARC\n";
-    info += "Feature detection not available.\n";
-
-#else
-    info += "Architecture: Unknown\n";
-    info += "Feature detection not supported.\n";
-#endif
-
-    return info;
 }
 
 void SysInfoView::LoadData() {
+    BString infoText;
+
     system_info sysInfo;
     if (get_system_info(&sysInfo) != B_OK) {
-        const char* errorMsg = "Error fetching system info";
-        if (fKernelNameValue) fKernelNameValue->SetText(errorMsg);
+        infoText << B_TRANSLATE("Error fetching system info");
+        fInfoTextView->SetText(infoText.String());
         return;
     }
 
-    // --- OS Info ---
-    if (fKernelNameValue) fKernelNameValue->SetText(sysInfo.kernel_name);
-
-    BString kernelVer;
-    kernelVer.SetToFormat("%" B_PRId64 " (API %" B_PRIu32 ")",
-                          sysInfo.kernel_version, sysInfo.abi);
-    if (fKernelVersionValue) fKernelVersionValue->SetText(kernelVer);
-
-    char dateTimeStr[64];
-    snprintf(dateTimeStr, sizeof(dateTimeStr), "%s %s",
-             sysInfo.kernel_build_date, sysInfo.kernel_build_time);
-    struct tm build_tm = {};
-    if (strptime(dateTimeStr, "%b %d %Y %H:%M:%S", &build_tm)) {
-        char isoStr[32];
-        strftime(isoStr, sizeof(isoStr), "%Y-%m-%d %H:%M:%S", &build_tm);
-        if (fKernelBuildValue) fKernelBuildValue->SetText(isoStr);
-    } else {
-        if (fKernelBuildValue) fKernelBuildValue->SetText(dateTimeStr);
+    // OS Info
+    infoText << B_TRANSLATE("OPERATING SYSTEM") << "\n\n";
+    struct utsname unameInfo;
+    if (uname(&unameInfo) == 0) {
+        BString kernelVer;
+        kernelVer.SetToFormat("%s %s %s hrev%" B_PRId64 " %s %s",
+                              unameInfo.sysname, unameInfo.nodename, unameInfo.version,
+                              sysInfo.kernel_version, unameInfo.machine, unameInfo.machine);
+        infoText << B_TRANSLATE("Kernel:") << " " << kernelVer << "\n";
     }
-
     BString archStr;
 #if defined(__x86_64__)
     archStr = "x86_64";
@@ -403,71 +167,84 @@ void SysInfoView::LoadData() {
 #elif defined(__m68k__)
     archStr = "m68k";
 #else
-    archStr = "Unknown";
+    archStr = B_TRANSLATE("Unknown");
 #endif
-    if (fCPUArchValue) fCPUArchValue->SetText(archStr);
-    if (fUptimeValue) fUptimeValue->SetText(FormatUptime(sysInfo.boot_time).String());
+    infoText << B_TRANSLATE("CPU Architecture:") << " " << archStr << "\n";
+    infoText << B_TRANSLATE("System Uptime:") << " " << ::FormatUptime(system_time()) << "\n";
 
-    // --- CPU Info ---
+    infoText << B_TRANSLATE("Teams:") << " " << sysInfo.used_teams << " / " << sysInfo.max_teams << "\n";
+    infoText << B_TRANSLATE("Threads:") << " " << sysInfo.used_threads << " / " << sysInfo.max_threads << "\n";
+    infoText << B_TRANSLATE("Ports:") << " " << sysInfo.used_ports << " / " << sysInfo.max_ports << "\n";
+    infoText << B_TRANSLATE("Semaphores:") << " " << sysInfo.used_semaphores << " / " << sysInfo.max_semaphores << "\n\n\n";
+
+    // CPU Info
+    infoText << B_TRANSLATE("PROCESSOR") << "\n\n";
     BString cpuBrand = GetCPUBrandString();
-    if (fCPUModelValue) fCPUModelValue->SetText(cpuBrand.IsEmpty() ? "Unknown CPU" : cpuBrand);
-
-    // Microcode
-    int fd = open("/dev/microcode_info", O_RDONLY);
-    if (fd >= 0) {
-        char buffer[32] = {};
-        ssize_t len = read(fd, buffer, sizeof(buffer) - 1);
-        close(fd);
-        if (len > 0 && fMicrocodeValue) {
-            buffer[len] = '\0';
-            BString microcodeStr = BString(buffer).Trim();
-            fMicrocodeValue->SetText(microcodeStr);
-            fMicrocodeValue->Show();
-        } else if (fMicrocodeValue) {
-            fMicrocodeValue->Hide();
+    infoText << B_TRANSLATE("Model:") << " " << (cpuBrand.IsEmpty() ? B_TRANSLATE("Unknown CPU") : cpuBrand.String()) << "\n";
+    infoText << B_TRANSLATE("Cores:") << " " << sysInfo.cpu_count << "\n";
+    infoText << B_TRANSLATE("Features:") << " " << _GetCPUFeaturesString() << "\n";
+    cpu_topology_node_info* topology = NULL;
+    uint32_t topologyNodeCount = 0;
+    if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
+        topology = new cpu_topology_node_info[topologyNodeCount];
+        if (topology != NULL) {
+            uint32_t actualNodeCount = topologyNodeCount;
+            if (get_cpu_topology_info(topology, &actualNodeCount) == B_OK) {
+                uint64_t max_freq = 0;
+                for (uint32_t i = 0; i < actualNodeCount; i++) {
+                    if (topology[i].type == B_TOPOLOGY_CORE) {
+                        if (topology[i].data.core.default_frequency > max_freq)
+                            max_freq = topology[i].data.core.default_frequency;
+                    }
+                }
+                if (max_freq > 0)
+                    infoText << B_TRANSLATE("Clock Speed:") << " " << ::FormatHertz(max_freq) << "\n";
+            }
+            delete[] topology;
         }
-    } else if (fMicrocodeValue) {
-        fMicrocodeValue->Hide();
     }
+    infoText << "\n\n";
 
-    if (fCPUCoresValue) fCPUCoresValue->SetText(BString() << sysInfo.cpu_count);
-    if (fCPUClockSpeedValue) fCPUClockSpeedValue->SetText("See features →");
-    if (fL1CacheValue) fL1CacheValue->SetText("See features →");
-    if (fL2CacheValue) fL2CacheValue->SetText("See features →");
-    if (fL3CacheValue) fL3CacheValue->SetText("See features →");
-
-    BString flags = GetCPUFeatureFlags();
-    if (fCPUFeaturesValue) fCPUFeaturesValue->SetText(flags.IsEmpty() ? "Unavailable" : flags);
-
-    // --- RAM Info ---
-    if (fTotalRAMValue) fTotalRAMValue->SetText(FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE).String());
-
-    // --- Graphics Info ---
+    // Graphics Info
+    infoText << B_TRANSLATE("GRAPHICS") << "\n\n";
     BScreen screen(B_MAIN_SCREEN_ID);
     if (screen.IsValid()) {
         accelerant_device_info deviceInfo;
         if (screen.GetDeviceInfo(&deviceInfo) == B_OK) {
-            if (fGPUTypeValue) fGPUTypeValue->SetText(deviceInfo.name);
-            if (fGPUDriverValue) fGPUDriverValue->SetText(BString() << deviceInfo.version);
-            if (fGPUVRAMValue) fGPUVRAMValue->SetText(FormatBytes(deviceInfo.memory).String());
+            infoText << B_TRANSLATE("GPU Type:") << " " << deviceInfo.name << "\n";
+            infoText << B_TRANSLATE("Driver:") << " " << deviceInfo.version << "\n";
+			if (deviceInfo.memory > 0)
+				infoText << B_TRANSLATE("VRAM:") << " " << ::FormatBytes(deviceInfo.memory) << "\n";
+			else
+				infoText << B_TRANSLATE("VRAM:") << " N/A\n";
         } else {
-            if (fGPUTypeValue) fGPUTypeValue->SetText("Error getting GPU info");
-            if (fGPUDriverValue) fGPUDriverValue->SetText("N/A");
-            if (fGPUVRAMValue) fGPUVRAMValue->SetText("N/A");
+            infoText << B_TRANSLATE("GPU Type:") << " " << B_TRANSLATE("Error getting GPU info") << "\n";
         }
-        BRect frame = screen.Frame();
-        BString resStr;
-        resStr.SetToFormat("%.0fx%.0f", frame.Width() + 1, frame.Height() + 1);
-        if (fScreenResolutionValue) fScreenResolutionValue->SetText(resStr);
+        display_mode mode;
+        if (screen.GetMode(&mode) == B_OK) {
+            BString resStr;
+            resStr.SetToFormat("%dx%d", mode.virtual_width, mode.virtual_height);
+            infoText << B_TRANSLATE("Resolution:") << " " << resStr << "\n";
+        } else {
+            infoText << B_TRANSLATE("Resolution:") << " N/A\n";
+        }
     } else {
-        if (fGPUTypeValue) fGPUTypeValue->SetText("Error: Invalid screen object");
-        if (fGPUDriverValue) fGPUDriverValue->SetText("N/A");
-        if (fGPUVRAMValue) fGPUVRAMValue->SetText("N/A");
-        if (fScreenResolutionValue) fScreenResolutionValue->SetText("N/A");
+        infoText << B_TRANSLATE("GPU Type:") << " " << B_TRANSLATE("Error: Invalid screen object") << "\n";
     }
+    infoText << "\n\n";
 
-    // --- Disk Info ---
-    BString diskTextData;
+    // Memory Info
+    infoText << B_TRANSLATE("MEMORY") << "\n\n";
+    infoText << B_TRANSLATE("Physical RAM:") << " " << ::FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n";
+
+    uint64 swapBytes = 0;
+    if (sysInfo.max_swap_pages > sysInfo.max_pages)
+        swapBytes = (uint64)(sysInfo.max_swap_pages - sysInfo.max_pages) * B_PAGE_SIZE;
+
+    infoText << B_TRANSLATE("Swap Memory:") << " " << ::FormatBytes(swapBytes) << "\n\n\n";
+
+    // Disk Info
+    infoText << B_TRANSLATE("DISK VOLUMES") << "\n\n";
     BVolume volume;
     BVolumeRoster volRoster;
     volRoster.Rewind();
@@ -478,26 +255,107 @@ void SysInfoView::LoadData() {
 
         fs_info fsInfo;
         if (fs_stat_dev(volume.Device(), &fsInfo) == B_OK) {
-            if (diskTextData.Length() > 0)
-                diskTextData << "\n---\n";
-            diskTextData << "Volume Name: " << fsInfo.volume_name << "\n";
+            if (diskCount > 1)
+                infoText << "\n---\n";
+            infoText << B_TRANSLATE("Volume Name:") << " " << fsInfo.volume_name << "\n";
 
             BDirectory rootDir;
-            volume.GetRootDirectory(&rootDir);
-            BEntry entry;
-            rootDir.GetEntry(&entry);
-            BPath path;
-            entry.GetPath(&path);
-            diskTextData << "Mount Point: " << path.Path() << "\n";
-
-            diskTextData << "File System: " << fsInfo.fsh_name << "\n";
-            diskTextData << "Total Size: " << FormatBytes(fsInfo.total_blocks * fsInfo.block_size).String() << "\n";
-            diskTextData << "Free Size: " << FormatBytes(fsInfo.free_blocks * fsInfo.block_size).String();
+            if (volume.GetRootDirectory(&rootDir) == B_OK) {
+                BEntry entry;
+                if (rootDir.GetEntry(&entry) == B_OK) {
+                    BPath path;
+                    if (entry.GetPath(&path) == B_OK) {
+                        infoText << B_TRANSLATE("Mount Point:") << " " << path.Path() << "\n";
+                    }
+                }
+            }
+            infoText << B_TRANSLATE("File System:") << " " << fsInfo.fsh_name << "\n";
+            infoText << B_TRANSLATE("Total Size:") << " " << ::FormatBytes(fsInfo.total_blocks * fsInfo.block_size).String() << "\n";
+            infoText << B_TRANSLATE("Free Size:") << " " << ::FormatBytes(fsInfo.free_blocks * fsInfo.block_size).String() << "\n";
         }
     }
 
     if (diskCount == 0) {
-        diskTextData = "No disk volumes found or accessible.";
+        infoText << B_TRANSLATE("No disk volumes found or accessible.");
     }
-    if (fDiskInfoTextView) fDiskInfoTextView->SetText(diskTextData.String());
+
+    fInfoTextView->SetText(infoText.String());
+
+    BFont font;
+    fInfoTextView->GetFont(&font);
+    BFont boldFont(be_bold_font);
+
+    // Note: Applying styles based on localized strings is fragile if the translation changes the order or string.
+    // However, for this task, I'll update the search strings to match the B_TRANSLATE keys.
+    // A better approach would be to insert text in chunks and apply style, but that requires refactoring LoadData.
+    // I will try to match the localized string.
+    // Since B_TRANSLATE returns the translated string, I can search for it.
+
+    // Helper to bold a section header
+    auto boldHeader = [&](const char* key) {
+        BString str = B_TRANSLATE(key);
+        int32 pos = infoText.FindFirst(str);
+        if (pos >= 0) {
+            fInfoTextView->SetFontAndColor(pos, pos + str.Length(), &boldFont);
+        }
+    };
+
+    boldHeader("OPERATING SYSTEM");
+    boldHeader("PROCESSOR");
+    boldHeader("GRAPHICS");
+    boldHeader("MEMORY");
+    boldHeader("DISK VOLUMES");
+}
+
+BString
+SysInfoView::_GetCPUFeaturesString()
+{
+#if defined(__i386__) || defined(__x86_64__)
+    BString features;
+    unsigned int eax, ebx, ecx, edx;
+
+    if (__get_cpuid(1, &eax, &ebx, &ecx, &edx) == 1) {
+        for (int i = 0; i < 32; i++) {
+            if ((edx & (1 << i)) && kFeatures[i]) {
+                if (features.Length() > 0)
+                    features << " ";
+                features << kFeatures[i];
+            }
+        }
+        for (int i = 0; i < 32; i++) {
+            if ((ecx & (1 << i)) && kExtendedFeatures[i]) {
+                if (features.Length() > 0)
+                    features << " ";
+                features << kExtendedFeatures[i];
+            }
+        }
+    }
+
+    if (__get_cpuid(0x80000001, &eax, &ebx, &ecx, &edx) == 1) {
+        for (int i = 0; i < 32; i++) {
+            if ((edx & (1 << i)) && kAMDExtFeatures[i]) {
+                if (features.Length() > 0)
+                    features << " ";
+                features << kAMDExtFeatures[i];
+            }
+        }
+    }
+
+    // Leaf 7 features
+    if (__get_cpuid_max(0, NULL) >= 7) {
+        if (__get_cpuid_count(7, 0, &eax, &ebx, &ecx, &edx) == 1) {
+            for (int i = 0; i < 32; i++) {
+                if ((ebx & (1 << i)) && kLeaf7Features[i]) {
+                    if (features.Length() > 0)
+                        features << " ";
+                    features << kLeaf7Features[i];
+                }
+            }
+        }
+    }
+
+    return features;
+#else
+    return B_TRANSLATE("Not available on this architecture");
+#endif
 }

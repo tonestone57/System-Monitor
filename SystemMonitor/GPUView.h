@@ -4,28 +4,27 @@
 #include <View.h>
 #include <StringView.h>
 #include <String.h>
+#include <vector>
+#include "ActivityGraphView.h"
 
 class GPUView : public BView {
 public:
-    GPUView(BRect frame);
+    GPUView();
     virtual ~GPUView();
     
     virtual void AttachedToWindow();
+    virtual void Pulse();
 
 private:
+    void CreateLayout();
     void UpdateData();
-    BString FormatBytes(uint64 bytes);
     
-    BStringView* fCardNameLabel;
     BStringView* fCardNameValue;
-    BStringView* fChipsetLabel;
-    BStringView* fChipsetValue;
-    BStringView* fMemorySizeLabel;
-    BStringView* fMemorySizeValue;
-    BStringView* fDacSpeedLabel;
-    BStringView* fDacSpeedValue;
-    BStringView* fDriverVersionLabel;
     BStringView* fDriverVersionValue;
+    BStringView* fMemorySizeValue;
+    BStringView* fResolutionValue;
+
+    std::vector<ActivityGraphView*> fGpuGraphs;
 };
 
 #endif // GPUVIEW_H
