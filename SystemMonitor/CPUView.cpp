@@ -18,6 +18,7 @@
 CPUView::CPUView()
     : BView("CPUView", B_WILL_DRAW | B_PULSE_NEEDED),
       fPreviousIdleTime(nullptr),
+      fCpuInfos(nullptr),
       fCpuCount(0),
       fPreviousTimeSnapshot(0),
       fCurrentUsage(0.0f),
@@ -59,6 +60,7 @@ void CPUView::CreateLayout()
 
     if (fCpuCount > 0) {
         fPreviousIdleTime = new(std::nothrow) bigtime_t[fCpuCount];
+        fCpuInfos = new(std::nothrow) cpu_info[fCpuCount];
         fPerCoreUsage.resize(fCpuCount, 0.0f);
 
         int cols = ceil(sqrt((double)fCpuCount));
@@ -70,12 +72,16 @@ void CPUView::CreateLayout()
             fCoreGraphs.push_back(graph);
 
             graphGrid->AddView(graph, i % cols, i / cols);
+        }
 
-            cpu_info info;
-            if (get_cpu_info(i, 1, &info) == B_OK)
-                fPreviousIdleTime[i] = info.active_time;
-            else
+        if (fPreviousIdleTime && fCpuInfos && get_cpu_info(0, fCpuCount, fCpuInfos) == B_OK) {
+            for (uint32 i = 0; i < fCpuCount; ++i) {
+                fPreviousIdleTime[i] = fCpuInfos[i].active_time;
+            }
+        } else if (fPreviousIdleTime) {
+            for (uint32 i = 0; i < fCpuCount; ++i) {
                 fPreviousIdleTime[i] = 0;
+            }
         }
     }
 
@@ -137,6 +143,8 @@ void CPUView::CreateLayout()
 CPUView::~CPUView() {
     if (fPreviousIdleTime)
         delete[] fPreviousIdleTime;
+    if (fCpuInfos)
+        delete[] fCpuInfos;
 }
 
 void CPUView::AttachedToWindow() {
@@ -153,7 +161,7 @@ void CPUView::Pulse() {
 
 void CPUView::GetCPUUsage(float& overallUsage)
 {
-    if (fCpuCount == 0 || fPreviousIdleTime == NULL) {
+    if (fCpuCount == 0 || fPreviousIdleTime == NULL || fCpuInfos == NULL) {
         overallUsage = -1.0f;
         return;
     }
