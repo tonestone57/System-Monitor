@@ -65,7 +65,7 @@ void CPUView::CreateLayout()
         if (cols < 1) cols = 1;
 
         for (uint32 i = 0; i < fCpuCount; ++i) {
-            ActivityGraphView* graph = new ActivityGraphView("core_graph", {0, 150, 0, 255}, B_SUCCESS_COLOR);
+            ActivityGraphView* graph = new ActivityGraphView("core_graph", {80, 133, 229, 255}, B_NAVIGATION_BASE_COLOR);
             graph->SetExplicitMinSize(BSize(50, 40));
             fCoreGraphs.push_back(graph);
 
