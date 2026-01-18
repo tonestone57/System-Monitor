@@ -22,6 +22,18 @@
 #define B_TRANSLATION_CONTEXT "DataSource"
 
 
+static const rgb_color kCPUColors[] = {
+	{51, 102, 204},
+	{220, 57, 18},
+	{255, 153, 0},
+	{16, 150, 24},
+	{153, 0, 153},
+	{0, 153, 198},
+	{221, 68, 119},
+	{102, 170, 0}
+};
+
+
 const DataSource* kSources[] = {
 	new UsedMemoryDataSource(),
 	new CachedMemoryDataSource(),
@@ -930,19 +942,8 @@ CPUFrequencyDataSource::_SetCPU(int32 cpu)
 		fShortLabel = B_TRANSLATE("CPU");
 	}
 
-	const rgb_color kColors[] = {
-		{51, 102, 204},
-		{220, 57, 18},
-		{255, 153, 0},
-		{16, 150, 24},
-		{153, 0, 153},
-		{0, 153, 198},
-		{221, 68, 119},
-		{102, 170, 0}
-	};
-	const uint32 kNumColors = B_COUNT_OF(kColors);
-
-	fColor = kColors[cpu % kNumColors];
+	const uint32 kNumColors = B_COUNT_OF(kCPUColors);
+	fColor = kCPUColors[cpu % kNumColors];
 }
 
 
