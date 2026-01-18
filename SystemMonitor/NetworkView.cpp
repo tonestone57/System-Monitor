@@ -178,40 +178,54 @@ void NetworkView::UpdateData()
 		} else {
 			row = rowIt->second;
 			BStringField* field = static_cast<BStringField*>(row->GetField(kInterfaceTypeColumn));
-			if (field != NULL)
-				field->SetString(typeStr);
-			else
+			if (field != NULL) {
+				if (strcmp(field->String(), typeStr.String()) != 0)
+					field->SetString(typeStr);
+			} else {
 				row->SetField(new BStringField(typeStr), kInterfaceTypeColumn);
+			}
 
 			field = static_cast<BStringField*>(row->GetField(kInterfaceAddressColumn));
-			if (field != NULL)
-				field->SetString(addressStr);
-			else
+			if (field != NULL) {
+				if (strcmp(field->String(), addressStr.String()) != 0)
+					field->SetString(addressStr);
+			} else {
 				row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
+			}
 
 			field = static_cast<BStringField*>(row->GetField(kBytesSentColumn));
-			if (field != NULL)
-				field->SetString(::FormatBytes(currentSent));
-			else
+			if (field != NULL) {
+				BString sentStr = ::FormatBytes(currentSent);
+				if (strcmp(field->String(), sentStr.String()) != 0)
+					field->SetString(sentStr);
+			} else {
 				row->SetField(new BStringField(::FormatBytes(currentSent)), kBytesSentColumn);
+			}
 
 			field = static_cast<BStringField*>(row->GetField(kBytesRecvColumn));
-			if (field != NULL)
-				field->SetString(::FormatBytes(currentReceived));
-			else
+			if (field != NULL) {
+				BString recvStr = ::FormatBytes(currentReceived);
+				if (strcmp(field->String(), recvStr.String()) != 0)
+					field->SetString(recvStr);
+			} else {
 				row->SetField(new BStringField(::FormatBytes(currentReceived)), kBytesRecvColumn);
+			}
 
 			field = static_cast<BStringField*>(row->GetField(kSendSpeedColumn));
-			if (field != NULL)
-				field->SetString(sendSpeed);
-			else
+			if (field != NULL) {
+				if (strcmp(field->String(), sendSpeed.String()) != 0)
+					field->SetString(sendSpeed);
+			} else {
 				row->SetField(new BStringField(sendSpeed), kSendSpeedColumn);
+			}
 
 			field = static_cast<BStringField*>(row->GetField(kRecvSpeedColumn));
-			if (field != NULL)
-				field->SetString(recvSpeed);
-			else
+			if (field != NULL) {
+				if (strcmp(field->String(), recvSpeed.String()) != 0)
+					field->SetString(recvSpeed);
+			} else {
 				row->SetField(new BStringField(recvSpeed), kRecvSpeedColumn);
+			}
 
 			fInterfaceListView->UpdateRow(row);
 		}
