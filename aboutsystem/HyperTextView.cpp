@@ -203,10 +203,15 @@ HyperTextView::AddHyperTextAction(int32 startOffset, int32 endOffset,
 		return;
 	}
 
+	ActionInfo probe(startOffset, endOffset, NULL);
+	if (fActionInfos->BinarySearch(probe,
+			ActionInfo::CompareEqualIfIntersecting) != NULL) {
+		delete action;
+		return;
+	}
+
 	fActionInfos->BinaryInsert(new ActionInfo(startOffset, endOffset, action),
 		ActionInfo::Compare);
-
-	// TODO: Of course we should check for overlaps...
 }
 
 
