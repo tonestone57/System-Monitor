@@ -163,7 +163,8 @@ void NetworkView::UpdateData()
         rec.lastUpdateTime = currentTime;
 
 		BRow* row;
-		if (fInterfaceRowMap.find(name.String()) == fInterfaceRowMap.end()) {
+		auto rowIt = fInterfaceRowMap.find(name.String());
+		if (rowIt == fInterfaceRowMap.end()) {
 			row = new BRow();
 			row->SetField(new BStringField(name), kInterfaceNameColumn);
 			row->SetField(new BStringField(typeStr), kInterfaceTypeColumn);
@@ -175,7 +176,7 @@ void NetworkView::UpdateData()
 			fInterfaceListView->AddRow(row);
 			fInterfaceRowMap[name.String()] = row;
 		} else {
-			row = fInterfaceRowMap[name.String()];
+			row = rowIt->second;
 			BStringField* field = static_cast<BStringField*>(row->GetField(kInterfaceTypeColumn));
 			if (field != NULL)
 				field->SetString(typeStr);
