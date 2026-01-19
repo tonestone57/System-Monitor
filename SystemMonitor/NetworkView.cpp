@@ -291,8 +291,9 @@ int32 NetworkView::UpdateThread(void* data)
     NetworkView* view = static_cast<NetworkView*>(data);
 
     while (!view->fTerminated) {
-        acquire_sem(view->fScanSem);
-        if (view->fTerminated) break;
+        if (acquire_sem(view->fScanSem) != B_OK) {
+            if (view->fTerminated) break;
+        }
 
         BMessage updateMsg(kMsgNetworkDataUpdate);
         BNetworkRoster& roster = BNetworkRoster::Default();

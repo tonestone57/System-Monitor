@@ -50,9 +50,9 @@ public:
         const char* str1 = ((BStringField*)field1)->String();
         const char* str2 = ((BStringField*)field2)->String();
         float val1 = 0, val2 = 0;
-        char unit1[5] = {0}, unit2[5] = {0};
-        sscanf(str1, "%f %s", &val1, unit1);
-        sscanf(str2, "%f %s", &val2, unit2);
+        char unit1[16] = {0}, unit2[16] = {0};
+        sscanf(str1, "%f %15s", &val1, unit1);
+        sscanf(str2, "%f %15s", &val2, unit2);
 
         if (strcmp(unit1, "MiB") == 0) val1 *= 1024;
         if (strcmp(unit1, "GiB") == 0) val1 *= 1024 * 1024;
@@ -563,7 +563,12 @@ int32 ProcessView::UpdateThread(void* data)
         if (status != B_OK)
             delete procList;
 
-        acquire_sem_etc(view->fQuitSem, 1, B_RELATIVE_TIMEOUT, view->fRefreshInterval);
+        if (acquire_sem_etc(view->fQuitSem, 1, B_RELATIVE_TIMEOUT, view->fRefreshInterval) == B_OK) {
+            // Drain the semaphore to prevent spinning if multiple updates were requested
+            int32 count;
+            if (get_sem_count(view->fQuitSem, &count) == B_OK && count > 0)
+                acquire_sem_etc(view->fQuitSem, count, B_RELATIVE_TIMEOUT, 0);
+        }
     }
 
     return B_OK;
