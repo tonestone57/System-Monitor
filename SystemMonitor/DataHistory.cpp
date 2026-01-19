@@ -64,8 +64,10 @@ DataHistory::ValueAt(bigtime_t time)
 			if (nextItem->time > time) {
 				// found item
 				int64 value = item->value;
-				value += int64(double(nextItem->value - value)
-					/ (nextItem->time - item->time) * (time - item->time));
+				if (nextItem->time > item->time) {
+					value += int64(double(nextItem->value - value)
+						/ (nextItem->time - item->time) * (time - item->time));
+				}
 				return value;
 			}
 
