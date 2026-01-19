@@ -2,6 +2,7 @@
 #include "Utils.h"
 #include <LayoutBuilder.h>
 #include <StringView.h>
+#include <OS.h>
 #include <cstdio>
 #include <Directory.h>
 #include <Entry.h>
@@ -101,6 +102,7 @@ DiskView::~DiskView()
 void DiskView::AttachedToWindow()
 {
     BView::AttachedToWindow();
+    fTerminated = false;
     fUpdateThread = spawn_thread(UpdateThread, "DiskView Update", B_NORMAL_PRIORITY, this);
     if (fUpdateThread >= 0)
         resume_thread(fUpdateThread);

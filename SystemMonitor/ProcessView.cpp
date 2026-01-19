@@ -564,11 +564,11 @@ int32 ProcessView::UpdateThread(void* data)
             delete procList;
 
         if (acquire_sem_etc(view->fQuitSem, 1, B_RELATIVE_TIMEOUT, view->fRefreshInterval) == B_OK) {
-			// Drain the semaphore to prevent spinning if multiple updates were requested
-			int32 count;
-			if (get_sem_count(view->fQuitSem, &count) == B_OK && count > 0)
-				acquire_sem_etc(view->fQuitSem, count, B_RELATIVE_TIMEOUT, 0);
-		}
+            // Drain the semaphore to prevent spinning if multiple updates were requested
+            int32 count;
+            if (get_sem_count(view->fQuitSem, &count) == B_OK && count > 0)
+                acquire_sem_etc(view->fQuitSem, count, B_RELATIVE_TIMEOUT, 0);
+        }
     }
 
     return B_OK;
