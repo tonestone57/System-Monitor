@@ -14,6 +14,7 @@
 #include <Box.h>
 #include <Font.h>
 #include <set>
+#include <Messenger.h>
 #include <Catalog.h>
 
 #undef B_TRANSLATION_CONTEXT
@@ -180,10 +181,14 @@ status_t DiskView::GetDiskInfo(BVolume& volume, DiskInfo& info) {
 int32 DiskView::UpdateThread(void* data)
 {
     DiskView* view = static_cast<DiskView*>(data);
+    BMessenger target(view);
 
     while (!view->fTerminated) {
-        if (acquire_sem(view->fScanSem) != B_OK) {
+        status_t err = acquire_sem(view->fScanSem);
+        if (err != B_OK) {
             if (view->fTerminated) break;
+            if (err == B_INTERRUPTED) continue;
+            break;
         }
 
         BMessage updateMsg(kMsgDiskDataUpdate);
@@ -211,9 +216,7 @@ int32 DiskView::UpdateThread(void* data)
              updateMsg.AddMessage("volume", &volMsg);
         }
 
-        if (view->Window()) {
-            view->Window()->PostMessage(&updateMsg, view);
-        }
+        target.SendMessage(&updateMsg);
     }
     return B_OK;
 }
@@ -272,11 +275,19 @@ void DiskView::UpdateData(BMessage* message)
 		} else {
 			// Existing device, update the row
 			row = fDeviceRowMap[deviceID];
+            bool changed = false;
             // Only update fields if changed (optimization)
             auto updateField = [&](int index, const char* newVal) {
                 BStringField* f = static_cast<BStringField*>(row->GetField(index));
-                if (f && strcmp(f->String(), newVal) != 0) f->SetString(newVal);
-                else if (!f) row->SetField(new BStringField(newVal), index);
+                if (f) {
+                    if (strcmp(f->String(), newVal) != 0) {
+                        f->SetString(newVal);
+                        changed = true;
+                    }
+                } else {
+                    row->SetField(new BStringField(newVal), index);
+                    changed = true;
+                }
             };
 
             updateField(kDeviceColumn, deviceName);
@@ -287,7 +298,8 @@ void DiskView::UpdateData(BMessage* message)
             updateField(kFreeSizeColumn, ::FormatBytes(freeSize));
             updateField(kUsagePercentageColumn, percentStr);
 
-			fDiskListView->UpdateRow(row);
+            if (changed)
+			    fDiskListView->UpdateRow(row);
 		}
     }
 

@@ -14,6 +14,7 @@
 #include <string>
 #include <net/if.h>
 #include "ActivityGraphView.h"
+#include <Messenger.h>
 #include <Catalog.h>
 
 #undef B_TRANSLATION_CONTEXT
@@ -98,6 +99,7 @@ NetworkView::~NetworkView()
 void NetworkView::AttachedToWindow()
 {
     BView::AttachedToWindow();
+    fTerminated = false;
     fUpdateThread = spawn_thread(UpdateThread, "NetworkView Update", B_NORMAL_PRIORITY, this);
     if (fUpdateThread >= 0)
         resume_thread(fUpdateThread);
@@ -289,10 +291,14 @@ void NetworkView::UpdateData(BMessage* message)
 int32 NetworkView::UpdateThread(void* data)
 {
     NetworkView* view = static_cast<NetworkView*>(data);
+    BMessenger target(view);
 
     while (!view->fTerminated) {
-        if (acquire_sem(view->fScanSem) != B_OK) {
+        status_t err = acquire_sem(view->fScanSem);
+        if (err != B_OK) {
             if (view->fTerminated) break;
+            if (err == B_INTERRUPTED) continue;
+            break;
         }
 
         BMessage updateMsg(kMsgNetworkDataUpdate);
@@ -341,9 +347,7 @@ int32 NetworkView::UpdateThread(void* data)
             updateMsg.AddData("net_info", B_RAW_TYPE, &info, sizeof(NetworkInfo));
         }
 
-        if (view->Window()) {
-            view->Window()->PostMessage(&updateMsg, view);
-        }
+        target.SendMessage(&updateMsg);
     }
     return B_OK;
 }

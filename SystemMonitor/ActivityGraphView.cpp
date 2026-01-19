@@ -65,7 +65,10 @@ ActivityGraphView::FrameResized(float /*width*/, float /*height*/)
 void
 ActivityGraphView::_UpdateOffscreenBitmap()
 {
-	if (fOffscreen != NULL && Bounds() == fOffscreen->Bounds())
+	BRect bounds = Bounds();
+	bounds.OffsetTo(B_ORIGIN);
+
+	if (fOffscreen != NULL && bounds == fOffscreen->Bounds())
 		return;
 
 	delete fOffscreen;
@@ -78,7 +81,7 @@ ActivityGraphView::_UpdateOffscreenBitmap()
 	if (!locker.IsLocked())
 		return;
 
-	fOffscreen = new(std::nothrow) BBitmap(Bounds(), B_BITMAP_ACCEPTS_VIEWS,
+	fOffscreen = new(std::nothrow) BBitmap(bounds, B_BITMAP_ACCEPTS_VIEWS,
 		B_RGB32);
 	if (fOffscreen == NULL || fOffscreen->InitCheck() != B_OK) {
 		delete fOffscreen;
@@ -86,7 +89,7 @@ ActivityGraphView::_UpdateOffscreenBitmap()
 		return;
 	}
 
-	BView* view = new BView(Bounds(), NULL, B_FOLLOW_NONE, 0);
+	BView* view = new BView(bounds, NULL, B_FOLLOW_NONE, 0);
 	fOffscreen->AddChild(view);
 }
 

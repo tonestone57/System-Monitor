@@ -132,7 +132,27 @@ void SysInfoView::MessageReceived(BMessage* message)
         case kMsgUpdateInfo: {
             BString infoText;
             if (message->FindString("text", &infoText) == B_OK) {
+                // Preserve scroll position
+                BScrollBar* scrollBar = NULL;
+                float min, max, value = 0;
+                BScrollView* scrollView = dynamic_cast<BScrollView*>(fInfoTextView->Parent());
+                if (scrollView) {
+                    scrollBar = scrollView->ScrollBar(B_VERTICAL);
+                    if (scrollBar) {
+                        scrollBar->GetRange(&min, &max);
+                        value = scrollBar->Value();
+                    }
+                }
+
                 fInfoTextView->SetText(infoText.String());
+
+                // Restore scroll position
+                if (scrollBar) {
+                    float newMin, newMax;
+                    scrollBar->GetRange(&newMin, &newMax);
+                    if (value > newMax) value = newMax;
+                    scrollBar->SetValue(value);
+                }
 
                 // Styling
                 BFont font;

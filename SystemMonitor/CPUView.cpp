@@ -171,8 +171,6 @@ CPUView::~CPUView() {
 
 void CPUView::AttachedToWindow() {
     SetFlags(Flags() | B_PULSE_NEEDED);
-    if (Window())
-        Window()->SetPulseRate(1000000); // 1 second
     UpdateData(); // Initial data fetch
     BView::AttachedToWindow();
 }
