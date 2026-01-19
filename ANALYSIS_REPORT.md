@@ -85,6 +85,14 @@ The `ProcessView` implements a sophisticated "diff" logic to update existing row
 
 ### 3.5 UI Efficiency
 - **`ProcessView` Search**: The filtering logic in `ProcessView::Update` works by only adding matching processes to the internal update set. This causes non-matching rows to be removed from the `BColumnListView`. When the search filter is cleared, all rows are re-created (re-allocated). A more efficient approach would be to hide rows or filter at the model level to preserve row state (selection, expansion) and avoid churn.
+- **Sorting Performance**: In `ProcessView`, the `BCPUColumn` and `BMemoryColumn` implement sorting by parsing the displayed string values (using `atof` and `sscanf`) in `CompareFields`. This is computationally expensive (performed for every comparison during sort) and fragile regarding locale formatting. A more robust solution would be to implement custom `BField` subclasses that store the raw numeric values for sorting while displaying the formatted string.
+
+### 3.6 Concurrency Correctness
+- **Atomic Flags**: `ProcessView`, `DiskView`, and `NetworkView` use `volatile bool fTerminated` to signal thread termination. In modern C++, `volatile` does not guarantee the necessary memory ordering semantics for inter-thread synchronization. These should be replaced with `std::atomic<bool>`, consistent with the usage of `fIsHidden` in `ProcessView`.
+
+### 3.7 Resource Management
+- **Unbounded Cache**: `ProcessView::fUserNameCache` stores mappings of UIDs to Usernames. This map is never cleared or pruned. While likely insignificant on single-user desktop systems, in an environment with high user turnover (e.g., numerous transient system users/services), this cache could grow indefinitely.
+- **UI Responsiveness**: The use of modal `BAlert` dialogs (e.g., in `KillSelectedProcess`) runs a nested message loop that may block the main window's `Pulse` messages. This pauses the update of all other views (CPU, Memory, etc.) while the dialog is open. Using asynchronous notifications or non-modal windows would improve the user experience.
 
 ## 4. Conclusion
-The `SystemMonitor` code is high quality. The primary actionable finding is the semaphore accumulation in `DiskView` and `NetworkView`. Fixing this will improve the application's responsiveness and efficiency under load. Addressing the minor code quality issues and understanding the functional limitations (GPU/Disk I/O) will further refine the project.
+The `SystemMonitor` code is high quality. The primary actionable finding is the semaphore accumulation in `DiskView` and `NetworkView`. Fixing this will improve the application's responsiveness and efficiency under load. Addressing the code quality issues (sorting performance, atomic flags) and understanding the functional limitations (GPU/Disk I/O) will further refine the project.
