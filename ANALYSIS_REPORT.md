@@ -75,5 +75,16 @@ The `ProcessView` implements a sophisticated "diff" logic to update existing row
 - **`CPUView`**: topology calculation is done once in `CreateLayout`, avoiding overhead in the update loop.
 - **`MemView`**: Static info (Total Memory) is fetched once.
 
+### 3.3 Code Quality & Cleanup
+- **`ProcessView` Unused Declaration**: `ProcessView.h` declares `BString FormatBytes(uint64 bytes);` but it is not defined in the source file. The code uses the global `::FormatBytes` from `Utils.h`. The class member declaration should be removed.
+- **`CPUView` Naming Confusion**: The member variable `fPreviousIdleTime` in `CPUView` actually stores the *active* time (`active_time` from `cpu_info`). While the logic (Active Delta / Total Delta) appears correct, the variable name is misleading and should be renamed to `fPreviousActiveTime`.
+
+### 3.4 Functional Limitations
+- **`GPUView`**: The current implementation is a placeholder. The `Pulse()` method injects 0 values into the graphs, and it does not query actual hardware statistics.
+- **`DiskView`**: The view explicitly notes that "Real-time Disk I/O monitoring is not supported". It correctly displays storage usage (Used/Free space) but does not provide read/write throughput metrics.
+
+### 3.5 UI Efficiency
+- **`ProcessView` Search**: The filtering logic in `ProcessView::Update` works by only adding matching processes to the internal update set. This causes non-matching rows to be removed from the `BColumnListView`. When the search filter is cleared, all rows are re-created (re-allocated). A more efficient approach would be to hide rows or filter at the model level to preserve row state (selection, expansion) and avoid churn.
+
 ## 4. Conclusion
-The `SystemMonitor` code is high quality. The primary actionable finding is the semaphore accumulation in `DiskView` and `NetworkView`. Fixing this will improve the application's responsiveness and efficiency under load.
+The `SystemMonitor` code is high quality. The primary actionable finding is the semaphore accumulation in `DiskView` and `NetworkView`. Fixing this will improve the application's responsiveness and efficiency under load. Addressing the minor code quality issues and understanding the functional limitations (GPU/Disk I/O) will further refine the project.
