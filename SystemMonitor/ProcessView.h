@@ -10,6 +10,7 @@
 #include <map>
 #include <vector>
 #include <unordered_map>
+#include <atomic>
 #include <kernel/OS.h>
 
 class BColumnListView;
@@ -45,6 +46,8 @@ public:
     virtual void AttachedToWindow();
     virtual void DetachedFromWindow();
     virtual void MessageReceived(BMessage* message);
+    virtual void Hide();
+    virtual void Show();
 
     void SaveState(BMessage& state);
     void LoadState(const BMessage& state);
@@ -83,6 +86,7 @@ private:
     thread_id fUpdateThread;
     sem_id fQuitSem;
     volatile bool fTerminated;
+    std::atomic<bool> fIsHidden;
 };
 
 #endif // PROCESSVIEW_H

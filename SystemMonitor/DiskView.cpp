@@ -139,7 +139,7 @@ void DiskView::MessageReceived(BMessage* message)
 
 void DiskView::Pulse()
 {
-    if (fScanSem >= 0) release_sem(fScanSem);
+    if (!IsHidden() && fScanSem >= 0) release_sem(fScanSem);
 }
 
 status_t DiskView::GetDiskInfo(BVolume& volume, DiskInfo& info) {

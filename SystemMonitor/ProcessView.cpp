@@ -125,7 +125,8 @@ ProcessView::ProcessView()
       fLastSystemTime(0),
       fRefreshInterval(1000000),
       fUpdateThread(B_ERROR),
-      fTerminated(false)
+      fTerminated(false),
+      fIsHidden(false)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -260,6 +261,18 @@ void ProcessView::MessageReceived(BMessage* message)
             BView::MessageReceived(message);
             break;
     }
+}
+
+void ProcessView::Hide()
+{
+    fIsHidden = true;
+    BView::Hide();
+}
+
+void ProcessView::Show()
+{
+    fIsHidden = false;
+    BView::Show();
 }
 
 const BString& ProcessView::GetUserName(uid_t uid) {
@@ -505,6 +518,12 @@ int32 ProcessView::UpdateThread(void* data)
     BMessenger target(view);
 
     while (!view->fTerminated) {
+        if (view->fIsHidden) {
+            status_t err = acquire_sem_etc(view->fQuitSem, 1, B_RELATIVE_TIMEOUT, view->fRefreshInterval);
+            if (err != B_OK && err != B_TIMED_OUT && err != B_INTERRUPTED) break;
+            continue;
+        }
+
 		activeThreads.clear();
         procList.clear();
 
