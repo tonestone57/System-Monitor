@@ -51,8 +51,8 @@ public:
         const char* str2 = ((BStringField*)field2)->String();
         float val1 = 0, val2 = 0;
         char unit1[16] = {0}, unit2[16] = {0};
-        sscanf(str1, "%f %s", &val1, unit1);
-        sscanf(str2, "%f %s", &val2, unit2);
+        sscanf(str1, "%f %15s", &val1, unit1);
+        sscanf(str2, "%f %15s", &val2, unit2);
 
         if (strcmp(unit1, "MiB") == 0) val1 *= 1024;
         if (strcmp(unit1, "GiB") == 0) val1 *= 1024 * 1024;
