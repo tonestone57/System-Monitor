@@ -46,6 +46,8 @@ public:
     virtual void AttachedToWindow();
     virtual void DetachedFromWindow();
     virtual void MessageReceived(BMessage* message);
+    virtual void MouseDown(BPoint where);
+    virtual void KeyDown(const char* bytes, int32 numBytes);
     virtual void Hide();
     virtual void Show();
 
@@ -61,7 +63,6 @@ private:
     void ResumeSelectedProcess();
     void SetSelectedProcessPriority(int32 priority);
     void ShowContextMenu(BPoint screenPoint);
-    BString FormatBytes(uint64 bytes);
     const BString& GetUserName(uid_t uid);
     void SetRefreshInterval(bigtime_t interval);
 
@@ -85,7 +86,7 @@ private:
     
     thread_id fUpdateThread;
     sem_id fQuitSem;
-    volatile bool fTerminated;
+    std::atomic<bool> fTerminated;
     std::atomic<bool> fIsHidden;
 };
 

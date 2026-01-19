@@ -94,5 +94,15 @@ The `ProcessView` implements a sophisticated "diff" logic to update existing row
 - **Unbounded Cache**: `ProcessView::fUserNameCache` stores mappings of UIDs to Usernames. This map is never cleared or pruned. While likely insignificant on single-user desktop systems, in an environment with high user turnover (e.g., numerous transient system users/services), this cache could grow indefinitely.
 - **UI Responsiveness**: The use of modal `BAlert` dialogs (e.g., in `KillSelectedProcess`) runs a nested message loop that may block the main window's `Pulse` messages. This pauses the update of all other views (CPU, Memory, etc.) while the dialog is open. Using asynchronous notifications or non-modal windows would improve the user experience.
 
+### 3.8 Functional Defects
+- **Broken Context Menu**: The `ProcessView` class initializes a `BPopUpMenu` (`fContextMenu`) with actions to Kill, Suspend, and Resume processes, and defines a helper method `ShowContextMenu`. However, this method is never called, and the view does not implement a `MouseDown` hook to trigger the menu. Consequently, these features are inaccessible to the user.
+- **Missing Keyboard Support**: There is no implementation of `KeyDown` in `ProcessView` to handle standard shortcuts (e.g., pressing the `Delete` key to kill a process), further limiting the usability of the process manager.
+
+### 3.9 Logic Risks
+- **Coarse-grained Priority Adjustment**: The `SetSelectedProcessPriority` method iterates through *all* threads in the selected team and sets them to the same priority. This flattening of thread priorities can negatively affect applications that rely on specific internal scheduling hierarchies (e.g., real-time audio threads vs. background workers).
+
+### 3.10 Incomplete Implementation
+- **DataHistory Resizing**: The `DataHistory::SetRefreshInterval` method contains a `TODO` comment and is empty. When the user changes the global refresh speed (e.g., from 1s to 0.5s), the history buffer size is not adjusted. This results in the history duration (time window) shrinking or expanding unexpectedly, rather than maintaining a constant time window with varying resolution.
+
 ## 4. Conclusion
-The `SystemMonitor` code is high quality. The primary actionable finding is the semaphore accumulation in `DiskView` and `NetworkView`. Fixing this will improve the application's responsiveness and efficiency under load. Addressing the code quality issues (sorting performance, atomic flags) and understanding the functional limitations (GPU/Disk I/O) will further refine the project.
+The `SystemMonitor` code is high quality but contains specific functional gaps and concurrency risks. The primary actionable finding is the semaphore accumulation in `DiskView` and `NetworkView`. Fixing this will improve the application's responsiveness and efficiency under load. Additionally, wiring up the unreachable Context Menu in `ProcessView` is essential to restore intended functionality.

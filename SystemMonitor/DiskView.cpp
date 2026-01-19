@@ -196,6 +196,11 @@ int32 DiskView::UpdateThread(void* data)
             break;
         }
 
+        // Drain the semaphore
+        int32 count;
+        if (get_sem_count(view->fScanSem, &count) == B_OK && count > 0)
+            acquire_sem_etc(view->fScanSem, count, B_RELATIVE_TIMEOUT, 0);
+
         BMessage updateMsg(kMsgDiskDataUpdate);
         BVolumeRoster volRoster;
         BVolume volume;

@@ -263,6 +263,30 @@ void ProcessView::MessageReceived(BMessage* message)
     }
 }
 
+void ProcessView::MouseDown(BPoint where)
+{
+    BMessage* msg = Window()->CurrentMessage();
+    int32 buttons = 0;
+    msg->FindInt32("buttons", &buttons);
+
+    if (buttons & B_SECONDARY_MOUSE_BUTTON) {
+        ShowContextMenu(where);
+    }
+
+    BView::MouseDown(where);
+}
+
+void ProcessView::KeyDown(const char* bytes, int32 numBytes)
+{
+    if (numBytes == 1) {
+        if (bytes[0] == B_DELETE) {
+            KillSelectedProcess();
+            return;
+        }
+    }
+    BView::KeyDown(bytes, numBytes);
+}
+
 void ProcessView::Hide()
 {
     fIsHidden = true;
@@ -385,8 +409,11 @@ void ProcessView::Update(BMessage* message)
     const char* searchText = fSearchControl->Text();
     bool filtering = (searchText != NULL && strlen(searchText) > 0);
 
+    std::unordered_set<uid_t> activeUIDs;
+
     for (size_t i = 0; i < count; i++) {
         const ProcessInfo& info = infos[i];
+        activeUIDs.insert(info.userID);
         
         bool match = true;
         if (filtering) {
@@ -508,6 +535,15 @@ void ProcessView::Update(BMessage* message)
 			++it;
 		}
 	}
+
+    // Prune user name cache
+    for (auto it = fUserNameCache.begin(); it != fUserNameCache.end();) {
+        if (activeUIDs.find(it->first) == activeUIDs.end()) {
+            it = fUserNameCache.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
 int32 ProcessView::UpdateThread(void* data)
