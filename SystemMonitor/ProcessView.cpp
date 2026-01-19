@@ -190,6 +190,7 @@ ProcessView::~ProcessView()
 void ProcessView::AttachedToWindow()
 {
     BView::AttachedToWindow();
+    fTerminated = false;
     fProcessListView->SetTarget(this);
     fSearchControl->SetTarget(this);
     fLastSystemTime = system_time();

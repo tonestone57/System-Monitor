@@ -184,8 +184,11 @@ int32 DiskView::UpdateThread(void* data)
     BMessenger target(view);
 
     while (!view->fTerminated) {
-        if (acquire_sem(view->fScanSem) != B_OK) {
+        status_t err = acquire_sem(view->fScanSem);
+        if (err != B_OK) {
             if (view->fTerminated) break;
+            if (err == B_INTERRUPTED) continue;
+            break;
         }
 
         BMessage updateMsg(kMsgDiskDataUpdate);

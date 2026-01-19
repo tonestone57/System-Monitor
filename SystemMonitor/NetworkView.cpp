@@ -99,6 +99,7 @@ NetworkView::~NetworkView()
 void NetworkView::AttachedToWindow()
 {
     BView::AttachedToWindow();
+    fTerminated = false;
     fUpdateThread = spawn_thread(UpdateThread, "NetworkView Update", B_NORMAL_PRIORITY, this);
     if (fUpdateThread >= 0)
         resume_thread(fUpdateThread);
@@ -293,8 +294,11 @@ int32 NetworkView::UpdateThread(void* data)
     BMessenger target(view);
 
     while (!view->fTerminated) {
-        if (acquire_sem(view->fScanSem) != B_OK) {
+        status_t err = acquire_sem(view->fScanSem);
+        if (err != B_OK) {
             if (view->fTerminated) break;
+            if (err == B_INTERRUPTED) continue;
+            break;
         }
 
         BMessage updateMsg(kMsgNetworkDataUpdate);
