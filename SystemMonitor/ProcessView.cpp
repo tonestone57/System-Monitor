@@ -17,6 +17,7 @@
 #include <vector>
 #include <unordered_set>
 #include <Window.h>
+#include <Messenger.h>
 #include <Catalog.h>
 
 #undef B_TRANSLATION_CONTEXT
@@ -258,10 +259,11 @@ const BString& ProcessView::GetUserName(uid_t uid) {
     struct passwd* result = NULL;
     long bufSize = sysconf(_SC_GETPW_R_SIZE_MAX);
     if (bufSize == -1) bufSize = 16384;
-    char buffer[bufSize];
+
+    std::vector<char> buffer(bufSize);
 
     BString name;
-    if (getpwuid_r(uid, &pwd, buffer, sizeof(buffer), &result) == 0 && result != NULL) {
+    if (getpwuid_r(uid, &pwd, buffer.data(), buffer.size(), &result) == 0 && result != NULL) {
         name = result->pw_name;
     } else {
         name << uid;
@@ -345,15 +347,20 @@ void ProcessView::SetRefreshInterval(bigtime_t interval)
 void ProcessView::Update(BMessage* message)
 {
     std::unordered_set<team_id> activePIDsThisPulse;
-    std::vector<ProcessInfo>* procList = NULL;
-    if (message->FindPointer("proc_list", (void**)&procList) != B_OK || procList == NULL) {
+
+    const void* data;
+    ssize_t size;
+    if (message->FindData("procs", B_RAW_TYPE, &data, &size) != B_OK)
         return;
-    }
+
+    const ProcessInfo* infos = (const ProcessInfo*)data;
+    size_t count = size / sizeof(ProcessInfo);
 
     const char* searchText = fSearchControl->Text();
     bool filtering = (searchText != NULL && strlen(searchText) > 0);
 
-    for (const auto& info : *procList) {
+    for (size_t i = 0; i < count; i++) {
+        const ProcessInfo& info = infos[i];
         
         bool match = true;
         if (filtering) {
@@ -384,65 +391,83 @@ void ProcessView::Update(BMessage* message)
                 fTeamRowMap[info.id] = row;
             } else { // Existing process
                 row = fTeamRowMap[info.id];
+                bool changed = false;
 
                 BStringField* nameField = static_cast<BStringField*>(row->GetField(kProcessNameColumn));
                 if (nameField) {
-                     if (strcmp(nameField->String(), info.name) != 0)
+                     if (strcmp(nameField->String(), info.name) != 0) {
                         nameField->SetString(info.name);
+                        changed = true;
+                     }
                 } else {
                     row->SetField(new BStringField(info.name), kProcessNameColumn);
+                    changed = true;
                 }
 
                 BStringField* stateField = static_cast<BStringField*>(row->GetField(kStateColumn));
                 BString stateStr = B_TRANSLATE(info.state);
                 if (stateField) {
-                     if (strcmp(stateField->String(), stateStr.String()) != 0)
+                     if (strcmp(stateField->String(), stateStr.String()) != 0) {
                         stateField->SetString(stateStr);
+                        changed = true;
+                     }
                 } else {
                     row->SetField(new BStringField(stateStr), kStateColumn);
+                    changed = true;
                 }
 
                 char cpuStr[16];
                 snprintf(cpuStr, sizeof(cpuStr), "%.1f", info.cpuUsage);
                 BStringField* cpuField = static_cast<BStringField*>(row->GetField(kCPUUsageColumn));
                 if (cpuField) {
-                    if (strcmp(cpuField->String(), cpuStr) != 0)
+                    if (strcmp(cpuField->String(), cpuStr) != 0) {
                         cpuField->SetString(cpuStr);
+                        changed = true;
+                     }
                 } else {
                     row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
+                    changed = true;
                 }
 
                 BString memStr = ::FormatBytes(info.memoryUsageBytes);
                 BStringField* memField = static_cast<BStringField*>(row->GetField(kMemoryUsageColumn));
                 if (memField) {
-                    if (strcmp(memField->String(), memStr.String()) != 0)
+                    if (strcmp(memField->String(), memStr.String()) != 0) {
                         memField->SetString(memStr);
+                        changed = true;
+                     }
                 } else {
                     row->SetField(new BStringField(memStr), kMemoryUsageColumn);
+                    changed = true;
                 }
 
                 BIntegerField* threadsField = static_cast<BIntegerField*>(row->GetField(kThreadCountColumn));
                 if (threadsField) {
-                    if (threadsField->Value() != (int32)info.threadCount)
+                    if (threadsField->Value() != (int32)info.threadCount) {
                         threadsField->SetValue(info.threadCount);
+                        changed = true;
+                    }
                 } else {
                     row->SetField(new BIntegerField(info.threadCount), kThreadCountColumn);
+                    changed = true;
                 }
 
                 BStringField* userField = static_cast<BStringField*>(row->GetField(kUserNameColumn));
                 if (userField) {
-                    if (strcmp(userField->String(), info.userName) != 0)
+                    if (strcmp(userField->String(), info.userName) != 0) {
                         userField->SetString(info.userName);
+                        changed = true;
+                     }
                 } else {
                     row->SetField(new BStringField(info.userName), kUserNameColumn);
+                    changed = true;
                 }
 
-                fProcessListView->UpdateRow(row);
+                if (changed)
+                    fProcessListView->UpdateRow(row);
             }
         }
     }
-
-    delete procList;
 
 	for (auto it = fTeamRowMap.begin(); it != fTeamRowMap.end();) {
         bool presentInPulse = (activePIDsThisPulse.find(it->first) != activePIDsThisPulse.end());
@@ -463,12 +488,11 @@ int32 ProcessView::UpdateThread(void* data)
 {
     ProcessView* view = static_cast<ProcessView*>(data);
 	std::unordered_set<thread_id> activeThreads;
+    BMessenger target(view);
 
     while (!view->fTerminated) {
 		activeThreads.clear();
-        std::vector<ProcessInfo>* procList = new std::vector<ProcessInfo>();
-        BMessage msg(MSG_PROCESS_DATA_UPDATE);
-        msg.AddPointer("proc_list", procList);
+        std::vector<ProcessInfo> procList;
 
         bigtime_t currentSystemTime = system_time();
         bigtime_t systemTimeDelta = currentSystemTime - view->fLastSystemTime;
@@ -545,7 +569,7 @@ int32 ProcessView::UpdateThread(void* data)
                 currentProc.memoryUsageBytes += areaInfo.ram_size;
             }
 
-            procList->push_back(currentProc);
+            procList.push_back(currentProc);
         }
 
 		// Prune dead threads from the map
@@ -556,12 +580,11 @@ int32 ProcessView::UpdateThread(void* data)
 				++it;
 		}
 
-        status_t status = B_ERROR;
-        if (view->Window())
-            status = view->Window()->PostMessage(&msg, view);
-
-        if (status != B_OK)
-            delete procList;
+        if (!procList.empty()) {
+            BMessage msg(MSG_PROCESS_DATA_UPDATE);
+            msg.AddData("procs", B_RAW_TYPE, procList.data(), procList.size() * sizeof(ProcessInfo));
+            target.SendMessage(&msg);
+        }
 
         if (acquire_sem_etc(view->fQuitSem, 1, B_RELATIVE_TIMEOUT, view->fRefreshInterval) == B_OK) {
             // Drain the semaphore to prevent spinning if multiple updates were requested
