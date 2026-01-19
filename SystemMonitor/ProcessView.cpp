@@ -55,10 +55,16 @@ public:
         sscanf(str1, "%f %15s", &val1, unit1);
         sscanf(str2, "%f %15s", &val2, unit2);
 
-        if (strcmp(unit1, "MiB") == 0) val1 *= 1024;
-        if (strcmp(unit1, "GiB") == 0) val1 *= 1024 * 1024;
-        if (strcmp(unit2, "MiB") == 0) val2 *= 1024;
-        if (strcmp(unit2, "GiB") == 0) val2 *= 1024 * 1024;
+        // Normalize to bytes
+        auto normalize = [](float val, const char* unit) -> float {
+            if (strcmp(unit, "KiB") == 0) return val * 1024.0f;
+            if (strcmp(unit, "MiB") == 0) return val * 1024.0f * 1024.0f;
+            if (strcmp(unit, "GiB") == 0) return val * 1024.0f * 1024.0f * 1024.0f;
+            return val; // "Bytes" or unknown
+        };
+
+        val1 = normalize(val1, unit1);
+        val2 = normalize(val2, unit2);
 
         if (val1 < val2) return -1;
         if (val1 > val2) return 1;
@@ -119,7 +125,8 @@ ProcessView::ProcessView()
       fLastSystemTime(0),
       fRefreshInterval(1000000),
       fUpdateThread(B_ERROR),
-      fTerminated(false)
+      fTerminated(false),
+      fIsHidden(false)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -195,6 +202,12 @@ void ProcessView::AttachedToWindow()
     fSearchControl->SetTarget(this);
     fLastSystemTime = system_time();
 
+    if (fQuitSem < 0)
+        fQuitSem = create_sem(0, "ProcessView Quit");
+
+    // Clear thread time map to avoid stale calculations
+    fThreadTimeMap.clear();
+
     fUpdateThread = spawn_thread(UpdateThread, "Process Update", B_NORMAL_PRIORITY, this);
     if (fUpdateThread >= 0)
         resume_thread(fUpdateThread);
@@ -248,6 +261,18 @@ void ProcessView::MessageReceived(BMessage* message)
             BView::MessageReceived(message);
             break;
     }
+}
+
+void ProcessView::Hide()
+{
+    fIsHidden = true;
+    BView::Hide();
+}
+
+void ProcessView::Show()
+{
+    fIsHidden = false;
+    BView::Show();
 }
 
 const BString& ProcessView::GetUserName(uid_t uid) {
@@ -489,11 +514,18 @@ int32 ProcessView::UpdateThread(void* data)
 {
     ProcessView* view = static_cast<ProcessView*>(data);
 	std::unordered_set<thread_id> activeThreads;
+    std::vector<ProcessInfo> procList;
     BMessenger target(view);
 
     while (!view->fTerminated) {
+        if (view->fIsHidden) {
+            status_t err = acquire_sem_etc(view->fQuitSem, 1, B_RELATIVE_TIMEOUT, view->fRefreshInterval);
+            if (err != B_OK && err != B_TIMED_OUT && err != B_INTERRUPTED) break;
+            continue;
+        }
+
 		activeThreads.clear();
-        std::vector<ProcessInfo> procList;
+        procList.clear();
 
         bigtime_t currentSystemTime = system_time();
         bigtime_t systemTimeDelta = currentSystemTime - view->fLastSystemTime;
@@ -587,11 +619,15 @@ int32 ProcessView::UpdateThread(void* data)
             target.SendMessage(&msg);
         }
 
-        if (acquire_sem_etc(view->fQuitSem, 1, B_RELATIVE_TIMEOUT, view->fRefreshInterval) == B_OK) {
+        status_t err = acquire_sem_etc(view->fQuitSem, 1, B_RELATIVE_TIMEOUT, view->fRefreshInterval);
+        if (err == B_OK) {
             // Drain the semaphore to prevent spinning if multiple updates were requested
             int32 count;
             if (get_sem_count(view->fQuitSem, &count) == B_OK && count > 0)
                 acquire_sem_etc(view->fQuitSem, count, B_RELATIVE_TIMEOUT, 0);
+        } else if (err != B_TIMED_OUT && err != B_INTERRUPTED) {
+            // Semaphore failure (e.g. deleted), exit
+            break;
         }
     }
 

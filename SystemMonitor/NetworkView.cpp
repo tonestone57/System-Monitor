@@ -100,6 +100,10 @@ void NetworkView::AttachedToWindow()
 {
     BView::AttachedToWindow();
     fTerminated = false;
+
+    if (fScanSem < 0)
+        fScanSem = create_sem(0, "network scan sem");
+
     fUpdateThread = spawn_thread(UpdateThread, "NetworkView Update", B_NORMAL_PRIORITY, this);
     if (fUpdateThread >= 0)
         resume_thread(fUpdateThread);

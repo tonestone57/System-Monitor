@@ -104,6 +104,10 @@ void DiskView::AttachedToWindow()
 {
     BView::AttachedToWindow();
     fTerminated = false;
+
+    if (fScanSem < 0)
+        fScanSem = create_sem(0, "disk scan sem");
+
     fUpdateThread = spawn_thread(UpdateThread, "DiskView Update", B_NORMAL_PRIORITY, this);
     if (fUpdateThread >= 0)
         resume_thread(fUpdateThread);
@@ -135,7 +139,7 @@ void DiskView::MessageReceived(BMessage* message)
 
 void DiskView::Pulse()
 {
-    if (fScanSem >= 0) release_sem(fScanSem);
+    if (!IsHidden() && fScanSem >= 0) release_sem(fScanSem);
 }
 
 status_t DiskView::GetDiskInfo(BVolume& volume, DiskInfo& info) {
@@ -188,6 +192,7 @@ int32 DiskView::UpdateThread(void* data)
         if (err != B_OK) {
             if (view->fTerminated) break;
             if (err == B_INTERRUPTED) continue;
+            // If the semaphore is bad (e.g. deleted), we must exit
             break;
         }
 
