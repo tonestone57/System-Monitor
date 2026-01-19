@@ -60,7 +60,8 @@ private:
     void ShowContextMenu(BPoint screenPoint);
     BString FormatBytes(uint64 bytes);
     const BString& GetUserName(uid_t uid);
-    
+    void SetRefreshInterval(bigtime_t interval);
+
     BColumnListView* fProcessListView;
     BPopUpMenu* fContextMenu;
     BTextControl* fSearchControl;
@@ -77,6 +78,7 @@ private:
 	std::unordered_map<team_id, BRow*> fTeamRowMap;
     std::unordered_map<uid_t, BString> fUserNameCache;
     bigtime_t fLastSystemTime;
+    bigtime_t fRefreshInterval;
     
     thread_id fUpdateThread;
     sem_id fQuitSem;

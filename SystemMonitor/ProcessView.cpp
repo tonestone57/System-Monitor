@@ -116,6 +116,7 @@ const uint32 MSG_PRIORITY_HIGH = 'prih';
 ProcessView::ProcessView()
     : BView("ProcessView", B_WILL_DRAW),
       fLastSystemTime(0),
+      fRefreshInterval(1000000),
       fUpdateThread(B_ERROR),
       fTerminated(false)
 {
@@ -336,6 +337,11 @@ void ProcessView::SetSelectedProcessPriority(int32 priority) {
     }
 }
 
+void ProcessView::SetRefreshInterval(bigtime_t interval)
+{
+    fRefreshInterval = interval;
+}
+
 void ProcessView::Update(BMessage* message)
 {
     std::unordered_set<team_id> activePIDsThisPulse;
@@ -380,32 +386,56 @@ void ProcessView::Update(BMessage* message)
                 row = fTeamRowMap[info.id];
 
                 BStringField* nameField = static_cast<BStringField*>(row->GetField(kProcessNameColumn));
-                if (strcmp(nameField->String(), info.name) != 0)
-                    nameField->SetString(info.name);
+                if (nameField) {
+                     if (strcmp(nameField->String(), info.name) != 0)
+                        nameField->SetString(info.name);
+                } else {
+                    row->SetField(new BStringField(info.name), kProcessNameColumn);
+                }
 
                 BStringField* stateField = static_cast<BStringField*>(row->GetField(kStateColumn));
                 BString stateStr = B_TRANSLATE(info.state);
-                if (strcmp(stateField->String(), stateStr.String()) != 0)
-                    stateField->SetString(stateStr);
+                if (stateField) {
+                     if (strcmp(stateField->String(), stateStr.String()) != 0)
+                        stateField->SetString(stateStr);
+                } else {
+                    row->SetField(new BStringField(stateStr), kStateColumn);
+                }
 
                 char cpuStr[16];
                 snprintf(cpuStr, sizeof(cpuStr), "%.1f", info.cpuUsage);
                 BStringField* cpuField = static_cast<BStringField*>(row->GetField(kCPUUsageColumn));
-                if (strcmp(cpuField->String(), cpuStr) != 0)
-                    cpuField->SetString(cpuStr);
+                if (cpuField) {
+                    if (strcmp(cpuField->String(), cpuStr) != 0)
+                        cpuField->SetString(cpuStr);
+                } else {
+                    row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
+                }
 
                 BString memStr = ::FormatBytes(info.memoryUsageBytes);
                 BStringField* memField = static_cast<BStringField*>(row->GetField(kMemoryUsageColumn));
-                if (strcmp(memField->String(), memStr.String()) != 0)
-                    memField->SetString(memStr);
+                if (memField) {
+                    if (strcmp(memField->String(), memStr.String()) != 0)
+                        memField->SetString(memStr);
+                } else {
+                    row->SetField(new BStringField(memStr), kMemoryUsageColumn);
+                }
 
                 BIntegerField* threadsField = static_cast<BIntegerField*>(row->GetField(kThreadCountColumn));
-                if (threadsField->Value() != (int32)info.threadCount)
-                    threadsField->SetValue(info.threadCount);
+                if (threadsField) {
+                    if (threadsField->Value() != (int32)info.threadCount)
+                        threadsField->SetValue(info.threadCount);
+                } else {
+                    row->SetField(new BIntegerField(info.threadCount), kThreadCountColumn);
+                }
 
                 BStringField* userField = static_cast<BStringField*>(row->GetField(kUserNameColumn));
-                if (strcmp(userField->String(), info.userName) != 0)
-                    userField->SetString(info.userName);
+                if (userField) {
+                    if (strcmp(userField->String(), info.userName) != 0)
+                        userField->SetString(info.userName);
+                } else {
+                    row->SetField(new BStringField(info.userName), kUserNameColumn);
+                }
 
                 fProcessListView->UpdateRow(row);
             }
@@ -533,7 +563,7 @@ int32 ProcessView::UpdateThread(void* data)
         if (status != B_OK)
             delete procList;
 
-        acquire_sem_etc(view->fQuitSem, 1, B_RELATIVE_TIMEOUT, 1000000);
+        acquire_sem_etc(view->fQuitSem, 1, B_RELATIVE_TIMEOUT, view->fRefreshInterval);
     }
 
     return B_OK;

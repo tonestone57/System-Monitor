@@ -35,9 +35,13 @@ NetworkView::NetworkView()
     fDownloadGraph(NULL),
     fUploadGraph(NULL),
     fUploadSpeed(0.0f),
-    fDownloadSpeed(0.0f)
+    fDownloadSpeed(0.0f),
+    fUpdateThread(-1),
+    fScanSem(-1),
+    fTerminated(false)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+    fScanSem = create_sem(0, "network scan sem");
 
     auto* netBox = new BBox("NetworkInterfacesBox");
     netBox->SetLabel(B_TRANSLATE("Network Interfaces"));
@@ -83,179 +87,168 @@ NetworkView::NetworkView()
 
 NetworkView::~NetworkView()
 {
+    fTerminated = true;
+    if (fScanSem >= 0) delete_sem(fScanSem);
+    if (fUpdateThread >= 0) {
+        status_t dummy;
+        wait_for_thread(fUpdateThread, &dummy);
+    }
 }
 
 void NetworkView::AttachedToWindow()
 {
     BView::AttachedToWindow();
-    UpdateData();
+    fUpdateThread = spawn_thread(UpdateThread, "NetworkView Update", B_NORMAL_PRIORITY, this);
+    if (fUpdateThread >= 0)
+        resume_thread(fUpdateThread);
+}
+
+void NetworkView::DetachedFromWindow()
+{
+    fTerminated = true;
+    if (fScanSem >= 0) {
+        delete_sem(fScanSem);
+        fScanSem = -1;
+    }
+    if (fUpdateThread >= 0) {
+        status_t dummy;
+        wait_for_thread(fUpdateThread, &dummy);
+        fUpdateThread = -1;
+    }
+    BView::DetachedFromWindow();
+}
+
+void NetworkView::MessageReceived(BMessage* message)
+{
+    if (message->what == kMsgNetworkDataUpdate) {
+        UpdateData(message);
+    } else {
+        BView::MessageReceived(message);
+    }
 }
 
 void NetworkView::Pulse()
 {
-    UpdateData();
+    // Trigger update in thread
+    if (fScanSem >= 0) release_sem(fScanSem);
 }
 
-void NetworkView::UpdateData()
+void NetworkView::UpdateData(BMessage* message)
 {
     fLocker.Lock();
     
 	std::set<std::string> activeInterfaces;
-    BNetworkRoster& roster = BNetworkRoster::Default();
-    uint32 cookie = 0;
-    BNetworkInterface interface;
     bigtime_t currentTime = system_time();
     uint64 totalSentDelta = 0;
     uint64 totalReceivedDelta = 0;
 
-    while (roster.GetNextInterface(&cookie, interface) == B_OK) {
-        BString name(interface.Name());
-		activeInterfaces.insert(name.String());
+    int32 count = 0;
+    type_code type;
+    message->GetInfo("net_info", &type, &count);
 
-        BString typeStr = B_TRANSLATE("Ethernet");
-        if (interface.Flags() & IFF_LOOPBACK) {
-            typeStr = B_TRANSLATE("Loopback");
-        } else if (interface.Flags() & IFF_POINTOPOINT) {
-            typeStr = B_TRANSLATE("Point-to-Point");
-        }
+    for (int32 i = 0; i < count; i++) {
+        const NetworkInfo* info;
+        ssize_t size;
+        if (message->FindData("net_info", B_RAW_TYPE, i, (const void**)&info, &size) == B_OK) {
 
-        BString addressStr = "N/A";
-        for (int32 i = 0; i < interface.CountAddresses(); ++i) {
-            BNetworkInterfaceAddress ifaceAddr;
-            if (interface.GetAddressAt(i, ifaceAddr) == B_OK) {
-                BNetworkAddress addr = ifaceAddr.Address();
-                if (addr.Family() == AF_INET || addr.Family() == AF_INET6) {
-                    addressStr = addr.ToString();
-                    break;
+            BString name(info->name);
+            activeInterfaces.insert(name.String());
+
+            BString typeStr(info->typeStr);
+            BString addressStr(info->addressStr);
+            uint64 currentSent = info->bytesSent;
+            uint64 currentReceived = info->bytesReceived;
+
+            BString sendSpeed = "N/A", recvSpeed = "N/A";
+
+            InterfaceStatsRecord& rec = fPreviousStatsMap[name.String()];
+            if (rec.lastUpdateTime > 0) {
+                bigtime_t dt = currentTime - rec.lastUpdateTime;
+                if (dt > 0) {
+                    uint64 sentDelta = (currentSent > rec.bytesSent) ? currentSent - rec.bytesSent : 0;
+                    uint64 recvDelta = (currentReceived > rec.bytesReceived) ? currentReceived - rec.bytesReceived : 0;
+                    sendSpeed = ::FormatSpeed(sentDelta, dt);
+                    recvSpeed = ::FormatSpeed(recvDelta, dt);
+
+                    if (typeStr != B_TRANSLATE("Loopback")) {
+                        totalSentDelta += sentDelta;
+                        totalReceivedDelta += recvDelta;
+                    }
                 }
             }
-        }
 
-		ifreq_stats stats;
-		status_t status = interface.GetStats(stats);
-		uint64 currentSent = 0;
-		uint64 currentReceived = 0;
+            rec.bytesSent = currentSent;
+            rec.bytesReceived = currentReceived;
+            rec.lastUpdateTime = currentTime;
 
-		if (status == B_OK) {
-			currentSent = stats.send.bytes;
-			currentReceived = stats.receive.bytes;
-		}
-
-        BString sendSpeed = "N/A", recvSpeed = "N/A";
-
-        InterfaceStatsRecord& rec = fPreviousStatsMap[name.String()];
-        if (rec.lastUpdateTime > 0) {
-            bigtime_t dt = currentTime - rec.lastUpdateTime;
-            if (dt > 0) {
-                uint64 sentDelta = (currentSent > rec.bytesSent) ? currentSent - rec.bytesSent : 0;
-                uint64 recvDelta = (currentReceived > rec.bytesReceived) ? currentReceived - rec.bytesReceived : 0;
-                sendSpeed = ::FormatSpeed(sentDelta, dt);
-                recvSpeed = ::FormatSpeed(recvDelta, dt);
-                if (!(interface.Flags() & IFF_LOOPBACK)) {
-                    totalSentDelta += sentDelta;
-                    totalReceivedDelta += recvDelta;
+            BRow* row;
+            auto rowIt = fInterfaceRowMap.find(name.String());
+            if (rowIt == fInterfaceRowMap.end()) {
+                row = new BRow();
+                row->SetField(new BStringField(name), kInterfaceNameColumn);
+                row->SetField(new BStringField(typeStr), kInterfaceTypeColumn);
+                row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
+                row->SetField(new BStringField(::FormatBytes(currentSent)), kBytesSentColumn);
+                row->SetField(new BStringField(::FormatBytes(currentReceived)), kBytesRecvColumn);
+                row->SetField(new BStringField(sendSpeed), kSendSpeedColumn);
+                row->SetField(new BStringField(recvSpeed), kRecvSpeedColumn);
+                fInterfaceListView->AddRow(row);
+                fInterfaceRowMap[name.String()] = row;
+            } else {
+                row = rowIt->second;
+                BStringField* field = static_cast<BStringField*>(row->GetField(kInterfaceTypeColumn));
+                if (field != NULL) {
+                    if (strcmp(field->String(), typeStr.String()) != 0)
+                        field->SetString(typeStr);
+                } else {
+                    row->SetField(new BStringField(typeStr), kInterfaceTypeColumn);
                 }
-            }
-        }
 
-		BRow* row;
-		auto rowIt = fInterfaceRowMap.find(name.String());
-		if (rowIt == fInterfaceRowMap.end()) {
-			row = new BRow();
-			row->SetField(new BStringField(name), kInterfaceNameColumn);
-			row->SetField(new BStringField(typeStr), kInterfaceTypeColumn);
-			row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
-			row->SetField(new BStringField(::FormatBytes(currentSent)), kBytesSentColumn);
-			row->SetField(new BStringField(::FormatBytes(currentReceived)), kBytesRecvColumn);
-			row->SetField(new BStringField(sendSpeed), kSendSpeedColumn);
-			row->SetField(new BStringField(recvSpeed), kRecvSpeedColumn);
-			fInterfaceListView->AddRow(row);
-			fInterfaceRowMap[name.String()] = row;
-		} else {
-			row = rowIt->second;
-            bool changed = false;
-
-			BStringField* field = static_cast<BStringField*>(row->GetField(kInterfaceTypeColumn));
-			if (field != NULL) {
-				if (strcmp(field->String(), typeStr.String()) != 0) {
-					field->SetString(typeStr);
-                    changed = true;
+                field = static_cast<BStringField*>(row->GetField(kInterfaceAddressColumn));
+                if (field != NULL) {
+                    if (strcmp(field->String(), addressStr.String()) != 0)
+                        field->SetString(addressStr);
+                } else {
+                    row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
                 }
-			} else {
-				row->SetField(new BStringField(typeStr), kInterfaceTypeColumn);
-                changed = true;
-			}
 
-			field = static_cast<BStringField*>(row->GetField(kInterfaceAddressColumn));
-			if (field != NULL) {
-				if (strcmp(field->String(), addressStr.String()) != 0) {
-					field->SetString(addressStr);
-                    changed = true;
-                }
-			} else {
-				row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
-                changed = true;
-			}
-
-			field = static_cast<BStringField*>(row->GetField(kBytesSentColumn));
-			if (field != NULL) {
-                // Optimize: Only format and update if value changed numerically
-                if (currentSent != rec.bytesSent) {
+                field = static_cast<BStringField*>(row->GetField(kBytesSentColumn));
+                if (field != NULL) {
                     BString sentStr = ::FormatBytes(currentSent);
-                    if (strcmp(field->String(), sentStr.String()) != 0) {
+                    if (strcmp(field->String(), sentStr.String()) != 0)
                         field->SetString(sentStr);
-                        changed = true;
-                    }
+                } else {
+                    row->SetField(new BStringField(::FormatBytes(currentSent)), kBytesSentColumn);
                 }
-			} else {
-				row->SetField(new BStringField(::FormatBytes(currentSent)), kBytesSentColumn);
-                changed = true;
-			}
 
-			field = static_cast<BStringField*>(row->GetField(kBytesRecvColumn));
-			if (field != NULL) {
-                // Optimize: Only format and update if value changed numerically
-                if (currentReceived != rec.bytesReceived) {
+                field = static_cast<BStringField*>(row->GetField(kBytesRecvColumn));
+                if (field != NULL) {
                     BString recvStr = ::FormatBytes(currentReceived);
-                    if (strcmp(field->String(), recvStr.String()) != 0) {
+                    if (strcmp(field->String(), recvStr.String()) != 0)
                         field->SetString(recvStr);
-                        changed = true;
-                    }
+                } else {
+                    row->SetField(new BStringField(::FormatBytes(currentReceived)), kBytesRecvColumn);
                 }
-			} else {
-				row->SetField(new BStringField(::FormatBytes(currentReceived)), kBytesRecvColumn);
-                changed = true;
-			}
 
-			field = static_cast<BStringField*>(row->GetField(kSendSpeedColumn));
-			if (field != NULL) {
-				if (strcmp(field->String(), sendSpeed.String()) != 0) {
-					field->SetString(sendSpeed);
-                    changed = true;
+                field = static_cast<BStringField*>(row->GetField(kSendSpeedColumn));
+                if (field != NULL) {
+                    if (strcmp(field->String(), sendSpeed.String()) != 0)
+                        field->SetString(sendSpeed);
+                } else {
+                    row->SetField(new BStringField(sendSpeed), kSendSpeedColumn);
                 }
-			} else {
-				row->SetField(new BStringField(sendSpeed), kSendSpeedColumn);
-                changed = true;
-			}
 
-			field = static_cast<BStringField*>(row->GetField(kRecvSpeedColumn));
-			if (field != NULL) {
-				if (strcmp(field->String(), recvSpeed.String()) != 0) {
-					field->SetString(recvSpeed);
-                    changed = true;
+                field = static_cast<BStringField*>(row->GetField(kRecvSpeedColumn));
+                if (field != NULL) {
+                    if (strcmp(field->String(), recvSpeed.String()) != 0)
+                        field->SetString(recvSpeed);
+                } else {
+                    row->SetField(new BStringField(recvSpeed), kRecvSpeedColumn);
                 }
-			} else {
-				row->SetField(new BStringField(recvSpeed), kRecvSpeedColumn);
-                changed = true;
-			}
 
-			if (changed)
                 fInterfaceListView->UpdateRow(row);
-		}
-
-        rec.bytesSent = currentSent;
-        rec.bytesReceived = currentReceived;
-        rec.lastUpdateTime = currentTime;
+            }
+        }
     }
 
 	// Prune dead interfaces from the map
@@ -291,6 +284,67 @@ void NetworkView::UpdateData()
     }
 
     fLocker.Unlock();
+}
+
+int32 NetworkView::UpdateThread(void* data)
+{
+    NetworkView* view = static_cast<NetworkView*>(data);
+
+    while (!view->fTerminated) {
+        acquire_sem(view->fScanSem);
+        if (view->fTerminated) break;
+
+        BMessage updateMsg(kMsgNetworkDataUpdate);
+        BNetworkRoster& roster = BNetworkRoster::Default();
+        uint32 cookie = 0;
+        BNetworkInterface interface;
+
+        while (roster.GetNextInterface(&cookie, interface) == B_OK) {
+            NetworkInfo info;
+            strlcpy(info.name, interface.Name(), sizeof(info.name));
+
+            // Determine Type
+            BString typeStr = B_TRANSLATE("Ethernet");
+            if (interface.Flags() & IFF_LOOPBACK) {
+                typeStr = B_TRANSLATE("Loopback");
+            } else if (interface.Flags() & IFF_POINTOPOINT) {
+                typeStr = B_TRANSLATE("Point-to-Point");
+            }
+            strlcpy(info.typeStr, typeStr.String(), sizeof(info.typeStr));
+
+            // Determine Address
+            BString addressStr = "N/A";
+            for (int32 i = 0; i < interface.CountAddresses(); ++i) {
+                BNetworkInterfaceAddress ifaceAddr;
+                if (interface.GetAddressAt(i, ifaceAddr) == B_OK) {
+                    BNetworkAddress addr = ifaceAddr.Address();
+                    if (addr.Family() == AF_INET || addr.Family() == AF_INET6) {
+                        addressStr = addr.ToString();
+                        break;
+                    }
+                }
+            }
+            strlcpy(info.addressStr, addressStr.String(), sizeof(info.addressStr));
+
+            // Get Stats
+            ifreq_stats stats;
+            status_t status = interface.GetStats(stats);
+            if (status == B_OK) {
+                info.bytesSent = stats.send.bytes;
+                info.bytesReceived = stats.receive.bytes;
+            } else {
+                info.bytesSent = 0;
+                info.bytesReceived = 0;
+            }
+
+            updateMsg.AddData("net_info", B_RAW_TYPE, &info, sizeof(NetworkInfo));
+        }
+
+        if (view->Window()) {
+            view->Window()->PostMessage(&updateMsg, view);
+        }
+    }
+    return B_OK;
 }
 
 float NetworkView::GetUploadSpeed()
