@@ -258,11 +258,12 @@ ProcessView::~ProcessView()
     // Rows currently in the list view are owned by it and will be deleted by it.
     // We must only manually delete rows that are hidden (not in the list view).
     for (auto& pair : fTeamRowMap) {
-        if (!fProcessListView->HasRow(pair.second)) {
+        if (fVisibleRows.find(pair.second) == fVisibleRows.end()) {
             delete pair.second;
         }
     }
     fTeamRowMap.clear();
+    fVisibleRows.clear();
 }
 
 void ProcessView::AttachedToWindow()
@@ -499,11 +500,13 @@ void ProcessView::FilterRows()
             }
         }
 
-        bool isVisible = fProcessListView->HasRow(row);
+        bool isVisible = fVisibleRows.find(row) != fVisibleRows.end();
         if (match && !isVisible) {
             fProcessListView->AddRow(row);
+            fVisibleRows.insert(row);
         } else if (!match && isVisible) {
             fProcessListView->RemoveRow(row);
+            fVisibleRows.erase(row);
         }
     }
 }
@@ -601,7 +604,7 @@ void ProcessView::Update(BMessage* message)
 
             updateStrField(kUserNameColumn, info.userName);
 
-            if (changed && fProcessListView->HasRow(row))
+            if (changed && fVisibleRows.find(row) != fVisibleRows.end())
                 fProcessListView->UpdateRow(row);
         }
 
@@ -615,11 +618,13 @@ void ProcessView::Update(BMessage* message)
             }
         }
 
-        bool isVisible = fProcessListView->HasRow(row);
+        bool isVisible = fVisibleRows.find(row) != fVisibleRows.end();
         if (match && !isVisible) {
             fProcessListView->AddRow(row);
+            fVisibleRows.insert(row);
         } else if (!match && isVisible) {
             fProcessListView->RemoveRow(row);
+            fVisibleRows.erase(row);
             // Do NOT delete the row, it is still in fTeamRowMap
         }
     }
@@ -628,8 +633,9 @@ void ProcessView::Update(BMessage* message)
 	for (auto it = fTeamRowMap.begin(); it != fTeamRowMap.end();) {
         if (activePIDs.find(it->first) == activePIDs.end()) {
 			BRow* row = it->second;
-            if (fProcessListView->HasRow(row)) {
+            if (fVisibleRows.find(row) != fVisibleRows.end()) {
 			    fProcessListView->RemoveRow(row);
+                fVisibleRows.erase(row);
             }
 			delete row;
 			it = fTeamRowMap.erase(it);
@@ -695,7 +701,6 @@ int32 ProcessView::UpdateThread(void* data)
             if (get_next_image_info(teamInfo.team, &imgCookie, &imgInfo) == B_OK) {
                 BPath path(imgInfo.name);
 				strlcpy(currentProc.name, path.Leaf(), B_OS_NAME_LENGTH);
-				strlcpy(currentProc.path, imgInfo.name, B_PATH_NAME_LENGTH);
             } else {
 				strlcpy(currentProc.name, teamInfo.args, B_OS_NAME_LENGTH);
                 if (strlen(currentProc.name) == 0)
