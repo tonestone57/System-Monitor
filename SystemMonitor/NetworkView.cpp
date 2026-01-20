@@ -94,7 +94,6 @@ NetworkView::~NetworkView()
         status_t dummy;
         wait_for_thread(fUpdateThread, &dummy);
     }
-
 }
 
 void NetworkView::AttachedToWindow()

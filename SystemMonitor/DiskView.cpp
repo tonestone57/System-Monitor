@@ -98,7 +98,6 @@ DiskView::~DiskView()
         status_t dummy;
         wait_for_thread(fUpdateThread, &dummy);
     }
-
 }
 
 void DiskView::AttachedToWindow()
