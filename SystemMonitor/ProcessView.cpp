@@ -145,6 +145,16 @@ public:
         if (sensitive) *sensitive = true;
     }
 
+    virtual void KeyDown(const char* bytes, int32 numBytes) {
+        if (numBytes == 1 && bytes[0] == B_DELETE) {
+            BMessenger messenger(Target());
+            if (messenger.IsValid())
+                messenger.SendMessage(MSG_KILL_PROCESS);
+            return;
+        }
+        BColumnListView::KeyDown(bytes, numBytes);
+    }
+
 private:
     BColumn* fSortColumn;
     bool fSortInverse;
