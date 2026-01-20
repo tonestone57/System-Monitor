@@ -143,7 +143,7 @@ void NetworkView::UpdateData(BMessage* message)
 {
     fLocker.Lock();
     
-	std::set<std::string> activeInterfaces;
+	std::set<BString, BStringLess> activeInterfaces;
     bigtime_t currentTime = system_time();
     uint64 totalSentDelta = 0;
     uint64 totalReceivedDelta = 0;
@@ -158,7 +158,7 @@ void NetworkView::UpdateData(BMessage* message)
         if (message->FindData("net_info", B_RAW_TYPE, i, (const void**)&info, &size) == B_OK) {
 
             BString name(info->name);
-            activeInterfaces.insert(name.String());
+            activeInterfaces.insert(name);
 
             BString typeStr(info->typeStr);
             BString addressStr(info->addressStr);
@@ -167,7 +167,7 @@ void NetworkView::UpdateData(BMessage* message)
 
             BString sendSpeed = "N/A", recvSpeed = "N/A";
 
-            InterfaceStatsRecord& rec = fPreviousStatsMap[name.String()];
+            InterfaceStatsRecord& rec = fPreviousStatsMap[name];
             if (rec.lastUpdateTime > 0) {
                 bigtime_t dt = currentTime - rec.lastUpdateTime;
                 if (dt > 0) {
@@ -188,7 +188,7 @@ void NetworkView::UpdateData(BMessage* message)
             rec.lastUpdateTime = currentTime;
 
             BRow* row;
-            auto rowIt = fInterfaceRowMap.find(name.String());
+            auto rowIt = fInterfaceRowMap.find(name);
             if (rowIt == fInterfaceRowMap.end()) {
                 row = new BRow();
                 row->SetField(new BStringField(name), kInterfaceNameColumn);
@@ -199,7 +199,7 @@ void NetworkView::UpdateData(BMessage* message)
                 row->SetField(new BStringField(sendSpeed), kSendSpeedColumn);
                 row->SetField(new BStringField(recvSpeed), kRecvSpeedColumn);
                 fInterfaceListView->AddRow(row);
-                fInterfaceRowMap[name.String()] = row;
+                fInterfaceRowMap[name] = row;
             } else {
                 row = rowIt->second;
                 BStringField* field = static_cast<BStringField*>(row->GetField(kInterfaceTypeColumn));

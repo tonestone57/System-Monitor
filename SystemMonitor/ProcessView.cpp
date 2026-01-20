@@ -313,10 +313,7 @@ void ProcessView::MessageReceived(BMessage* message)
             Update(message);
             break;
         case MSG_SEARCH_UPDATED:
-            // Release the semaphore to wake up the thread immediately
-            // This triggers an immediate refresh cycle
-            if (fQuitSem >= 0)
-                release_sem(fQuitSem);
+            FilterRows();
             break;
         case MSG_SHOW_CONTEXT_MENU: {
             BPoint screenWhere;
@@ -471,6 +468,34 @@ void ProcessView::SetSelectedProcessPriority(int32 priority) {
 void ProcessView::SetRefreshInterval(bigtime_t interval)
 {
     fRefreshInterval = interval;
+}
+
+void ProcessView::FilterRows()
+{
+    const char* searchText = fSearchControl->Text();
+    bool filtering = (searchText != NULL && strlen(searchText) > 0);
+
+    for (auto& pair : fTeamRowMap) {
+        team_id id = pair.first;
+        BRow* row = pair.second;
+        bool match = true;
+
+        if (filtering) {
+            BStringField* nameField = static_cast<BStringField*>(row->GetField(kProcessNameColumn));
+            BString name(nameField->String());
+            BString idStr; idStr << id;
+            if (name.IFindFirst(searchText) == B_ERROR && idStr.IFindFirst(searchText) == B_ERROR) {
+                match = false;
+            }
+        }
+
+        bool isVisible = fProcessListView->HasRow(row);
+        if (match && !isVisible) {
+            fProcessListView->AddRow(row);
+        } else if (!match && isVisible) {
+            fProcessListView->RemoveRow(row);
+        }
+    }
 }
 
 void ProcessView::Update(BMessage* message)
