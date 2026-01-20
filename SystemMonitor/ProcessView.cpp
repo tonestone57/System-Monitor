@@ -617,9 +617,12 @@ void ProcessView::Update(BMessage* message)
 int32 ProcessView::UpdateThread(void* data)
 {
     ProcessView* view = static_cast<ProcessView*>(data);
+    BMessenger target(view);
+
+	// Allocated outside the loop to prevent repetitive allocation
 	std::unordered_set<thread_id> activeThreads;
     std::vector<ProcessInfo> procList;
-    BMessenger target(view);
+    procList.reserve(128);
 
     // Buffer for getpwuid_r reuse
     long bufSize = sysconf(_SC_GETPW_R_SIZE_MAX);
