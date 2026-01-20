@@ -94,6 +94,12 @@ NetworkView::~NetworkView()
         status_t dummy;
         wait_for_thread(fUpdateThread, &dummy);
     }
+
+    // Clean up BRow objects as they are not owned by BColumnListView here
+    for (auto& pair : fInterfaceRowMap) {
+        delete pair.second;
+    }
+    fInterfaceRowMap.clear();
 }
 
 void NetworkView::AttachedToWindow()

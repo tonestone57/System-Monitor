@@ -63,7 +63,7 @@ private:
     void ResumeSelectedProcess();
     void SetSelectedProcessPriority(int32 priority);
     void ShowContextMenu(BPoint screenPoint);
-    const BString& GetUserName(uid_t uid);
+    BString GetUserName(uid_t uid, std::vector<char>& buffer);
     void SetRefreshInterval(bigtime_t interval);
 
     BColumnListView* fProcessListView;
@@ -80,6 +80,7 @@ private:
     
     std::unordered_map<thread_id, bigtime_t> fThreadTimeMap;
 	std::unordered_map<team_id, BRow*> fTeamRowMap;
+    BLocker fCacheLock;
     std::unordered_map<uid_t, BString> fUserNameCache;
     bigtime_t fLastSystemTime;
     bigtime_t fRefreshInterval;

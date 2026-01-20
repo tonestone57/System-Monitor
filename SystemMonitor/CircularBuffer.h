@@ -41,15 +41,16 @@ public:
 		if (this == &other)
 			return *this;
 
-		Type* newBuffer = new(std::nothrow) Type[other.fSize];
-		if (newBuffer == NULL && other.fSize > 0) {
-			// Allocation failed, and we needed a buffer.
-			// Retain old state.
-			return *this;
-		}
+		Type* newBuffer = NULL;
+		if (other.fSize > 0) {
+			newBuffer = new(std::nothrow) Type[other.fSize];
+			if (newBuffer == NULL) {
+				// Allocation failed, and we needed a buffer.
+				// Retain old state.
+				return *this;
+			}
 
-		// Copy data from other to newBuffer
-		if (newBuffer != NULL) {
+			// Copy data from other to newBuffer
 			for (size_t i = 0; i < other.fSize; i++)
 				newBuffer[i] = other.fBuffer[i];
 		}

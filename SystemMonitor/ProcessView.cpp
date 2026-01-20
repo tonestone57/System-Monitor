@@ -20,6 +20,7 @@
 #include <Invoker.h>
 #include <Messenger.h>
 #include <Catalog.h>
+#include <Autolock.h>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "ProcessView"
@@ -242,6 +243,12 @@ ProcessView::~ProcessView()
         wait_for_thread(fUpdateThread, &ret);
     }
     delete fContextMenu;
+
+    // Clean up BRow objects as they are not owned by BColumnListView here
+    for (auto& pair : fTeamRowMap) {
+        delete pair.second;
+    }
+    fTeamRowMap.clear();
 }
 
 void ProcessView::AttachedToWindow()
@@ -363,18 +370,18 @@ void ProcessView::Show()
     BView::Show();
 }
 
-const BString& ProcessView::GetUserName(uid_t uid) {
+BString ProcessView::GetUserName(uid_t uid, std::vector<char>& buffer) {
+    fCacheLock.Lock();
     auto it = fUserNameCache.find(uid);
     if (it != fUserNameCache.end()) {
-        return it->second;
+        BString name = it->second;
+        fCacheLock.Unlock();
+        return name;
     }
+    fCacheLock.Unlock();
 
     struct passwd pwd;
     struct passwd* result = NULL;
-    long bufSize = sysconf(_SC_GETPW_R_SIZE_MAX);
-    if (bufSize == -1) bufSize = 16384;
-
-    std::vector<char> buffer(bufSize);
 
     BString name;
     if (getpwuid_r(uid, &pwd, buffer.data(), buffer.size(), &result) == 0 && result != NULL) {
@@ -383,7 +390,16 @@ const BString& ProcessView::GetUserName(uid_t uid) {
         name << uid;
     }
 
-    return fUserNameCache.emplace(uid, name).first->second;
+    fCacheLock.Lock();
+    // Re-check in case another thread inserted it
+    it = fUserNameCache.find(uid);
+    if (it != fUserNameCache.end()) {
+        name = it->second;
+    } else {
+        fUserNameCache.emplace(uid, name);
+    }
+    fCacheLock.Unlock();
+    return name;
 }
 
 void ProcessView::ShowContextMenu(BPoint screenPoint) {
@@ -591,6 +607,7 @@ void ProcessView::Update(BMessage* message)
 	}
 
     // Prune user name cache
+    BAutolock locker(fCacheLock);
     for (auto it = fUserNameCache.begin(); it != fUserNameCache.end();) {
         if (activeUIDs.find(it->first) == activeUIDs.end()) {
             it = fUserNameCache.erase(it);
@@ -606,6 +623,11 @@ int32 ProcessView::UpdateThread(void* data)
 	std::unordered_set<thread_id> activeThreads;
     std::vector<ProcessInfo> procList;
     BMessenger target(view);
+
+    // Buffer for getpwuid_r reuse
+    long bufSize = sysconf(_SC_GETPW_R_SIZE_MAX);
+    if (bufSize == -1) bufSize = 16384;
+    std::vector<char> pwdBuffer(bufSize);
 
     while (!view->fTerminated) {
         if (view->fIsHidden) {
@@ -648,7 +670,7 @@ int32 ProcessView::UpdateThread(void* data)
             currentProc.threadCount = teamInfo.thread_count;
             currentProc.areaCount = teamInfo.area_count;
             currentProc.userID = teamInfo.uid;
-			const BString& userName = view->GetUserName(currentProc.userID);
+			BString userName = view->GetUserName(currentProc.userID, pwdBuffer);
 			strlcpy(currentProc.userName, userName.String(), B_OS_NAME_LENGTH);
 
             int32 threadCookie = 0;
