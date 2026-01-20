@@ -99,11 +99,6 @@ DiskView::~DiskView()
         wait_for_thread(fUpdateThread, &dummy);
     }
 
-    // Clean up BRow objects as they are not owned by BColumnListView here
-    for (auto& pair : fDeviceRowMap) {
-        delete pair.second;
-    }
-    fDeviceRowMap.clear();
 }
 
 void DiskView::AttachedToWindow()
