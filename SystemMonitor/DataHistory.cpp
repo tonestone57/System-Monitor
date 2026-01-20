@@ -64,6 +64,7 @@ DataHistory::ValueAt(bigtime_t time)
 			if (nextItem->time > time) {
 				// found item
 				int64 value = item->value;
+				// Prevent division by zero if multiple samples have the same timestamp
 				if (nextItem->time > item->time) {
 					value += int64(double(nextItem->value - value)
 						/ (nextItem->time - item->time) * (time - item->time));

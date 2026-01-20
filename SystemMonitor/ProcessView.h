@@ -57,6 +57,7 @@ public:
 private:
     static int32 UpdateThread(void* data);
     void Update(BMessage* message);
+    void FilterRows();
 
     void KillSelectedProcess();
     void SuspendSelectedProcess();

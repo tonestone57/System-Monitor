@@ -52,8 +52,15 @@ private:
     ActivityGraphView* fUploadGraph;
     
     BLocker fLocker;
-    std::map<std::string, InterfaceStatsRecord> fPreviousStatsMap;
-    std::map<std::string, BRow*> fInterfaceRowMap;
+
+    struct BStringLess {
+        bool operator()(const BString& a, const BString& b) const {
+            return a.Compare(b) < 0;
+        }
+    };
+
+    std::map<BString, InterfaceStatsRecord, BStringLess> fPreviousStatsMap;
+    std::map<BString, BRow*, BStringLess> fInterfaceRowMap;
     float fUploadSpeed;
     float fDownloadSpeed;
 

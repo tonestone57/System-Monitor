@@ -145,6 +145,16 @@ public:
         if (sensitive) *sensitive = true;
     }
 
+    virtual void KeyDown(const char* bytes, int32 numBytes) {
+        if (numBytes == 1 && bytes[0] == B_DELETE) {
+            BMessenger messenger(Target());
+            if (messenger.IsValid())
+                messenger.SendMessage(MSG_KILL_PROCESS);
+            return;
+        }
+        BColumnListView::KeyDown(bytes, numBytes);
+    }
+
 private:
     BColumn* fSortColumn;
     bool fSortInverse;
@@ -313,10 +323,7 @@ void ProcessView::MessageReceived(BMessage* message)
             Update(message);
             break;
         case MSG_SEARCH_UPDATED:
-            // Release the semaphore to wake up the thread immediately
-            // This triggers an immediate refresh cycle
-            if (fQuitSem >= 0)
-                release_sem(fQuitSem);
+            FilterRows();
             break;
         case MSG_SHOW_CONTEXT_MENU: {
             BPoint screenWhere;
@@ -473,6 +480,34 @@ void ProcessView::SetRefreshInterval(bigtime_t interval)
     fRefreshInterval = interval;
 }
 
+void ProcessView::FilterRows()
+{
+    const char* searchText = fSearchControl->Text();
+    bool filtering = (searchText != NULL && strlen(searchText) > 0);
+
+    for (auto& pair : fTeamRowMap) {
+        team_id id = pair.first;
+        BRow* row = pair.second;
+        bool match = true;
+
+        if (filtering) {
+            BStringField* nameField = static_cast<BStringField*>(row->GetField(kProcessNameColumn));
+            BString name(nameField->String());
+            BString idStr; idStr << id;
+            if (name.IFindFirst(searchText) == B_ERROR && idStr.IFindFirst(searchText) == B_ERROR) {
+                match = false;
+            }
+        }
+
+        bool isVisible = fProcessListView->HasRow(row);
+        if (match && !isVisible) {
+            fProcessListView->AddRow(row);
+        } else if (!match && isVisible) {
+            fProcessListView->RemoveRow(row);
+        }
+    }
+}
+
 void ProcessView::Update(BMessage* message)
 {
     const void* data;
@@ -617,9 +652,12 @@ void ProcessView::Update(BMessage* message)
 int32 ProcessView::UpdateThread(void* data)
 {
     ProcessView* view = static_cast<ProcessView*>(data);
+    BMessenger target(view);
+
+	// Allocated outside the loop to prevent repetitive allocation
 	std::unordered_set<thread_id> activeThreads;
     std::vector<ProcessInfo> procList;
-    BMessenger target(view);
+    procList.reserve(128);
 
     // Buffer for getpwuid_r reuse
     long bufSize = sysconf(_SC_GETPW_R_SIZE_MAX);
