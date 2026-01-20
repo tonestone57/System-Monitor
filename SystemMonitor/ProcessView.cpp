@@ -20,6 +20,7 @@
 #include <Invoker.h>
 #include <Messenger.h>
 #include <Catalog.h>
+#include <Autolock.h>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "ProcessView"
@@ -242,6 +243,16 @@ ProcessView::~ProcessView()
         wait_for_thread(fUpdateThread, &ret);
     }
     delete fContextMenu;
+
+    // Clean up BRow objects.
+    // Rows currently in the list view are owned by it and will be deleted by it.
+    // We must only manually delete rows that are hidden (not in the list view).
+    for (auto& pair : fTeamRowMap) {
+        if (!fProcessListView->HasRow(pair.second)) {
+            delete pair.second;
+        }
+    }
+    fTeamRowMap.clear();
 }
 
 void ProcessView::AttachedToWindow()
@@ -363,18 +374,18 @@ void ProcessView::Show()
     BView::Show();
 }
 
-const BString& ProcessView::GetUserName(uid_t uid) {
+BString ProcessView::GetUserName(uid_t uid, std::vector<char>& buffer) {
+    fCacheLock.Lock();
     auto it = fUserNameCache.find(uid);
     if (it != fUserNameCache.end()) {
-        return it->second;
+        BString name = it->second;
+        fCacheLock.Unlock();
+        return name;
     }
+    fCacheLock.Unlock();
 
     struct passwd pwd;
     struct passwd* result = NULL;
-    long bufSize = sysconf(_SC_GETPW_R_SIZE_MAX);
-    if (bufSize == -1) bufSize = 16384;
-
-    std::vector<char> buffer(bufSize);
 
     BString name;
     if (getpwuid_r(uid, &pwd, buffer.data(), buffer.size(), &result) == 0 && result != NULL) {
@@ -383,7 +394,16 @@ const BString& ProcessView::GetUserName(uid_t uid) {
         name << uid;
     }
 
-    return fUserNameCache.emplace(uid, name).first->second;
+    fCacheLock.Lock();
+    // Re-check in case another thread inserted it
+    it = fUserNameCache.find(uid);
+    if (it != fUserNameCache.end()) {
+        name = it->second;
+    } else {
+        fUserNameCache.emplace(uid, name);
+    }
+    fCacheLock.Unlock();
+    return name;
 }
 
 void ProcessView::ShowContextMenu(BPoint screenPoint) {
@@ -455,8 +475,6 @@ void ProcessView::SetRefreshInterval(bigtime_t interval)
 
 void ProcessView::Update(BMessage* message)
 {
-    std::unordered_set<team_id> activePIDsThisPulse;
-
     const void* data;
     ssize_t size;
     if (message->FindData("procs", B_RAW_TYPE, &data, &size) != B_OK)
@@ -469,11 +487,90 @@ void ProcessView::Update(BMessage* message)
     bool filtering = (searchText != NULL && strlen(searchText) > 0);
 
     std::unordered_set<uid_t> activeUIDs;
+    std::unordered_set<team_id> activePIDs;
 
+    // First pass: Update existing rows or create new ones, and handle visibility
     for (size_t i = 0; i < count; i++) {
         const ProcessInfo& info = infos[i];
         activeUIDs.insert(info.userID);
+        activePIDs.insert(info.id);
         
+        BRow* row;
+        if (fTeamRowMap.find(info.id) == fTeamRowMap.end()) {
+            row = new BRow();
+            row->SetField(new BIntegerField(info.id), kPIDColumn);
+            row->SetField(new BStringField(info.name), kProcessNameColumn);
+            row->SetField(new BStringField(B_TRANSLATE(info.state)), kStateColumn);
+            row->SetField(new FloatField(info.cpuUsage), kCPUUsageColumn);
+            row->SetField(new SizeField(info.memoryUsageBytes), kMemoryUsageColumn);
+            row->SetField(new BIntegerField(info.threadCount), kThreadCountColumn);
+            row->SetField(new BStringField(info.userName), kUserNameColumn);
+            // Don't AddRow here yet, wait for filter check
+            fTeamRowMap[info.id] = row;
+        } else {
+            row = fTeamRowMap[info.id];
+            bool changed = false;
+
+            // Helper lambda for updating fields
+            auto updateStrField = [&](int index, const char* newVal) {
+                BStringField* f = static_cast<BStringField*>(row->GetField(index));
+                if (f) {
+                    if (strcmp(f->String(), newVal) != 0) {
+                        f->SetString(newVal);
+                        changed = true;
+                    }
+                } else {
+                    row->SetField(new BStringField(newVal), index);
+                    changed = true;
+                }
+            };
+
+            updateStrField(kProcessNameColumn, info.name);
+            updateStrField(kStateColumn, B_TRANSLATE(info.state));
+
+            // CPU
+            FloatField* cpuField = static_cast<FloatField*>(row->GetField(kCPUUsageColumn));
+            if (cpuField) {
+                if (cpuField->Value() != info.cpuUsage) {
+                    cpuField->SetValue(info.cpuUsage);
+                    changed = true;
+                }
+            } else {
+                row->SetField(new FloatField(info.cpuUsage), kCPUUsageColumn);
+                changed = true;
+            }
+
+            // Memory
+            SizeField* memField = static_cast<SizeField*>(row->GetField(kMemoryUsageColumn));
+            if (memField) {
+                if (memField->Value() != info.memoryUsageBytes) {
+                    memField->SetValue(info.memoryUsageBytes);
+                    changed = true;
+                }
+            } else {
+                row->SetField(new SizeField(info.memoryUsageBytes), kMemoryUsageColumn);
+                changed = true;
+            }
+
+            // Threads
+            BIntegerField* threadsField = static_cast<BIntegerField*>(row->GetField(kThreadCountColumn));
+            if (threadsField) {
+                if (threadsField->Value() != (int32)info.threadCount) {
+                    threadsField->SetValue(info.threadCount);
+                    changed = true;
+                }
+            } else {
+                row->SetField(new BIntegerField(info.threadCount), kThreadCountColumn);
+                changed = true;
+            }
+
+            updateStrField(kUserNameColumn, info.userName);
+
+            if (changed && fProcessListView->HasRow(row))
+                fProcessListView->UpdateRow(row);
+        }
+
+        // Handle filtering
         bool match = true;
         if (filtering) {
             BString name(info.name);
@@ -483,106 +580,22 @@ void ProcessView::Update(BMessage* message)
             }
         }
 
-        if (match)
-            activePIDsThisPulse.insert(info.id);
-
-        if (match) {
-            BRow* row;
-            if (fTeamRowMap.find(info.id) == fTeamRowMap.end()) {
-                row = new BRow();
-                row->SetField(new BIntegerField(info.id), kPIDColumn);
-                row->SetField(new BStringField(info.name), kProcessNameColumn);
-                row->SetField(new BStringField(B_TRANSLATE(info.state)), kStateColumn);
-                row->SetField(new FloatField(info.cpuUsage), kCPUUsageColumn);
-                row->SetField(new SizeField(info.memoryUsageBytes), kMemoryUsageColumn);
-                row->SetField(new BIntegerField(info.threadCount), kThreadCountColumn);
-                row->SetField(new BStringField(info.userName), kUserNameColumn);
-                fProcessListView->AddRow(row);
-                fTeamRowMap[info.id] = row;
-            } else { // Existing process
-                row = fTeamRowMap[info.id];
-                bool changed = false;
-
-                BStringField* nameField = static_cast<BStringField*>(row->GetField(kProcessNameColumn));
-                if (nameField) {
-                     if (strcmp(nameField->String(), info.name) != 0) {
-                        nameField->SetString(info.name);
-                        changed = true;
-                     }
-                } else {
-                    row->SetField(new BStringField(info.name), kProcessNameColumn);
-                    changed = true;
-                }
-
-                BStringField* stateField = static_cast<BStringField*>(row->GetField(kStateColumn));
-                BString stateStr = B_TRANSLATE(info.state);
-                if (stateField) {
-                     if (strcmp(stateField->String(), stateStr.String()) != 0) {
-                        stateField->SetString(stateStr);
-                        changed = true;
-                     }
-                } else {
-                    row->SetField(new BStringField(stateStr), kStateColumn);
-                    changed = true;
-                }
-
-                FloatField* cpuField = static_cast<FloatField*>(row->GetField(kCPUUsageColumn));
-                if (cpuField) {
-                    if (cpuField->Value() != info.cpuUsage) {
-                        cpuField->SetValue(info.cpuUsage);
-                        changed = true;
-                     }
-                } else {
-                    row->SetField(new FloatField(info.cpuUsage), kCPUUsageColumn);
-                    changed = true;
-                }
-
-                SizeField* memField = static_cast<SizeField*>(row->GetField(kMemoryUsageColumn));
-                if (memField) {
-                    if (memField->Value() != info.memoryUsageBytes) {
-                        memField->SetValue(info.memoryUsageBytes);
-                        changed = true;
-                     }
-                } else {
-                    row->SetField(new SizeField(info.memoryUsageBytes), kMemoryUsageColumn);
-                    changed = true;
-                }
-
-                BIntegerField* threadsField = static_cast<BIntegerField*>(row->GetField(kThreadCountColumn));
-                if (threadsField) {
-                    if (threadsField->Value() != (int32)info.threadCount) {
-                        threadsField->SetValue(info.threadCount);
-                        changed = true;
-                    }
-                } else {
-                    row->SetField(new BIntegerField(info.threadCount), kThreadCountColumn);
-                    changed = true;
-                }
-
-                BStringField* userField = static_cast<BStringField*>(row->GetField(kUserNameColumn));
-                if (userField) {
-                    if (strcmp(userField->String(), info.userName) != 0) {
-                        userField->SetString(info.userName);
-                        changed = true;
-                     }
-                } else {
-                    row->SetField(new BStringField(info.userName), kUserNameColumn);
-                    changed = true;
-                }
-
-                if (changed)
-                    fProcessListView->UpdateRow(row);
-            }
+        bool isVisible = fProcessListView->HasRow(row);
+        if (match && !isVisible) {
+            fProcessListView->AddRow(row);
+        } else if (!match && isVisible) {
+            fProcessListView->RemoveRow(row);
+            // Do NOT delete the row, it is still in fTeamRowMap
         }
     }
 
+    // Second pass: Remove dead processes
 	for (auto it = fTeamRowMap.begin(); it != fTeamRowMap.end();) {
-        bool presentInPulse = (activePIDsThisPulse.find(it->first) != activePIDsThisPulse.end());
-
-        if (!presentInPulse) {
+        if (activePIDs.find(it->first) == activePIDs.end()) {
 			BRow* row = it->second;
-			fProcessListView->RemoveRow(row);
-
+            if (fProcessListView->HasRow(row)) {
+			    fProcessListView->RemoveRow(row);
+            }
 			delete row;
 			it = fTeamRowMap.erase(it);
 		} else {
@@ -591,6 +604,7 @@ void ProcessView::Update(BMessage* message)
 	}
 
     // Prune user name cache
+    BAutolock locker(fCacheLock);
     for (auto it = fUserNameCache.begin(); it != fUserNameCache.end();) {
         if (activeUIDs.find(it->first) == activeUIDs.end()) {
             it = fUserNameCache.erase(it);
@@ -606,6 +620,11 @@ int32 ProcessView::UpdateThread(void* data)
 	std::unordered_set<thread_id> activeThreads;
     std::vector<ProcessInfo> procList;
     BMessenger target(view);
+
+    // Buffer for getpwuid_r reuse
+    long bufSize = sysconf(_SC_GETPW_R_SIZE_MAX);
+    if (bufSize == -1) bufSize = 16384;
+    std::vector<char> pwdBuffer(bufSize);
 
     while (!view->fTerminated) {
         if (view->fIsHidden) {
@@ -648,7 +667,7 @@ int32 ProcessView::UpdateThread(void* data)
             currentProc.threadCount = teamInfo.thread_count;
             currentProc.areaCount = teamInfo.area_count;
             currentProc.userID = teamInfo.uid;
-			const BString& userName = view->GetUserName(currentProc.userID);
+			BString userName = view->GetUserName(currentProc.userID, pwdBuffer);
 			strlcpy(currentProc.userName, userName.String(), B_OS_NAME_LENGTH);
 
             int32 threadCookie = 0;

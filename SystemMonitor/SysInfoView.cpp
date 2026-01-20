@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <sys/utsname.h>
 #include <Catalog.h>
+#include <vector>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "SysInfoView"
@@ -266,24 +267,20 @@ int32 SysInfoView::_LoadDataThread(void* data) {
 
         infoText << B_TRANSLATE("Cores:") << " " << sysInfo.cpu_count << "\n";
         infoText << B_TRANSLATE("Features:") << " " << _GetCPUFeaturesString() << "\n";
-        cpu_topology_node_info* topology = NULL;
         uint32_t topologyNodeCount = 0;
         if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
-            topology = new cpu_topology_node_info[topologyNodeCount];
-            if (topology != NULL) {
-                uint32_t actualNodeCount = topologyNodeCount;
-                if (get_cpu_topology_info(topology, &actualNodeCount) == B_OK) {
-                    uint64_t max_freq = 0;
-                    for (uint32_t i = 0; i < actualNodeCount; i++) {
-                        if (topology[i].type == B_TOPOLOGY_CORE) {
-                            if (topology[i].data.core.default_frequency > max_freq)
-                                max_freq = topology[i].data.core.default_frequency;
-                        }
+            std::vector<cpu_topology_node_info> topology(topologyNodeCount);
+            uint32_t actualNodeCount = topologyNodeCount;
+            if (get_cpu_topology_info(topology.data(), &actualNodeCount) == B_OK) {
+                uint64_t max_freq = 0;
+                for (uint32_t i = 0; i < actualNodeCount; i++) {
+                    if (topology[i].type == B_TOPOLOGY_CORE) {
+                        if (topology[i].data.core.default_frequency > max_freq)
+                            max_freq = topology[i].data.core.default_frequency;
                     }
-                    if (max_freq > 0)
-                        infoText << B_TRANSLATE("Clock Speed:") << " " << FormatHertz(max_freq) << "\n";
                 }
-                delete[] topology;
+                if (max_freq > 0)
+                    infoText << B_TRANSLATE("Clock Speed:") << " " << FormatHertz(max_freq) << "\n";
             }
         }
         infoText << "\n\n";
