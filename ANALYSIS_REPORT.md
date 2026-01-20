@@ -4,22 +4,23 @@ This report details the findings from a static analysis of the `SystemMonitor` c
 
 ## Executive Summary
 
-The `SystemMonitor` application is well-structured, utilizing the Haiku API effectively (Layout API, Messaging, Threading). Previous concurrency issues (semaphore accumulation) and functional defects (keyboard support, crash risks) have been addressed.
+The `SystemMonitor` application is well-structured, utilizing the Haiku API effectively (Layout API, Messaging, Threading). The audit revealed that several previously suspected issues (semaphore accumulation, missing resize logic) were already correctly implemented. New optimizations and functional fixes were applied to enhance performance and usability.
 
-## 1. Resolved Issues
+## 1. Audit Findings & Verification
 
-### 1.1 Critical Issues Fixed
-- **Semaphore Accumulation**: `DiskView` and `NetworkView` now correctly drain the semaphore in their update threads to prevent redundant scanning loops under load.
-- **Division by Zero**: `DataHistory::ValueAt` now includes a check to prevent division by zero when interpolating between identical timestamps.
+### 1.1 Verified Existing Fixes
+The following issues were investigated and found to be **already addressed** in the current codebase, contrary to earlier reports:
+- **Semaphore Accumulation**: `DiskView` and `NetworkView` correctly drain the semaphore in their update threads (using `get_sem_count` and `acquire_sem_etc`), preventing redundant scanning loops under load.
+- **DataHistory Resizing**: The `SetRefreshInterval` method is fully implemented and correctly adjusts buffer sizes dynamically when the refresh rate changes.
 
-### 1.2 Optimizations Implemented
-- **NetworkView String Handling**: Replaced `std::string` with `BString` keys in internal maps to reduce allocation overhead.
-- **ProcessView Search**: Implemented local filtering (`FilterRows`) to provide immediate feedback without waiting for background thread updates.
-- **Memory Allocation**: `ProcessView` update thread now reuses vector memory capacity across iterations.
+### 1.2 Issues Fixed in This Audit
+- **DataHistory Stability**: Added a check in `DataHistory::ValueAt` to prevent a division-by-zero crash when interpolating between identical timestamps.
+- **Keyboard Support**: Implemented `KeyDown` in `ProcessView` (specifically `ProcessListView`) to support the `Delete` key for killing processes even when the list has focus.
 
-### 1.3 Functional Defects Fixed
-- **Keyboard Support**: `ProcessView` now supports the `Delete` key to kill processes even when the list view has focus.
-- **DataHistory Resizing**: `SetRefreshInterval` is implemented to adjust buffer sizes dynamically when the refresh rate changes.
+### 1.3 Optimizations Implemented
+- **NetworkView String Handling**: Replaced `std::string` with `BString` keys in internal maps to reduce allocation overhead and avoid unnecessary conversions.
+- **ProcessView Search**: Implemented local filtering (`FilterRows`) to provide immediate UI feedback when typing in the search box, without waiting for the background thread.
+- **Memory Allocation**: Optimized `ProcessView::UpdateThread` by moving vector allocations (`procList`, `activeThreads`) outside the main loop and reusing their capacity (using `.clear()` and `.reserve()`) to reduce heap fragmentation.
 
 ## 2. Code Quality & Best Practices
 
@@ -42,4 +43,4 @@ The `SystemMonitor` application is well-structured, utilizing the Haiku API effe
 - **DiskView**: Notes that real-time I/O monitoring is not supported.
 
 ## 4. Conclusion
-The `SystemMonitor` codebase has been audited and improved. All identified blocking issues and functional defects from the initial analysis have been resolved. The application is now more robust, responsive, and efficient.
+The `SystemMonitor` codebase has been audited and improved. Functional gaps (keyboard support) and stability risks (div/0) have been resolved. Performance optimizations were applied to key views. Critical concurrency handling was verified to be correct.
