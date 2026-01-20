@@ -17,8 +17,6 @@
 
 CPUView::CPUView()
     : BView("CPUView", B_WILL_DRAW | B_PULSE_NEEDED),
-      fPreviousActiveTime(nullptr),
-      fCpuInfos(nullptr),
       fCpuCount(0),
       fPreviousTimeSnapshot(0),
       fCurrentUsage(0.0f),
@@ -59,8 +57,8 @@ void CPUView::CreateLayout()
     BGridLayout* graphGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
 
     if (fCpuCount > 0) {
-        fPreviousActiveTime = new(std::nothrow) bigtime_t[fCpuCount];
-        fCpuInfos = new(std::nothrow) cpu_info[fCpuCount];
+        fPreviousActiveTime.resize(fCpuCount, 0);
+        fCpuInfos.resize(fCpuCount);
         fPerCoreUsage.resize(fCpuCount, 0.0f);
 
         int cols = ceil(sqrt((double)fCpuCount));
@@ -74,11 +72,11 @@ void CPUView::CreateLayout()
             graphGrid->AddView(graph, i % cols, i / cols);
         }
 
-        if (fPreviousActiveTime && fCpuInfos && get_cpu_info(0, fCpuCount, fCpuInfos) == B_OK) {
+        if (get_cpu_info(0, fCpuCount, fCpuInfos.data()) == B_OK) {
             for (uint32 i = 0; i < fCpuCount; ++i) {
                 fPreviousActiveTime[i] = fCpuInfos[i].active_time;
             }
-        } else if (fPreviousActiveTime) {
+        } else {
             for (uint32 i = 0; i < fCpuCount; ++i) {
                 fPreviousActiveTime[i] = 0;
             }
@@ -103,24 +101,20 @@ void CPUView::CreateLayout()
     infoGrid->AddView(fSpeedValue, 1, 1);
 
     // Get CPU Speed (static)
-    cpu_topology_node_info* topology = NULL;
     uint32_t topologyNodeCount = 0;
     if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
-         topology = new(std::nothrow) cpu_topology_node_info[topologyNodeCount];
-         if (topology) {
-             uint32_t actualCount = topologyNodeCount;
-             if (get_cpu_topology_info(topology, &actualCount) == B_OK) {
-                 uint64 maxFreq = 0;
-                 for (uint32 i = 0; i < actualCount; i++) {
-                     if (topology[i].type == B_TOPOLOGY_CORE) {
-                         if (topology[i].data.core.default_frequency > maxFreq)
-                             maxFreq = topology[i].data.core.default_frequency;
-                     }
+         std::vector<cpu_topology_node_info> topology(topologyNodeCount);
+         uint32_t actualCount = topologyNodeCount;
+         if (get_cpu_topology_info(topology.data(), &actualCount) == B_OK) {
+             uint64 maxFreq = 0;
+             for (uint32 i = 0; i < actualCount; i++) {
+                 if (topology[i].type == B_TOPOLOGY_CORE) {
+                     if (topology[i].data.core.default_frequency > maxFreq)
+                         maxFreq = topology[i].data.core.default_frequency;
                  }
-                 if (maxFreq > 0)
-                     fSpeedValue->SetText(::FormatHertz(maxFreq).String());
              }
-             delete[] topology;
+             if (maxFreq > 0)
+                 fSpeedValue->SetText(::FormatHertz(maxFreq).String());
          }
     }
 
@@ -163,10 +157,6 @@ void CPUView::CreateLayout()
 }
 
 CPUView::~CPUView() {
-    if (fPreviousActiveTime)
-        delete[] fPreviousActiveTime;
-    if (fCpuInfos)
-        delete[] fCpuInfos;
 }
 
 void CPUView::AttachedToWindow() {
@@ -181,7 +171,7 @@ void CPUView::Pulse() {
 
 void CPUView::GetCPUUsage(float& overallUsage)
 {
-    if (fCpuCount == 0 || fPreviousActiveTime == NULL || fCpuInfos == NULL) {
+    if (fCpuCount == 0 || fPreviousActiveTime.empty() || fCpuInfos.empty()) {
         overallUsage = -1.0f;
         return;
     }
@@ -190,7 +180,7 @@ void CPUView::GetCPUUsage(float& overallUsage)
     if (fPreviousTimeSnapshot == 0) {
         fPreviousTimeSnapshot = currentTimeSnapshot;
         // Also update previous active time to avoid spikes on first update
-        if (get_cpu_info(0, fCpuCount, fCpuInfos) == B_OK) {
+        if (get_cpu_info(0, fCpuCount, fCpuInfos.data()) == B_OK) {
              for (uint32 i = 0; i < fCpuCount; ++i)
                  fPreviousActiveTime[i] = fCpuInfos[i].active_time;
         }
@@ -204,7 +194,7 @@ void CPUView::GetCPUUsage(float& overallUsage)
     }
 
     float totalDeltaActiveTime = 0;
-    if (get_cpu_info(0, fCpuCount, fCpuInfos) == B_OK) {
+    if (get_cpu_info(0, fCpuCount, fCpuInfos.data()) == B_OK) {
         for (uint32 i = 0; i < fCpuCount; ++i) {
             bigtime_t delta = fCpuInfos[i].active_time - fPreviousActiveTime[i];
             if (delta < 0) delta = 0; // Handle time rollover
