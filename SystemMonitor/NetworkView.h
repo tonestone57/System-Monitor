@@ -6,6 +6,7 @@
 #include <String.h>
 #include <map>
 #include <string>
+#include <atomic>
 #include "ActivityGraphView.h"
 
 class BColumnListView;
@@ -58,7 +59,7 @@ private:
 
     thread_id fUpdateThread;
     sem_id fScanSem;
-    volatile bool fTerminated;
+    std::atomic<bool> fTerminated;
 };
 
 #endif // NETWORKVIEW_H

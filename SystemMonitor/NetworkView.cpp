@@ -305,6 +305,11 @@ int32 NetworkView::UpdateThread(void* data)
             break;
         }
 
+        // Drain the semaphore
+        int32 count;
+        if (get_sem_count(view->fScanSem, &count) == B_OK && count > 0)
+            acquire_sem_etc(view->fScanSem, count, B_RELATIVE_TIMEOUT, 0);
+
         BMessage updateMsg(kMsgNetworkDataUpdate);
         BNetworkRoster& roster = BNetworkRoster::Default();
         uint32 cookie = 0;

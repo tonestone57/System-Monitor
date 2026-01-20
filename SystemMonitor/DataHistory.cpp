@@ -120,7 +120,18 @@ DataHistory::End() const
 void
 DataHistory::SetRefreshInterval(bigtime_t interval)
 {
-	// TODO: adjust buffer size
+	if (interval <= 0 || interval == fRefreshInterval)
+		return;
+
+	// Calculate current duration with old interval
+	bigtime_t duration = fBuffer.Size() * fRefreshInterval;
+
+	// Calculate new size to keep the same duration
+	size_t newSize = duration / interval;
+	if (newSize < 10) newSize = 10;
+
+	fBuffer.SetSize(newSize);
+	fRefreshInterval = interval;
 }
 
 

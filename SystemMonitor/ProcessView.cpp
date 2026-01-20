@@ -17,6 +17,7 @@
 #include <vector>
 #include <unordered_set>
 #include <Window.h>
+#include <Invoker.h>
 #include <Messenger.h>
 #include <Catalog.h>
 
@@ -26,6 +27,26 @@
 
 namespace {
 
+class FloatField : public BStringField {
+public:
+    FloatField(float value) : BStringField(""), fValue(value) {
+        UpdateString();
+    }
+    void SetValue(float value) {
+        if (fValue == value) return;
+        fValue = value;
+        UpdateString();
+    }
+    float Value() const { return fValue; }
+private:
+    void UpdateString() {
+        char buffer[32];
+        snprintf(buffer, sizeof(buffer), "%.1f", fValue);
+        SetString(buffer);
+    }
+    float fValue;
+};
+
 class BCPUColumn : public BStringColumn {
 public:
     BCPUColumn(const char* title, float width, float minWidth, float maxWidth,
@@ -33,12 +54,30 @@ public:
         : BStringColumn(title, width, minWidth, maxWidth, truncate, align) {}
 
     virtual int CompareFields(BField* field1, BField* field2) {
-        float val1 = atof(((BStringField*)field1)->String());
-        float val2 = atof(((BStringField*)field2)->String());
+        float val1 = ((FloatField*)field1)->Value();
+        float val2 = ((FloatField*)field2)->Value();
         if (val1 < val2) return -1;
         if (val1 > val2) return 1;
         return 0;
     }
+};
+
+class SizeField : public BStringField {
+public:
+    SizeField(uint64 value) : BStringField(""), fValue(value) {
+        UpdateString();
+    }
+    void SetValue(uint64 value) {
+        if (fValue == value) return;
+        fValue = value;
+        UpdateString();
+    }
+    uint64 Value() const { return fValue; }
+private:
+    void UpdateString() {
+        SetString(FormatBytes(fValue));
+    }
+    uint64 fValue;
 };
 
 class BMemoryColumn : public BStringColumn {
@@ -48,24 +87,8 @@ public:
         : BStringColumn(title, width, minWidth, maxWidth, truncate, align) {}
 
     virtual int CompareFields(BField* field1, BField* field2) {
-        const char* str1 = ((BStringField*)field1)->String();
-        const char* str2 = ((BStringField*)field2)->String();
-        float val1 = 0, val2 = 0;
-        char unit1[16] = {0}, unit2[16] = {0};
-        sscanf(str1, "%f %15s", &val1, unit1);
-        sscanf(str2, "%f %15s", &val2, unit2);
-
-        // Normalize to bytes
-        auto normalize = [](float val, const char* unit) -> float {
-            if (strcmp(unit, "KiB") == 0) return val * 1024.0f;
-            if (strcmp(unit, "MiB") == 0) return val * 1024.0f * 1024.0f;
-            if (strcmp(unit, "GiB") == 0) return val * 1024.0f * 1024.0f * 1024.0f;
-            return val; // "Bytes" or unknown
-        };
-
-        val1 = normalize(val1, unit1);
-        val2 = normalize(val2, unit2);
-
+        uint64 val1 = ((SizeField*)field1)->Value();
+        uint64 val2 = ((SizeField*)field2)->Value();
         if (val1 < val2) return -1;
         if (val1 > val2) return 1;
         return 0;
@@ -80,6 +103,31 @@ public:
           fSortColumn(NULL),
           fSortInverse(false)
     {
+    }
+
+    virtual void MouseDown(BPoint where) {
+        BMessage* msg = Window()->CurrentMessage();
+        int32 buttons = 0;
+        msg->FindInt32("buttons", &buttons);
+        if (buttons & B_SECONDARY_MOUSE_BUTTON) {
+            // Context menu logic
+            // We need to notify the parent ProcessView
+            // But we don't have a direct pointer easily accessible unless we store it.
+            // BColumnListView doesn't propagate right clicks automatically in all cases.
+            // However, since ProcessView is the target of the list view's invocation,
+            // we can try sending a message to the window or view.
+
+            // Best approach: Send a message to the target (ProcessView)
+            BMessenger messenger(Target());
+            if (messenger.IsValid()) {
+                BMessage contextMsg('cntx'); // MSG_SHOW_CONTEXT_MENU
+                BPoint screenWhere = where;
+                ConvertToScreen(&screenWhere);
+                contextMsg.AddPoint("screen_where", screenWhere);
+                messenger.SendMessage(&contextMsg);
+            }
+        }
+        BColumnListView::MouseDown(where);
     }
 
     virtual void SetSortColumn(BColumn* column, bool add, bool inverse) {
@@ -119,6 +167,8 @@ const uint32 MSG_RESUME_PROCESS = 'resm';
 const uint32 MSG_PRIORITY_LOW = 'pril';
 const uint32 MSG_PRIORITY_NORMAL = 'prin';
 const uint32 MSG_PRIORITY_HIGH = 'prih';
+const uint32 MSG_SHOW_CONTEXT_MENU = 'cntx';
+const uint32 MSG_CONFIRM_KILL = 'conf';
 
 ProcessView::ProcessView()
     : BView("ProcessView", B_WILL_DRAW),
@@ -257,10 +307,48 @@ void ProcessView::MessageReceived(BMessage* message)
             if (fQuitSem >= 0)
                 release_sem(fQuitSem);
             break;
+        case MSG_SHOW_CONTEXT_MENU: {
+            BPoint screenWhere;
+            if (message->FindPoint("screen_where", &screenWhere) == B_OK) {
+                ShowContextMenu(screenWhere);
+            }
+            break;
+        }
+        case MSG_CONFIRM_KILL: {
+            int32 button_index;
+            team_id team;
+            if (message->FindInt32("which", &button_index) == B_OK && button_index == 0) {
+                if (message->FindInt32("team_id", (int32*)&team) == B_OK) {
+                    if (kill_team(team) != B_OK) {
+                        BAlert* errAlert = new BAlert(B_TRANSLATE("Error"), B_TRANSLATE("Failed to kill process."), B_TRANSLATE("OK"),
+                                                      NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+                        errAlert->Go(NULL); // Asynchronous fire-and-forget
+                    }
+                }
+            }
+            break;
+        }
         default:
             BView::MessageReceived(message);
             break;
     }
+}
+
+void ProcessView::MouseDown(BPoint where)
+{
+    // Deprecated: Handled by ProcessListView
+    BView::MouseDown(where);
+}
+
+void ProcessView::KeyDown(const char* bytes, int32 numBytes)
+{
+    if (numBytes == 1) {
+        if (bytes[0] == B_DELETE) {
+            KillSelectedProcess();
+            return;
+        }
+    }
+    BView::KeyDown(bytes, numBytes);
 }
 
 void ProcessView::Hide()
@@ -303,7 +391,7 @@ void ProcessView::ShowContextMenu(BPoint screenPoint) {
     if (!selectedRow) return;
 
     fContextMenu->SetTargetForItems(this);
-    fProcessListView->ConvertToScreen(&screenPoint);
+    // fProcessListView->ConvertToScreen(&screenPoint); // Argument is already in screen coordinates
     fContextMenu->Go(screenPoint, true, true, true);
 }
 
@@ -320,17 +408,12 @@ void ProcessView::KillSelectedProcess() {
     alertMsg.SetToFormat(B_TRANSLATE("Are you sure you want to kill process %d (%s)?"),
                          (int)team,
                          ((BStringField*)selectedRow->GetField(kProcessNameColumn))->String());
-    BAlert confirmAlert(B_TRANSLATE("Confirm Kill"), alertMsg.String(), B_TRANSLATE("Kill"), B_TRANSLATE("Cancel"),
+    BAlert* confirmAlert = new BAlert(B_TRANSLATE("Confirm Kill"), alertMsg.String(), B_TRANSLATE("Kill"), B_TRANSLATE("Cancel"),
                                       NULL, B_WIDTH_AS_USUAL, B_WARNING_ALERT);
-    int32 button_index = confirmAlert.Go();
 
-    if (button_index == 0) { // "Kill" button
-        if (kill_team(team) != B_OK) {
-            BAlert errAlert(B_TRANSLATE("Error"), B_TRANSLATE("Failed to kill process."), B_TRANSLATE("OK"),
-                                          NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
-            errAlert.Go();
-        }
-    }
+    BMessage* confirmMsg = new BMessage(MSG_CONFIRM_KILL);
+    confirmMsg->AddInt32("team_id", team);
+    confirmAlert->Go(new BInvoker(confirmMsg, this));
 }
 
 void ProcessView::SuspendSelectedProcess() {
@@ -385,8 +468,11 @@ void ProcessView::Update(BMessage* message)
     const char* searchText = fSearchControl->Text();
     bool filtering = (searchText != NULL && strlen(searchText) > 0);
 
+    std::unordered_set<uid_t> activeUIDs;
+
     for (size_t i = 0; i < count; i++) {
         const ProcessInfo& info = infos[i];
+        activeUIDs.insert(info.userID);
         
         bool match = true;
         if (filtering) {
@@ -407,10 +493,8 @@ void ProcessView::Update(BMessage* message)
                 row->SetField(new BIntegerField(info.id), kPIDColumn);
                 row->SetField(new BStringField(info.name), kProcessNameColumn);
                 row->SetField(new BStringField(B_TRANSLATE(info.state)), kStateColumn);
-                char cpuStr[16];
-                snprintf(cpuStr, sizeof(cpuStr), "%.1f", info.cpuUsage);
-                row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
-                row->SetField(new BStringField(::FormatBytes(info.memoryUsageBytes)), kMemoryUsageColumn);
+                row->SetField(new FloatField(info.cpuUsage), kCPUUsageColumn);
+                row->SetField(new SizeField(info.memoryUsageBytes), kMemoryUsageColumn);
                 row->SetField(new BIntegerField(info.threadCount), kThreadCountColumn);
                 row->SetField(new BStringField(info.userName), kUserNameColumn);
                 fProcessListView->AddRow(row);
@@ -442,28 +526,25 @@ void ProcessView::Update(BMessage* message)
                     changed = true;
                 }
 
-                char cpuStr[16];
-                snprintf(cpuStr, sizeof(cpuStr), "%.1f", info.cpuUsage);
-                BStringField* cpuField = static_cast<BStringField*>(row->GetField(kCPUUsageColumn));
+                FloatField* cpuField = static_cast<FloatField*>(row->GetField(kCPUUsageColumn));
                 if (cpuField) {
-                    if (strcmp(cpuField->String(), cpuStr) != 0) {
-                        cpuField->SetString(cpuStr);
+                    if (cpuField->Value() != info.cpuUsage) {
+                        cpuField->SetValue(info.cpuUsage);
                         changed = true;
                      }
                 } else {
-                    row->SetField(new BStringField(cpuStr), kCPUUsageColumn);
+                    row->SetField(new FloatField(info.cpuUsage), kCPUUsageColumn);
                     changed = true;
                 }
 
-                BString memStr = ::FormatBytes(info.memoryUsageBytes);
-                BStringField* memField = static_cast<BStringField*>(row->GetField(kMemoryUsageColumn));
+                SizeField* memField = static_cast<SizeField*>(row->GetField(kMemoryUsageColumn));
                 if (memField) {
-                    if (strcmp(memField->String(), memStr.String()) != 0) {
-                        memField->SetString(memStr);
+                    if (memField->Value() != info.memoryUsageBytes) {
+                        memField->SetValue(info.memoryUsageBytes);
                         changed = true;
                      }
                 } else {
-                    row->SetField(new BStringField(memStr), kMemoryUsageColumn);
+                    row->SetField(new SizeField(info.memoryUsageBytes), kMemoryUsageColumn);
                     changed = true;
                 }
 
@@ -508,6 +589,15 @@ void ProcessView::Update(BMessage* message)
 			++it;
 		}
 	}
+
+    // Prune user name cache
+    for (auto it = fUserNameCache.begin(); it != fUserNameCache.end();) {
+        if (activeUIDs.find(it->first) == activeUIDs.end()) {
+            it = fUserNameCache.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
 int32 ProcessView::UpdateThread(void* data)

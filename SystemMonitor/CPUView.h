@@ -34,7 +34,7 @@ private:
     BStringView* fThreadsValue;
     BStringView* fUptimeValue;
     
-    bigtime_t* fPreviousIdleTime;
+    bigtime_t* fPreviousActiveTime;
     cpu_info* fCpuInfos;
     uint32 fCpuCount;
     system_info fPreviousSysInfo;

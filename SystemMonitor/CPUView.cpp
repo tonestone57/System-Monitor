@@ -17,7 +17,7 @@
 
 CPUView::CPUView()
     : BView("CPUView", B_WILL_DRAW | B_PULSE_NEEDED),
-      fPreviousIdleTime(nullptr),
+      fPreviousActiveTime(nullptr),
       fCpuInfos(nullptr),
       fCpuCount(0),
       fPreviousTimeSnapshot(0),
@@ -59,7 +59,7 @@ void CPUView::CreateLayout()
     BGridLayout* graphGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
 
     if (fCpuCount > 0) {
-        fPreviousIdleTime = new(std::nothrow) bigtime_t[fCpuCount];
+        fPreviousActiveTime = new(std::nothrow) bigtime_t[fCpuCount];
         fCpuInfos = new(std::nothrow) cpu_info[fCpuCount];
         fPerCoreUsage.resize(fCpuCount, 0.0f);
 
@@ -74,13 +74,13 @@ void CPUView::CreateLayout()
             graphGrid->AddView(graph, i % cols, i / cols);
         }
 
-        if (fPreviousIdleTime && fCpuInfos && get_cpu_info(0, fCpuCount, fCpuInfos) == B_OK) {
+        if (fPreviousActiveTime && fCpuInfos && get_cpu_info(0, fCpuCount, fCpuInfos) == B_OK) {
             for (uint32 i = 0; i < fCpuCount; ++i) {
-                fPreviousIdleTime[i] = fCpuInfos[i].active_time;
+                fPreviousActiveTime[i] = fCpuInfos[i].active_time;
             }
-        } else if (fPreviousIdleTime) {
+        } else if (fPreviousActiveTime) {
             for (uint32 i = 0; i < fCpuCount; ++i) {
-                fPreviousIdleTime[i] = 0;
+                fPreviousActiveTime[i] = 0;
             }
         }
     }
@@ -163,8 +163,8 @@ void CPUView::CreateLayout()
 }
 
 CPUView::~CPUView() {
-    if (fPreviousIdleTime)
-        delete[] fPreviousIdleTime;
+    if (fPreviousActiveTime)
+        delete[] fPreviousActiveTime;
     if (fCpuInfos)
         delete[] fCpuInfos;
 }
@@ -181,7 +181,7 @@ void CPUView::Pulse() {
 
 void CPUView::GetCPUUsage(float& overallUsage)
 {
-    if (fCpuCount == 0 || fPreviousIdleTime == NULL || fCpuInfos == NULL) {
+    if (fCpuCount == 0 || fPreviousActiveTime == NULL || fCpuInfos == NULL) {
         overallUsage = -1.0f;
         return;
     }
@@ -189,10 +189,10 @@ void CPUView::GetCPUUsage(float& overallUsage)
     bigtime_t currentTimeSnapshot = system_time();
     if (fPreviousTimeSnapshot == 0) {
         fPreviousTimeSnapshot = currentTimeSnapshot;
-        // Also update previous idle time to avoid spikes on first update
+        // Also update previous active time to avoid spikes on first update
         if (get_cpu_info(0, fCpuCount, fCpuInfos) == B_OK) {
              for (uint32 i = 0; i < fCpuCount; ++i)
-                 fPreviousIdleTime[i] = fCpuInfos[i].active_time;
+                 fPreviousActiveTime[i] = fCpuInfos[i].active_time;
         }
     }
     bigtime_t elapsedWallTime = currentTimeSnapshot - fPreviousTimeSnapshot;
@@ -206,7 +206,7 @@ void CPUView::GetCPUUsage(float& overallUsage)
     float totalDeltaActiveTime = 0;
     if (get_cpu_info(0, fCpuCount, fCpuInfos) == B_OK) {
         for (uint32 i = 0; i < fCpuCount; ++i) {
-            bigtime_t delta = fCpuInfos[i].active_time - fPreviousIdleTime[i];
+            bigtime_t delta = fCpuInfos[i].active_time - fPreviousActiveTime[i];
             if (delta < 0) delta = 0; // Handle time rollover
 
             float coreUsage = (float)delta / elapsedWallTime * 100.0f;
@@ -216,7 +216,7 @@ void CPUView::GetCPUUsage(float& overallUsage)
                 fPerCoreUsage[i] = coreUsage;
 
             totalDeltaActiveTime += delta;
-            fPreviousIdleTime[i] = fCpuInfos[i].active_time;
+            fPreviousActiveTime[i] = fCpuInfos[i].active_time;
         }
     }
 

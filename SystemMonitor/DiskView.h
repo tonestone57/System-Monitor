@@ -6,6 +6,7 @@
 #include <String.h>
 #include <Volume.h>
 #include <map>
+#include <atomic>
 
 class BBox;
 class BColumnListView;
@@ -46,7 +47,7 @@ private:
 
     thread_id fUpdateThread;
     sem_id fScanSem;
-    volatile bool fTerminated;
+    std::atomic<bool> fTerminated;
 };
 
 #endif // DISKVIEW_H
