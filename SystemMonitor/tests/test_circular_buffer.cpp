@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cassert>
 #include <string.h>
+#include <cstdint>
 
 // Mock OS.h functionality for standalone testing if not available
 #ifndef _OS_H
