@@ -10,6 +10,7 @@
 #include <map>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include <atomic>
 #include <kernel/OS.h>
 
@@ -23,7 +24,6 @@ class BColumn;
 struct ProcessInfo {
     team_id id;
     char name[B_OS_NAME_LENGTH];
-    char path[B_PATH_NAME_LENGTH];
     char userName[B_OS_NAME_LENGTH];
     char state[32];
     uint32 threadCount;
@@ -81,10 +81,11 @@ private:
     
     std::unordered_map<thread_id, bigtime_t> fThreadTimeMap;
 	std::unordered_map<team_id, BRow*> fTeamRowMap;
+    std::unordered_set<BRow*> fVisibleRows;
     BLocker fCacheLock;
     std::unordered_map<uid_t, BString> fUserNameCache;
     bigtime_t fLastSystemTime;
-    bigtime_t fRefreshInterval;
+    std::atomic<bigtime_t> fRefreshInterval;
     
     thread_id fUpdateThread;
     sem_id fQuitSem;

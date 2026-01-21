@@ -1,5 +1,6 @@
 #include "DiskView.h"
 #include "Utils.h"
+#include "ColumnTypes.h"
 #include <LayoutBuilder.h>
 #include <StringView.h>
 #include <OS.h>
@@ -60,10 +61,10 @@ DiskView::DiskView()
     fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("Device"), 120, 50, 300, B_TRUNCATE_MIDDLE), kDeviceColumn);
     fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("Mount Point"), 120, 50, 300, B_TRUNCATE_MIDDLE), kMountPointColumn);
     fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("FS Type"), 80, 40, 150, B_TRUNCATE_END), kFSTypeColumn);
-    fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("Total Size"), 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kTotalSizeColumn);
-    fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("Used Size"), 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kUsedSizeColumn);
-    fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("Free Size"), 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kFreeSizeColumn);
-    fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("Usage %"), 80, 40, 100, B_TRUNCATE_END, B_ALIGN_RIGHT), kUsagePercentageColumn);
+    fDiskListView->AddColumn(new BSizeColumn(B_TRANSLATE("Total Size"), 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kTotalSizeColumn);
+    fDiskListView->AddColumn(new BSizeColumn(B_TRANSLATE("Used Size"), 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kUsedSizeColumn);
+    fDiskListView->AddColumn(new BSizeColumn(B_TRANSLATE("Free Size"), 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kFreeSizeColumn);
+    fDiskListView->AddColumn(new BFloatColumn(B_TRANSLATE("Usage %"), 80, 40, 100, B_TRUNCATE_END, B_ALIGN_RIGHT), kUsagePercentageColumn);
 
     fDiskListView->SetSortColumn(fDiskListView->ColumnAt(kMountPointColumn), true, true);
 
@@ -266,8 +267,35 @@ void DiskView::UpdateData(BMessage* message)
         if (totalSize > 0) {
             usagePercent = (double)usedSize / totalSize * 100.0;
         }
-        char percentStr[16];
-        snprintf(percentStr, sizeof(percentStr), "%.1f%%", usagePercent);
+        // Helper lambda for size fields
+        auto setSizeField = [&](BRow* row, int index, uint64 val) {
+            SizeField* field = static_cast<SizeField*>(row->GetField(index));
+            if (field) {
+                if (field->Value() != val) {
+                    field->SetValue(val);
+                    return true;
+                }
+            } else {
+                row->SetField(new SizeField(val), index);
+                return true;
+            }
+            return false;
+        };
+
+        // Helper for float/percent
+        auto setFloatField = [&](BRow* row, int index, float val) {
+             FloatField* field = static_cast<FloatField*>(row->GetField(index));
+             if (field) {
+                 if (field->Value() != val) {
+                     field->SetValue(val);
+                     return true;
+                 }
+             } else {
+                 row->SetField(new FloatField(val), index);
+                 return true;
+             }
+             return false;
+        };
 
 		BRow* row;
 		if (fDeviceRowMap.find(deviceID) == fDeviceRowMap.end()) {
@@ -276,10 +304,10 @@ void DiskView::UpdateData(BMessage* message)
 			row->SetField(new BStringField(deviceName), kDeviceColumn);
 			row->SetField(new BStringField(mountPoint), kMountPointColumn);
 			row->SetField(new BStringField(fsType), kFSTypeColumn);
-			row->SetField(new BStringField(::FormatBytes(totalSize)), kTotalSizeColumn);
-			row->SetField(new BStringField(::FormatBytes(usedSize)), kUsedSizeColumn);
-			row->SetField(new BStringField(::FormatBytes(freeSize)), kFreeSizeColumn);
-			row->SetField(new BStringField(percentStr), kUsagePercentageColumn);
+			row->SetField(new SizeField(totalSize), kTotalSizeColumn);
+			row->SetField(new SizeField(usedSize), kUsedSizeColumn);
+			row->SetField(new SizeField(freeSize), kFreeSizeColumn);
+			row->SetField(new FloatField(usagePercent), kUsagePercentageColumn);
 			fDiskListView->AddRow(row);
 			fDeviceRowMap[deviceID] = row;
 		} else {
@@ -303,10 +331,11 @@ void DiskView::UpdateData(BMessage* message)
             updateField(kDeviceColumn, deviceName);
             updateField(kMountPointColumn, mountPoint);
             updateField(kFSTypeColumn, fsType);
-            updateField(kTotalSizeColumn, ::FormatBytes(totalSize));
-            updateField(kUsedSizeColumn, ::FormatBytes(usedSize));
-            updateField(kFreeSizeColumn, ::FormatBytes(freeSize));
-            updateField(kUsagePercentageColumn, percentStr);
+
+            if (setSizeField(row, kTotalSizeColumn, totalSize)) changed = true;
+            if (setSizeField(row, kUsedSizeColumn, usedSize)) changed = true;
+            if (setSizeField(row, kFreeSizeColumn, freeSize)) changed = true;
+            if (setFloatField(row, kUsagePercentageColumn, usagePercent)) changed = true;
 
             if (changed)
 			    fDiskListView->UpdateRow(row);
