@@ -95,6 +95,8 @@ void MemView::AttachedToWindow()
 
 void MemView::Pulse()
 {
+    if (IsHidden())
+        return;
     UpdateData();
 }
 

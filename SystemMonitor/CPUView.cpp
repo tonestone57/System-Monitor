@@ -166,6 +166,8 @@ void CPUView::AttachedToWindow() {
 }
 
 void CPUView::Pulse() {
+    if (IsHidden())
+        return;
     UpdateData();
 }
 
