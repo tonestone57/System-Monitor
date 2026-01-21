@@ -51,3 +51,25 @@ The following issues were investigated and found to be **already addressed** in 
 
 ## 4. Conclusion
 The `SystemMonitor` codebase has been audited and improved. Functional gaps (keyboard support) and stability risks (div/0) have been resolved. Performance optimizations were applied to key views. Critical concurrency handling was verified to be correct.
+
+## 5. Final Audit Updates
+
+The following critical fixes and optimizations were applied to resolve remaining blockers and nitpicks:
+
+- **CircularBuffer Robustness**:
+  - Fixed a Division-by-Zero crash vector in `ItemAt` and `AddItem` when buffer size is 0.
+  - Improved `SetSize` to gracefully handle 0-size requests.
+  - Optimized `operator=` to linearize data during assignment and copy only valid items, reducing overhead.
+
+- **Crash Prevention**:
+  - `ProcessView`: Added `InitCheck()` and `NULL` checks for `BPath` usage to prevent segmentation faults when resolving process names.
+  - `ActivityGraphView`: Added `std::nothrow` and NULL checks for offscreen `BView` allocation to handle Out-Of-Memory conditions safely.
+
+- **Optimizations**:
+  - `ProcessView`: Moved `fActiveUIDs` and `fActivePIDs` sets to member variables to avoid repetitive memory allocation during updates.
+  - `ProcessView`: Implemented caching for common translated state strings ("Running", "Ready", "Sleeping") to reduce CPU usage in the update loop.
+  - `ProcessView`: Optimized filtering logic to reuse `BString` buffers.
+
+- **Logic Fixes**:
+  - `NetworkView`: Introduced `hasStats` flag to prevent invalid speed calculations when network interfaces fail to report statistics (e.g., transient driver errors).
+  - `DataHistory`: Updated `SetRefreshInterval` to only commit changes if the buffer resize operation succeeds.
