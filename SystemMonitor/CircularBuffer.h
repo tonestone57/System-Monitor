@@ -50,16 +50,23 @@ public:
 				return *this;
 			}
 
-			// Copy data from other to newBuffer
-			for (size_t i = 0; i < other.fSize; i++)
-				newBuffer[i] = other.fBuffer[i];
+			// Linearize data from other to newBuffer
+			int32 count = other.CountItems();
+			for (int32 i = 0; i < count; i++) {
+				Type* item = other.ItemAt(i);
+				if (item)
+					newBuffer[i] = *item;
+			}
+			fFirst = 0;
+			fIn = count;
+		} else {
+			fFirst = 0;
+			fIn = 0;
 		}
 
 		delete[] fBuffer;
 		fBuffer = newBuffer;
 		fSize = other.fSize;
-		fFirst = other.fFirst;
-		fIn = other.fIn;
 
 		return *this;
 	}
