@@ -157,6 +157,11 @@ ProcessView::ProcessView()
 
     fProcessListView->SetSortColumn(fCPUColumn, false, false);
 
+    // Cache translated strings
+    fStrRunning = B_TRANSLATE("Running");
+    fStrReady = B_TRANSLATE("Ready");
+    fStrSleeping = B_TRANSLATE("Sleeping");
+
     fContextMenu = new BPopUpMenu("ProcessContext", false, false);
     fContextMenu->AddItem(new BMenuItem(B_TRANSLATE("Kill Process"), new BMessage(MSG_KILL_PROCESS)));
     fContextMenu->AddSeparatorItem();
@@ -457,21 +462,32 @@ void ProcessView::Update(BMessage* message)
     const char* searchText = fSearchControl->Text();
     bool filtering = (searchText != NULL && strlen(searchText) > 0);
 
-    std::unordered_set<uid_t> activeUIDs;
-    std::unordered_set<team_id> activePIDs;
+    // Buffers for filtering to avoid reallocation
+    BString filterName;
+    BString filterID;
+
+    fActiveUIDs.clear();
+    fActivePIDs.clear();
 
     // First pass: Update existing rows or create new ones, and handle visibility
     for (size_t i = 0; i < count; i++) {
         const ProcessInfo& info = infos[i];
-        activeUIDs.insert(info.userID);
-        activePIDs.insert(info.id);
+        fActiveUIDs.insert(info.userID);
+        fActivePIDs.insert(info.id);
         
+        // Determine state string
+        const char* stateStr = info.state;
+        if (strcmp(info.state, "Running") == 0) stateStr = fStrRunning.String();
+        else if (strcmp(info.state, "Ready") == 0) stateStr = fStrReady.String();
+        else if (strcmp(info.state, "Sleeping") == 0) stateStr = fStrSleeping.String();
+        else stateStr = info.state; // Fallback
+
         BRow* row;
         if (fTeamRowMap.find(info.id) == fTeamRowMap.end()) {
             row = new BRow();
             row->SetField(new BIntegerField(info.id), kPIDColumn);
             row->SetField(new BStringField(info.name), kProcessNameColumn);
-            row->SetField(new BStringField(B_TRANSLATE(info.state)), kStateColumn);
+            row->SetField(new BStringField(stateStr), kStateColumn);
             row->SetField(new FloatField(info.cpuUsage), kCPUUsageColumn);
             row->SetField(new SizeField(info.memoryUsageBytes), kMemoryUsageColumn);
             row->SetField(new BIntegerField(info.threadCount), kThreadCountColumn);
@@ -497,7 +513,7 @@ void ProcessView::Update(BMessage* message)
             };
 
             updateStrField(kProcessNameColumn, info.name);
-            updateStrField(kStateColumn, B_TRANSLATE(info.state));
+            updateStrField(kStateColumn, stateStr);
 
             // CPU
             FloatField* cpuField = static_cast<FloatField*>(row->GetField(kCPUUsageColumn));
@@ -544,9 +560,10 @@ void ProcessView::Update(BMessage* message)
         // Handle filtering
         bool match = true;
         if (filtering) {
-            BString name(info.name);
-            BString idStr; idStr << info.id;
-            if (name.IFindFirst(searchText) == B_ERROR && idStr.IFindFirst(searchText) == B_ERROR) {
+            filterName.SetTo(info.name);
+            filterID.SetTo("");
+            filterID << info.id;
+            if (filterName.IFindFirst(searchText) == B_ERROR && filterID.IFindFirst(searchText) == B_ERROR) {
                 match = false;
             }
         }
@@ -564,7 +581,7 @@ void ProcessView::Update(BMessage* message)
 
     // Second pass: Remove dead processes
 	for (auto it = fTeamRowMap.begin(); it != fTeamRowMap.end();) {
-        if (activePIDs.find(it->first) == activePIDs.end()) {
+        if (fActivePIDs.find(it->first) == fActivePIDs.end()) {
 			BRow* row = it->second;
             if (fVisibleRows.find(row) != fVisibleRows.end()) {
 			    fProcessListView->RemoveRow(row);
@@ -580,7 +597,7 @@ void ProcessView::Update(BMessage* message)
     // Prune user name cache
     BAutolock locker(fCacheLock);
     for (auto it = fUserNameCache.begin(); it != fUserNameCache.end();) {
-        if (activeUIDs.find(it->first) == activeUIDs.end()) {
+        if (fActiveUIDs.find(it->first) == fActiveUIDs.end()) {
             it = fUserNameCache.erase(it);
         } else {
             ++it;
@@ -633,7 +650,14 @@ int32 ProcessView::UpdateThread(void* data)
             int32 imgCookie = 0;
             if (get_next_image_info(teamInfo.team, &imgCookie, &imgInfo) == B_OK) {
                 BPath path(imgInfo.name);
-				strlcpy(currentProc.name, path.Leaf(), B_OS_NAME_LENGTH);
+                const char* leafName = NULL;
+                if (path.InitCheck() == B_OK)
+                    leafName = path.Leaf();
+
+                if (leafName != NULL)
+                    strlcpy(currentProc.name, leafName, B_OS_NAME_LENGTH);
+                else
+                    strlcpy(currentProc.name, imgInfo.name, B_OS_NAME_LENGTH);
             } else {
 				strlcpy(currentProc.name, teamInfo.args, B_OS_NAME_LENGTH);
                 if (strlen(currentProc.name) == 0)

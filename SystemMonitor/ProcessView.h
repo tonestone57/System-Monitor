@@ -82,6 +82,14 @@ private:
     std::unordered_map<thread_id, bigtime_t> fThreadTimeMap;
 	std::unordered_map<team_id, BRow*> fTeamRowMap;
     std::unordered_set<BRow*> fVisibleRows;
+
+    // Optimization members
+    std::unordered_set<uid_t> fActiveUIDs;
+    std::unordered_set<team_id> fActivePIDs;
+    BString fStrRunning;
+    BString fStrReady;
+    BString fStrSleeping;
+
     BLocker fCacheLock;
     std::unordered_map<uid_t, BString> fUserNameCache;
     bigtime_t fLastSystemTime;

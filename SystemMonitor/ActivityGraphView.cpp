@@ -89,7 +89,12 @@ ActivityGraphView::_UpdateOffscreenBitmap()
 		return;
 	}
 
-	BView* view = new BView(bounds, NULL, B_FOLLOW_NONE, 0);
+	BView* view = new(std::nothrow) BView(bounds, NULL, B_FOLLOW_NONE, 0);
+	if (view == NULL) {
+		delete fOffscreen;
+		fOffscreen = NULL;
+		return;
+	}
 	fOffscreen->AddChild(view);
 }
 
