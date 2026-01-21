@@ -17,8 +17,6 @@ class CircularBuffer {
 public:
 	CircularBuffer(size_t size)
 		:
-		fFirst(0),
-		fIn(0),
 		fSize(0),
 		fBuffer(NULL)
 	{
@@ -27,8 +25,6 @@ public:
 
 	CircularBuffer(const CircularBuffer& other)
 		:
-		fFirst(0),
-		fIn(0),
 		fSize(0),
 		fBuffer(NULL)
 	{
