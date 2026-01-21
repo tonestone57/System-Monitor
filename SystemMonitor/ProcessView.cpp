@@ -1,5 +1,6 @@
 #include "ProcessView.h"
 #include "Utils.h"
+#include "ColumnTypes.h"
 #include <LayoutBuilder.h>
 #include <private/interface/ColumnListView.h>
 #include <private/interface/ColumnTypes.h>
@@ -27,74 +28,6 @@
 
 
 namespace {
-
-class FloatField : public BStringField {
-public:
-    FloatField(float value) : BStringField(""), fValue(value) {
-        UpdateString();
-    }
-    void SetValue(float value) {
-        if (fValue == value) return;
-        fValue = value;
-        UpdateString();
-    }
-    float Value() const { return fValue; }
-private:
-    void UpdateString() {
-        char buffer[32];
-        snprintf(buffer, sizeof(buffer), "%.1f", fValue);
-        SetString(buffer);
-    }
-    float fValue;
-};
-
-class BCPUColumn : public BStringColumn {
-public:
-    BCPUColumn(const char* title, float width, float minWidth, float maxWidth,
-                uint32 truncate, alignment align = B_ALIGN_LEFT)
-        : BStringColumn(title, width, minWidth, maxWidth, truncate, align) {}
-
-    virtual int CompareFields(BField* field1, BField* field2) {
-        float val1 = ((FloatField*)field1)->Value();
-        float val2 = ((FloatField*)field2)->Value();
-        if (val1 < val2) return -1;
-        if (val1 > val2) return 1;
-        return 0;
-    }
-};
-
-class SizeField : public BStringField {
-public:
-    SizeField(uint64 value) : BStringField(""), fValue(value) {
-        UpdateString();
-    }
-    void SetValue(uint64 value) {
-        if (fValue == value) return;
-        fValue = value;
-        UpdateString();
-    }
-    uint64 Value() const { return fValue; }
-private:
-    void UpdateString() {
-        SetString(FormatBytes(fValue));
-    }
-    uint64 fValue;
-};
-
-class BMemoryColumn : public BStringColumn {
-public:
-    BMemoryColumn(const char* title, float width, float minWidth, float maxWidth,
-                   uint32 truncate, alignment align = B_ALIGN_LEFT)
-        : BStringColumn(title, width, minWidth, maxWidth, truncate, align) {}
-
-    virtual int CompareFields(BField* field1, BField* field2) {
-        uint64 val1 = ((SizeField*)field1)->Value();
-        uint64 val2 = ((SizeField*)field2)->Value();
-        if (val1 < val2) return -1;
-        if (val1 > val2) return 1;
-        return 0;
-    }
-};
 
 class ProcessListView : public BColumnListView {
 public:
@@ -207,10 +140,10 @@ ProcessView::ProcessView()
     fNameColumn = new BStringColumn(B_TRANSLATE("Name"), 180, 50, 500, B_TRUNCATE_END);
     fProcessListView->AddColumn(fNameColumn, kProcessNameColumn);
 
-    fCPUColumn = new BCPUColumn(B_TRANSLATE("Total CPU %"), 90, 50, 120, B_TRUNCATE_END, B_ALIGN_RIGHT);
+    fCPUColumn = new BFloatColumn(B_TRANSLATE("Total CPU %"), 90, 50, 120, B_TRUNCATE_END, B_ALIGN_RIGHT);
     fProcessListView->AddColumn(fCPUColumn, kCPUUsageColumn);
 
-    fMemColumn = new BMemoryColumn(B_TRANSLATE("Memory"), 100, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT);
+    fMemColumn = new BSizeColumn(B_TRANSLATE("Memory"), 100, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT);
     fProcessListView->AddColumn(fMemColumn, kMemoryUsageColumn);
 
     fThreadsColumn = new BIntegerColumn(B_TRANSLATE("Threads"), 80, 40, 120, B_ALIGN_RIGHT);
