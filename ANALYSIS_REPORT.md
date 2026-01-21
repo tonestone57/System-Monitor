@@ -16,11 +16,15 @@ The following issues were investigated and found to be **already addressed** in 
 ### 1.2 Issues Fixed in This Audit
 - **DataHistory Stability**: Added a check in `DataHistory::ValueAt` to prevent a division-by-zero crash when interpolating between identical timestamps.
 - **Keyboard Support**: Implemented `KeyDown` in `ProcessView` (specifically `ProcessListView`) to support the `Delete` key for killing processes even when the list has focus.
+- **Sorting Logic**: Fixed incorrect alphabetical sorting of numeric columns (Sizes, Speeds, Percentages) in Disk and Network views by introducing specialized column types (`BSizeColumn`, `BFloatColumn`, `BSpeedColumn`).
+- **CircularBuffer Safety**: Fixed the `CircularBuffer` assignment operator to safely handle allocation failures without corrupting the existing buffer state.
 
 ### 1.3 Optimizations Implemented
+- **ProcessView Visibility Check**: Replaced the O(N) `HasRow()` linear scan with an O(1) `std::unordered_set` lookup for tracking visible rows. This significantly reduces CPU usage during updates when listing many processes.
 - **NetworkView String Handling**: Replaced `std::string` with `BString` keys in internal maps to reduce allocation overhead and avoid unnecessary conversions.
 - **ProcessView Search**: Implemented local filtering (`FilterRows`) to provide immediate UI feedback when typing in the search box, without waiting for the background thread.
-- **Memory Allocation**: Optimized `ProcessView::UpdateThread` by moving vector allocations (`procList`, `activeThreads`) outside the main loop and reusing their capacity (using `.clear()` and `.reserve()`) to reduce heap fragmentation.
+- **Memory Allocation**: Optimized `ProcessView::UpdateThread` by moving vector allocations (`procList`, `activeThreads`) outside the main loop and reusing their capacity. Removed the unused `path` buffer from `ProcessInfo` to reduce message size by ~1KB per process.
+- **OOM Protection**: Added `try-catch` blocks around memory allocations in `ActivityGraphView` to prevent crashes during low-memory conditions.
 
 ## 2. Code Quality & Best Practices
 
