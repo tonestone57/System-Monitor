@@ -633,7 +633,14 @@ int32 ProcessView::UpdateThread(void* data)
             int32 imgCookie = 0;
             if (get_next_image_info(teamInfo.team, &imgCookie, &imgInfo) == B_OK) {
                 BPath path(imgInfo.name);
-				strlcpy(currentProc.name, path.Leaf(), B_OS_NAME_LENGTH);
+                const char* leafName = NULL;
+                if (path.InitCheck() == B_OK)
+                    leafName = path.Leaf();
+
+                if (leafName != NULL)
+                    strlcpy(currentProc.name, leafName, B_OS_NAME_LENGTH);
+                else
+                    strlcpy(currentProc.name, imgInfo.name, B_OS_NAME_LENGTH);
             } else {
 				strlcpy(currentProc.name, teamInfo.args, B_OS_NAME_LENGTH);
                 if (strlen(currentProc.name) == 0)

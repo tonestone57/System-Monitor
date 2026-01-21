@@ -74,11 +74,20 @@ public:
 		if (fSize == size)
 			return B_OK;
 
+		if (size == 0) {
+			delete[] fBuffer;
+			fBuffer = NULL;
+			fSize = 0;
+			fFirst = 0;
+			fIn = 0;
+			return B_OK;
+		}
+
 		Type* newBuffer = new(std::nothrow) Type[size];
 		if (newBuffer == NULL)
 			return B_NO_MEMORY;
 
-		if (fBuffer != NULL) {
+		if (fBuffer != NULL && fSize > 0) {
 			// Preserve existing data
 			uint32 itemsToCopy = (fIn < size) ? fIn : size;
 			uint32 sourceIndex = fFirst;
@@ -123,7 +132,7 @@ public:
 
 	Type* ItemAt(int32 index) const
 	{
-		if (index >= (int32)fIn || index < 0 || fBuffer == NULL)
+		if (index >= (int32)fIn || index < 0 || fBuffer == NULL || fSize == 0)
 			return NULL;
 
 		return &fBuffer[(fFirst + index) % fSize];
@@ -131,6 +140,9 @@ public:
 
 	void AddItem(const Type& item)
 	{
+		if (fSize == 0)
+			return;
+
 		uint32 index;
 		if (fIn < fSize) {
 			index = fFirst + fIn++;
