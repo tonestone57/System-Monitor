@@ -1,6 +1,6 @@
 #include "DiskView.h"
 #include "Utils.h"
-#include "ColumnTypes.h"
+#include "MonitorColumnTypes.h"
 #include <LayoutBuilder.h>
 #include <StringView.h>
 #include <OS.h>

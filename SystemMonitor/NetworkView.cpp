@@ -1,6 +1,6 @@
 #include "NetworkView.h"
 #include "Utils.h"
-#include "ColumnTypes.h"
+#include "MonitorColumnTypes.h"
 #include <LayoutBuilder.h>
 #include <private/interface/ColumnListView.h>
 #include <private/interface/ColumnTypes.h>
