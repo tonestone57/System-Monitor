@@ -73,3 +73,7 @@ The following critical fixes and optimizations were applied to resolve remaining
 - **Logic Fixes**:
   - `NetworkView`: Introduced `hasStats` flag to prevent invalid speed calculations when network interfaces fail to report statistics (e.g., transient driver errors).
   - `DataHistory`: Updated `SetRefreshInterval` to only commit changes if the buffer resize operation succeeds.
+
+- **Initialization Safety**:
+  - `CircularBuffer`: Fixed uninitialized member variables (`fFirst`, `fIn`, `fSize`, `fBuffer`) in constructors, which could lead to undefined behavior.
+  - Added a comprehensive unit test (`SystemMonitor/tests/test_circular_buffer.cpp`) to verify circular buffer correctness (initialization, circularity, resizing, copying).
