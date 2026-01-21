@@ -25,6 +25,7 @@ struct NetworkInfo {
     char addressStr[128];
     uint64 bytesSent;
     uint64 bytesReceived;
+    bool hasStats;
 };
 
 const uint32 kMsgNetworkDataUpdate = 'netd';

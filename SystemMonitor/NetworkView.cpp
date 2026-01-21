@@ -161,6 +161,8 @@ void NetworkView::UpdateData(BMessage* message)
             BString name(info->name);
             activeInterfaces.insert(name);
 
+            if (!info->hasStats) continue;
+
             BString typeStr(info->typeStr);
             BString addressStr(info->addressStr);
             uint64 currentSent = info->bytesSent;
@@ -362,9 +364,11 @@ int32 NetworkView::UpdateThread(void* data)
             if (status == B_OK) {
                 info.bytesSent = stats.send.bytes;
                 info.bytesReceived = stats.receive.bytes;
+                info.hasStats = true;
             } else {
                 info.bytesSent = 0;
                 info.bytesReceived = 0;
+                info.hasStats = false;
             }
 
             updateMsg.AddData("net_info", B_RAW_TYPE, &info, sizeof(NetworkInfo));

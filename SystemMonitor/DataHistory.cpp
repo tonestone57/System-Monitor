@@ -131,8 +131,8 @@ DataHistory::SetRefreshInterval(bigtime_t interval)
 	size_t newSize = duration / interval;
 	if (newSize < 10) newSize = 10;
 
-	fBuffer.SetSize(newSize);
-	fRefreshInterval = interval;
+	if (fBuffer.SetSize(newSize) == B_OK)
+		fRefreshInterval = interval;
 }
 
 
