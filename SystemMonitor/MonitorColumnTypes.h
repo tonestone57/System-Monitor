@@ -1,5 +1,5 @@
-#ifndef COLUMNTYPES_H
-#define COLUMNTYPES_H
+#ifndef MONITORCOLUMNTYPES_H
+#define MONITORCOLUMNTYPES_H
 
 #include <ColumnTypes.h>
 #include <cstdio>
@@ -57,7 +57,7 @@ public:
     uint64 Value() const { return fValue; }
 private:
     void UpdateString() {
-        SetString(FormatBytes(fValue));
+        SetString(FormatBytes(fValue).String());
     }
     uint64 fValue;
 };
@@ -94,7 +94,7 @@ private:
     void UpdateString() {
         // FormatSpeed expects (bytes, micros). To treat fValue as bytes/sec,
         // we pass (fValue, 1000000).
-        SetString(FormatSpeed(fValue, 1000000));
+        SetString(FormatSpeed(fValue, 1000000).String());
     }
     uint64 fValue;
 };
@@ -114,4 +114,4 @@ public:
     }
 };
 
-#endif // COLUMNTYPES_H
+#endif // MONITORCOLUMNTYPES_H
