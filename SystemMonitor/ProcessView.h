@@ -85,7 +85,7 @@ private:
     BLocker fCacheLock;
     std::unordered_map<uid_t, BString> fUserNameCache;
     bigtime_t fLastSystemTime;
-    bigtime_t fRefreshInterval;
+    std::atomic<bigtime_t> fRefreshInterval;
     
     thread_id fUpdateThread;
     sem_id fQuitSem;
