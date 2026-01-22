@@ -417,6 +417,8 @@ void ProcessView::SetSelectedProcessPriority(int32 priority) {
 void ProcessView::SetRefreshInterval(bigtime_t interval)
 {
     fRefreshInterval = interval;
+    if (fQuitSem >= 0)
+        release_sem(fQuitSem);
 }
 
 void ProcessView::FilterRows()

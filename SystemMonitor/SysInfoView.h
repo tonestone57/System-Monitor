@@ -18,9 +18,11 @@ public:
     
     virtual void AttachedToWindow();
     virtual void MessageReceived(BMessage* message);
+    virtual void Show();
 
 private:
     void CreateLayout();
+    void _StartLoadThread();
     static int32 _LoadDataThread(void* data);
     
     // Static helpers to be used by the thread

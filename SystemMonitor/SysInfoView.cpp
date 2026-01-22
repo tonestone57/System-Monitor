@@ -116,6 +116,19 @@ void SysInfoView::CreateLayout()
 void SysInfoView::AttachedToWindow()
 {
     BView::AttachedToWindow();
+    _StartLoadThread();
+}
+
+void SysInfoView::Show()
+{
+    BView::Show();
+    _StartLoadThread();
+}
+
+void SysInfoView::_StartLoadThread()
+{
+    if (fLoadThread >= 0)
+        return;
 
     // Spawn thread to load data
     BMessenger* messenger = new BMessenger(this);
@@ -131,6 +144,7 @@ void SysInfoView::MessageReceived(BMessage* message)
 {
     switch (message->what) {
         case kMsgUpdateInfo: {
+            fLoadThread = -1;
             BString infoText;
             if (message->FindString("text", &infoText) == B_OK) {
                 // Preserve scroll position

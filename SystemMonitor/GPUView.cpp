@@ -87,6 +87,8 @@ void GPUView::CreateLayout()
 void GPUView::Pulse() {
     if (IsHidden()) return;
 
+    UpdateData();
+
     bigtime_t now = system_time();
     for (auto* graph : fGpuGraphs) {
         graph->AddValue(now, 0);
