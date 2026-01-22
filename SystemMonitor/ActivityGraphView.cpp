@@ -118,6 +118,14 @@ ActivityGraphView::AddValue(bigtime_t time, int64 value)
 
 
 void
+ActivityGraphView::SetRefreshInterval(bigtime_t interval)
+{
+	if (fHistory)
+		fHistory->SetRefreshInterval(interval);
+}
+
+
+void
 ActivityGraphView::Draw(BRect updateRect)
 {
 	_DrawHistory();

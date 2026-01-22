@@ -390,3 +390,12 @@ float NetworkView::GetDownloadSpeed()
 	BAutolock locker(fLocker);
     return fDownloadSpeed;
 }
+
+void NetworkView::SetRefreshInterval(bigtime_t interval)
+{
+    BAutolock locker(fLocker);
+    if (fUploadGraph)
+        fUploadGraph->SetRefreshInterval(interval);
+    if (fDownloadGraph)
+        fDownloadGraph->SetRefreshInterval(interval);
+}

@@ -17,6 +17,7 @@ public:
     virtual void Pulse();
 
     float GetCurrentUsage();
+    void SetRefreshInterval(bigtime_t interval);
 
 private:
     void UpdateData();

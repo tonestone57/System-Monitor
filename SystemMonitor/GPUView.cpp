@@ -104,6 +104,14 @@ void GPUView::AttachedToWindow()
     UpdateData();
 }
 
+void GPUView::SetRefreshInterval(bigtime_t interval)
+{
+    for (auto* graph : fGpuGraphs) {
+        if (graph)
+            graph->SetRefreshInterval(interval);
+    }
+}
+
 void GPUView::UpdateData()
 {
     BScreen screen(B_MAIN_SCREEN_ID);

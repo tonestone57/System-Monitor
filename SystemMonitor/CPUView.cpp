@@ -263,6 +263,15 @@ float CPUView::GetCurrentUsage()
     return fCurrentUsage;
 }
 
+void CPUView::SetRefreshInterval(bigtime_t interval)
+{
+    BAutolock locker(fLocker);
+    for (auto* graph : fCoreGraphs) {
+        if (graph)
+            graph->SetRefreshInterval(interval);
+    }
+}
+
 void CPUView::Draw(BRect updateRect) {
     BView::Draw(updateRect);
 }

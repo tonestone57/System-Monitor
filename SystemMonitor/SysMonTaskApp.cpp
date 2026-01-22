@@ -125,6 +125,12 @@ private:
         }
     }
 
+    void SetRefreshInterval(bigtime_t interval) {
+        if (fCpuGraph) fCpuGraph->SetRefreshInterval(interval);
+        if (fMemGraph) fMemGraph->SetRefreshInterval(interval);
+        if (fNetGraph) fNetGraph->SetRefreshInterval(interval);
+    }
+
 private:
     ActivityGraphView* fCpuGraph;
     ActivityGraphView* fMemGraph;
@@ -138,6 +144,7 @@ public:
     PerformanceView();
     virtual void AttachedToWindow();
     virtual void Pulse();
+    void SetRefreshInterval(bigtime_t interval);
 
     void SaveState(BMessage& state);
     void LoadState(const BMessage& state);
@@ -151,6 +158,8 @@ private:
     CPUView* fCPUView;
     MemView* fMemView;
     NetworkView* fNetworkView;
+    DiskView* fDiskView;
+    GPUView* fGPUView;
 };
 
 PerformanceView::PerformanceView()
@@ -169,8 +178,8 @@ PerformanceView::PerformanceView()
         fCPUView = new CPUView();
         fMemView = new MemView();
         fNetworkView = new NetworkView();
-        BView* diskTab = new DiskView();
-        BView* gpuTab = new GPUView();
+        fDiskView = new DiskView();
+        fGPUView = new GPUView();
 
         tabView->AddTab(fCPUView);
         tabView->TabAt(0)->SetLabel(B_TRANSLATE("CPU"));
@@ -178,9 +187,9 @@ PerformanceView::PerformanceView()
         tabView->TabAt(1)->SetLabel(B_TRANSLATE("Memory"));
         tabView->AddTab(fNetworkView);
         tabView->TabAt(2)->SetLabel(B_TRANSLATE("Network"));
-        tabView->AddTab(diskTab);
+        tabView->AddTab(fDiskView);
         tabView->TabAt(3)->SetLabel(B_TRANSLATE("Disk"));
-        tabView->AddTab(gpuTab);
+        tabView->AddTab(fGPUView);
         tabView->TabAt(4)->SetLabel(B_TRANSLATE("GPU"));
 
         splitView->AddChild(fSummaryView);
@@ -206,6 +215,15 @@ void PerformanceView::Pulse()
     fStats.memoryUsage = fMemView->GetCurrentUsage();
     fStats.uploadSpeed = fNetworkView->GetUploadSpeed();
     fStats.downloadSpeed = fNetworkView->GetDownloadSpeed();
+}
+
+void PerformanceView::SetRefreshInterval(bigtime_t interval)
+{
+    if (fSummaryView) fSummaryView->SetRefreshInterval(interval);
+    if (fCPUView) fCPUView->SetRefreshInterval(interval);
+    if (fMemView) fMemView->SetRefreshInterval(interval);
+    if (fNetworkView) fNetworkView->SetRefreshInterval(interval);
+    if (fGPUView) fGPUView->SetRefreshInterval(interval);
 }
 
 void PerformanceView::SaveState(BMessage& state)
@@ -365,14 +383,17 @@ void MainWindow::MessageReceived(BMessage* message) {
         case MSG_REFRESH_SPEED_HIGH:
             SetPulseRate(500000);
             if (fProcessView) fProcessView->SetRefreshInterval(500000);
+            if (fPerformanceView) fPerformanceView->SetRefreshInterval(500000);
             break;
         case MSG_REFRESH_SPEED_NORMAL:
             SetPulseRate(1000000);
             if (fProcessView) fProcessView->SetRefreshInterval(1000000);
+            if (fPerformanceView) fPerformanceView->SetRefreshInterval(1000000);
             break;
         case MSG_REFRESH_SPEED_LOW:
             SetPulseRate(2000000);
             if (fProcessView) fProcessView->SetRefreshInterval(2000000);
+            if (fPerformanceView) fPerformanceView->SetRefreshInterval(2000000);
             break;
             
         default:
@@ -438,6 +459,7 @@ void MainWindow::LoadSettings() {
                 if (settings.FindInt64("pulse_rate", &rate) == B_OK) {
                     SetPulseRate(rate);
                     if (fProcessView) fProcessView->SetRefreshInterval(rate);
+                    if (fPerformanceView) fPerformanceView->SetRefreshInterval(rate);
                 }
             }
         }

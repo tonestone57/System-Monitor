@@ -90,6 +90,10 @@ private:
     BString fStrReady;
     BString fStrSleeping;
 
+    // Buffers for filtering to avoid reallocation
+    BString fFilterName;
+    BString fFilterID;
+
     BLocker fCacheLock;
     std::unordered_map<uid_t, BString> fUserNameCache;
     bigtime_t fLastSystemTime;

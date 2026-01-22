@@ -462,10 +462,6 @@ void ProcessView::Update(BMessage* message)
     const char* searchText = fSearchControl->Text();
     bool filtering = (searchText != NULL && strlen(searchText) > 0);
 
-    // Buffers for filtering to avoid reallocation
-    BString filterName;
-    BString filterID;
-
     fActiveUIDs.clear();
     fActivePIDs.clear();
 
@@ -560,10 +556,10 @@ void ProcessView::Update(BMessage* message)
         // Handle filtering
         bool match = true;
         if (filtering) {
-            filterName.SetTo(info.name);
-            filterID.SetTo("");
-            filterID << info.id;
-            if (filterName.IFindFirst(searchText) == B_ERROR && filterID.IFindFirst(searchText) == B_ERROR) {
+            fFilterName.SetTo(info.name);
+            fFilterID.SetTo("");
+            fFilterID << info.id;
+            if (fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
                 match = false;
             }
         }
