@@ -15,6 +15,8 @@ public:
     virtual void AttachedToWindow();
     virtual void Pulse();
 
+    void SetRefreshInterval(bigtime_t interval);
+
 private:
     void CreateLayout();
     void UpdateData();

@@ -68,9 +68,10 @@ The following critical fixes and optimizations were applied to resolve remaining
 - **Optimizations**:
   - `ProcessView`: Moved `fActiveUIDs` and `fActivePIDs` sets to member variables to avoid repetitive memory allocation during updates.
   - `ProcessView`: Implemented caching for common translated state strings ("Running", "Ready", "Sleeping") to reduce CPU usage in the update loop.
-  - `ProcessView`: Optimized filtering logic to reuse `BString` buffers.
+  - `ProcessView`: Optimized filtering logic to reuse `BString` buffers (`fFilterName`, `fFilterID`) to avoid reallocation on every update cycle.
 
 - **Logic Fixes**:
+  - **Graph History Scaling**: Implemented proper propagation of `SetRefreshInterval` from `MainWindow` down to all `ActivityGraphView` instances. This ensures that the history duration (e.g., 60 seconds) remains constant regardless of the update speed (0.5s, 1s, or 2s).
   - `NetworkView`: Introduced `hasStats` flag to prevent invalid speed calculations when network interfaces fail to report statistics (e.g., transient driver errors).
   - `DataHistory`: Updated `SetRefreshInterval` to only commit changes if the buffer resize operation succeeds.
 

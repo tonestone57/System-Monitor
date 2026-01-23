@@ -143,3 +143,10 @@ float MemView::GetCurrentUsage()
 	BAutolock locker(fLocker);
     return fCurrentUsage;
 }
+
+void MemView::SetRefreshInterval(bigtime_t interval)
+{
+    BAutolock locker(fLocker);
+    if (fCacheGraphView)
+        fCacheGraphView->SetRefreshInterval(interval);
+}

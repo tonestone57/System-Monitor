@@ -18,6 +18,7 @@ public:
 	virtual void		Draw(BRect updateRect);
 
 			void		AddValue(bigtime_t time, int64 value);
+			void		SetRefreshInterval(bigtime_t interval);
 
 private:
 			void		_UpdateOffscreenBitmap();

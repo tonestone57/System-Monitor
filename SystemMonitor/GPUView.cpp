@@ -87,6 +87,8 @@ void GPUView::CreateLayout()
 void GPUView::Pulse() {
     if (IsHidden()) return;
 
+    UpdateData();
+
     bigtime_t now = system_time();
     for (auto* graph : fGpuGraphs) {
         graph->AddValue(now, 0);
@@ -102,6 +104,14 @@ void GPUView::AttachedToWindow()
 {
     BView::AttachedToWindow();
     UpdateData();
+}
+
+void GPUView::SetRefreshInterval(bigtime_t interval)
+{
+    for (auto* graph : fGpuGraphs) {
+        if (graph)
+            graph->SetRefreshInterval(interval);
+    }
 }
 
 void GPUView::UpdateData()

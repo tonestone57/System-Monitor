@@ -42,6 +42,7 @@ public:
 
     float GetUploadSpeed();
     float GetDownloadSpeed();
+    void SetRefreshInterval(bigtime_t interval);
 
 private:
     static int32 UpdateThread(void* data);

@@ -19,6 +19,7 @@ public:
     virtual void Draw(BRect updateRect);
 
     float GetCurrentUsage();
+    void SetRefreshInterval(bigtime_t interval);
 
 private:
     void CreateLayout();
