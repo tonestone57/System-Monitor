@@ -91,8 +91,8 @@ private:
     BString fStrSleeping;
 
     // Buffers for filtering to avoid reallocation
-    BString fFilterName;
-    BString fFilterID;
+    BString fFilterName; // Reused buffer for name filtering
+    BString fFilterID;   // Reused buffer for ID filtering
 
     BLocker fCacheLock;
     std::unordered_map<uid_t, BString> fUserNameCache;
