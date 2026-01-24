@@ -214,34 +214,55 @@ void SysInfoView::MessageReceived(BMessage* message)
                 fLogoTextView->SetFontAndColor(0, logo.Length(), NULL, 0, &darkGrey);
 
                 // Highlight Leaf parts (Yellow)
-                // This is hard to map exactly without regex or precise indices.
-                // Let's search for the "leafy" characters.
-                // The right side is the leaf.
-                // Just tinting the whole thing appropriately is tough programmatically.
-                // Let's assume the user accepts a monochrome or simple dual-color logo for now.
-                // Or try to color the "right side".
-                // Screenshot: MMMM is dark. Leaf on right is yellow.
-                // The split is clear.
-                // Let's try to color the parts starting with '.' or '/' or 'Y' as yellow.
+                // Manual highlighting of leaf parts based on line content
+                // Lines 5-8 contain the leaf
+                const char* lines[] = {
+                    "          MMMM\n",
+                    "          MMMM\n",
+                    "          MMMM\n",
+                    "          MMMM\n",
+                    "          MMMM       .ciO | /YMMMMM*\"\n",
+                    "          MMMM    .cOMMMMM | /MMMMM/`\n",
+                    "          ,iMM | /MMMMMMMMMMMMMMMM*\n",
+                    " `*      -cMMMMMMMMMMMMMMMMMMM/` .MMM\n",
+                    "   MMMMMMMMMM/` :MMM/  MMMM\n",
+                    "   MMMM         MMMM\n",
+                    "   MMMM         MMMM\n",
+                    "   \"\"\"\"         \"\"\"\"\n",
+                    NULL
+                };
+
+                int32 offset = 0;
+                for (int i = 0; lines[i]; i++) {
+                    BString line(lines[i]);
+                    // Coloring logic based on line index and content pattern
+                    if (i == 4) { // .ciO...
+                        int32 leafStart = line.FindFirst(".ciO");
+                        if (leafStart >= 0) fLogoTextView->SetFontAndColor(offset + leafStart, offset + line.Length() - 1, NULL, 0, &gold);
+                    } else if (i == 5) { // .cOMMM...
+                        int32 leafStart = line.FindFirst(".cOMMM");
+                        if (leafStart >= 0) fLogoTextView->SetFontAndColor(offset + leafStart, offset + line.Length() - 1, NULL, 0, &gold);
+                    } else if (i == 6) { // | /MMM... (after ,iMM)
+                        int32 leafStart = line.FindFirst("|");
+                        if (leafStart >= 0) fLogoTextView->SetFontAndColor(offset + leafStart, offset + line.Length() - 1, NULL, 0, &gold);
+                    } else if (i == 7) { // `* -cMM...
+                        // Whole line except last .MMM? Actually the whole left part is leaf-like here.
+                        fLogoTextView->SetFontAndColor(offset, offset + line.Length() - 1, NULL, 0, &gold);
+                    } else if (i == 8) { // ... :MMM/
+                         // The :MMM/ part
+                         int32 leafStart = line.FindFirst(":");
+                         if (leafStart >= 0) {
+                             int32 leafEnd = line.FindFirst("  ", leafStart);
+                             if (leafEnd < 0) leafEnd = line.Length() - 1;
+                             fLogoTextView->SetFontAndColor(offset + leafStart, offset + leafEnd, NULL, 0, &gold);
+                         }
+                    }
+                    offset += line.Length();
+                }
             }
 
             // Info Section
             BString infoText;
-
-            auto AddKeyVal = [&](const char* key, const char* valKey, rgb_color keyColor) {
-                BString val = message->FindString(valKey);
-                if (val.IsEmpty()) return;
-
-                // Append Key
-                int32 start = infoText.Length();
-                infoText << key << ": ";
-                int32 end = infoText.Length();
-                // We can't apply color here yet, we are building the string.
-                // We need to store color ranges.
-
-                // Append Value
-                infoText << val << "\n";
-            };
 
             // Build string first
             BString userHost = message->FindString("user_host");
@@ -548,17 +569,32 @@ ip_found:
     // /dev/power/acpi_battery/0/state
     int batFd = open("/dev/power/acpi_battery/0/state", O_RDONLY);
     if (batFd >= 0) {
-        // Need to parse text? usually it's "capacity: ...".
-        // Simplified: just check if we opened it, implies presence.
-        // Actually, we want percentage.
-        // Defensively just say "Present" or try to read.
-        // For now, let's hardcode "100%" if present or skip.
-        // Screenshot has it.
-        // We will just put "Available" if we can open it, to be safe.
-        // Or leave it out if too complex to parse right now.
-        // Let's add it if found.
-        reply.AddString("battery", "Unknown"); // Placeholder
+        char buffer[1024];
+        ssize_t bytesRead = read(batFd, buffer, sizeof(buffer) - 1);
         close(batFd);
+
+        if (bytesRead > 0) {
+            buffer[bytesRead] = '\0';
+            BString state(buffer);
+            BString capacityStr;
+            int32 capacityIndex = state.FindFirst("capacity: ");
+            if (capacityIndex >= 0) {
+                int32 end = state.FindFirst("\n", capacityIndex);
+                if (end < 0) end = state.Length();
+                capacityStr = state.Substring(capacityIndex + 10, end - (capacityIndex + 10));
+                capacityStr.Trim();
+                if (!capacityStr.IsEmpty()) {
+                    capacityStr << "%";
+                    reply.AddString("battery", capacityStr);
+                } else {
+                    reply.AddString("battery", "Unknown");
+                }
+            } else {
+                reply.AddString("battery", "Unknown");
+            }
+        } else {
+            reply.AddString("battery", "Unknown");
+        }
     }
 
     // 16. Locale
