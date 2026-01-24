@@ -33,6 +33,7 @@ private:
     static BString _GetCPUFeaturesString();
     static void GetCPUInfo(system_info* sysInfo);
     
+    BTextView* fLogoTextView;
     BTextView* fInfoTextView;
     thread_id fLoadThread;
 };
