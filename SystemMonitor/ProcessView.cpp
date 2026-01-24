@@ -27,6 +27,15 @@
 #define B_TRANSLATION_CONTEXT "ProcessView"
 
 
+const uint32 MSG_KILL_PROCESS = 'kill';
+const uint32 MSG_SUSPEND_PROCESS = 'susp';
+const uint32 MSG_RESUME_PROCESS = 'resm';
+const uint32 MSG_PRIORITY_LOW = 'pril';
+const uint32 MSG_PRIORITY_NORMAL = 'prin';
+const uint32 MSG_PRIORITY_HIGH = 'prih';
+const uint32 MSG_SHOW_CONTEXT_MENU = 'cntx';
+const uint32 MSG_CONFIRM_KILL = 'conf';
+
 namespace {
 
 class ProcessListView : public BColumnListView {
@@ -104,15 +113,6 @@ enum {
     kThreadCountColumn,
     kUserNameColumn
 };
-
-const uint32 MSG_KILL_PROCESS = 'kill';
-const uint32 MSG_SUSPEND_PROCESS = 'susp';
-const uint32 MSG_RESUME_PROCESS = 'resm';
-const uint32 MSG_PRIORITY_LOW = 'pril';
-const uint32 MSG_PRIORITY_NORMAL = 'prin';
-const uint32 MSG_PRIORITY_HIGH = 'prih';
-const uint32 MSG_SHOW_CONTEXT_MENU = 'cntx';
-const uint32 MSG_CONFIRM_KILL = 'conf';
 
 ProcessView::ProcessView()
     : BView("ProcessView", B_WILL_DRAW),
@@ -433,9 +433,10 @@ void ProcessView::FilterRows()
 
         if (filtering) {
             BStringField* nameField = static_cast<BStringField*>(row->GetField(kProcessNameColumn));
-            BString name(nameField->String());
-            BString idStr; idStr << id;
-            if (name.IFindFirst(searchText) == B_ERROR && idStr.IFindFirst(searchText) == B_ERROR) {
+            fFilterName.SetTo(nameField->String());
+            fFilterID.SetTo("");
+            fFilterID << id;
+            if (fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
                 match = false;
             }
         }
