@@ -6,6 +6,7 @@
 #include <String.h>
 #include <map>
 #include <string>
+#include <set>
 #include <atomic>
 #include "ActivityGraphView.h"
 

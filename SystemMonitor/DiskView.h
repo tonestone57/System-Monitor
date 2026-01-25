@@ -6,6 +6,7 @@
 #include <String.h>
 #include <Volume.h>
 #include <map>
+#include <set>
 #include <atomic>
 
 class BBox;
