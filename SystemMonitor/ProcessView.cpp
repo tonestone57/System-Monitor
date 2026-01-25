@@ -118,6 +118,8 @@ ProcessView::ProcessView()
     : BView("ProcessView", B_WILL_DRAW),
       fLastSystemTime(0),
       fRefreshInterval(1000000),
+      fFilterName(""),
+      fFilterID(""),
       fUpdateThread(B_ERROR),
       fTerminated(false),
       fIsHidden(false)

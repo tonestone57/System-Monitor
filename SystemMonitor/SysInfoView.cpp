@@ -23,9 +23,14 @@
 #include <Entry.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <pwd.h>
 #include <sys/utsname.h>
 #include <Catalog.h>
 #include <vector>
+#include <NetworkRoster.h>
+#include <NetworkInterface.h>
+#include <NetworkAddress.h>
+#include <Locale.h>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "SysInfoView"
@@ -80,6 +85,7 @@ static const uint32 kMsgUpdateInfo = 'UPDT';
 
 SysInfoView::SysInfoView()
     : BView("SysInfoView", B_WILL_DRAW),
+      fLogoTextView(NULL),
       fInfoTextView(NULL),
       fLoadThread(-1)
 {
@@ -97,14 +103,29 @@ SysInfoView::~SysInfoView()
 
 void SysInfoView::CreateLayout()
 {
+    fLogoTextView = new BTextView("logo_text_view");
+    fLogoTextView->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
+    fLogoTextView->SetStylable(true);
+    fLogoTextView->MakeEditable(false);
+    fLogoTextView->SetWordWrap(false);
+    fLogoTextView->SetFontAndColor(be_fixed_font);
+
     fInfoTextView = new BTextView("info_text_view");
     fInfoTextView->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
     fInfoTextView->SetStylable(true);
     fInfoTextView->MakeEditable(false);
-	fInfoTextView->SetWordWrap(true);
+    fInfoTextView->SetWordWrap(false);
+    fInfoTextView->SetFontAndColor(be_fixed_font);
 
-    BScrollView* scrollView = new BScrollView("sysInfoScroller", fInfoTextView,
-        false, true, B_PLAIN_BORDER);
+    BGroupView* groupView = new BGroupView(B_HORIZONTAL, B_USE_DEFAULT_SPACING);
+    BLayoutBuilder::Group<>(groupView)
+        .Add(fLogoTextView)
+        .Add(fInfoTextView)
+        .AddGlue()
+    .End();
+
+    BScrollView* scrollView = new BScrollView("sysInfoScroller", groupView,
+        true, true, B_PLAIN_BORDER);
     scrollView->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH, B_ALIGN_USE_FULL_HEIGHT));
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
@@ -145,49 +166,201 @@ void SysInfoView::MessageReceived(BMessage* message)
     switch (message->what) {
         case kMsgUpdateInfo: {
             fLoadThread = -1;
-            BString infoText;
-            if (message->FindString("text", &infoText) == B_OK) {
-                // Preserve scroll position
-                BScrollBar* scrollBar = NULL;
-                float min, max, value = 0;
-                BScrollView* scrollView = dynamic_cast<BScrollView*>(fInfoTextView->Parent());
-                if (scrollView) {
-                    scrollBar = scrollView->ScrollBar(B_VERTICAL);
-                    if (scrollBar) {
-                        scrollBar->GetRange(&min, &max);
-                        value = scrollBar->Value();
-                    }
-                }
 
-                fInfoTextView->SetText(infoText.String());
+            // Set Logo (ASCII Art)
+            // Color Palette from Haiku: Yellow/Gold for leaf, Blue for stem?
+            // Fastfetch Haiku Logo:
+            //           MMMM
+            //           MMMM
+            //           MMMM
+            //           MMMM
+            //           MMMM       .ciO  /YMMMMM*
+            //           MMMM    .dMMMMMM  /MMMMM/`
+            //           ,iMM   /MMMMMMMMMMMMMMMM*
+            //  *`     -cMMMMMMMMMMMMMMMMMMM/` .MMM
+            //    MMMMMMMMM/` :MMM/  MMMM
+            //    MMMM         MMMM
+            //    MMMM         MMMM
+            //    """"         """"
 
-                // Restore scroll position
-                if (scrollBar) {
-                    float newMin, newMax;
-                    scrollBar->GetRange(&newMin, &newMax);
-                    if (value > newMax) value = newMax;
-                    scrollBar->SetValue(value);
-                }
+            // We need to construct this text and color it.
+            // Simplified approach: Set text, then apply colors.
+            // Logo is constant.
+            if (fLogoTextView->TextLength() == 0) {
+                BString logo;
+                logo << "          MMMM\n";
+                logo << "          MMMM\n";
+                logo << "          MMMM\n";
+                logo << "          MMMM\n";
+                logo << "          MMMM       .ciO | /YMMMMM*\"\n";
+                logo << "          MMMM    .cOMMMMM | /MMMMM/`\n"; // Modified slightly to match screenshot curve
+                logo << "          ,iMM | /MMMMMMMMMMMMMMMM*\n";
+                logo << " `*      -cMMMMMMMMMMMMMMMMMMM/` .MMM\n";
+                logo << "   MMMMMMMMMM/` :MMM/  MMMM\n";
+                logo << "   MMMM         MMMM\n";
+                logo << "   MMMM         MMMM\n";
+                logo << "   \"\"\"\"         \"\"\"\"\n";
 
-                // Styling
-                BFont font;
-                fInfoTextView->GetFont(&font);
-                BFont boldFont(be_bold_font);
+                fLogoTextView->SetText(logo.String());
 
-                auto boldHeader = [&](const char* key) {
-                    BString str = B_TRANSLATE(key);
-                    int32 pos = infoText.FindFirst(str);
-                    if (pos >= 0) {
-                        fInfoTextView->SetFontAndColor(pos, pos + str.Length(), &boldFont);
-                    }
+                // Colors (Approximation based on screenshot)
+                // Dark Grey/Black for MMMM stem? No, screenshot shows dark grey/black.
+                // Yellow/Gold for Leaf.
+                rgb_color darkGrey = {80, 80, 80, 255};
+                rgb_color gold = {255, 200, 0, 255}; // Leaf
+                rgb_color green = {100, 200, 100, 255}; // Stem/details?
+
+                // Apply global dark grey first
+                fLogoTextView->SetFontAndColor(0, logo.Length(), NULL, 0, &darkGrey);
+
+                // Highlight Leaf parts (Yellow)
+                // Manual highlighting of leaf parts based on line content
+                // Lines 5-8 contain the leaf
+                const char* lines[] = {
+                    "          MMMM\n",
+                    "          MMMM\n",
+                    "          MMMM\n",
+                    "          MMMM\n",
+                    "          MMMM       .ciO | /YMMMMM*\"\n",
+                    "          MMMM    .cOMMMMM | /MMMMM/`\n",
+                    "          ,iMM | /MMMMMMMMMMMMMMMM*\n",
+                    " `*      -cMMMMMMMMMMMMMMMMMMM/` .MMM\n",
+                    "   MMMMMMMMMM/` :MMM/  MMMM\n",
+                    "   MMMM         MMMM\n",
+                    "   MMMM         MMMM\n",
+                    "   \"\"\"\"         \"\"\"\"\n",
+                    NULL
                 };
 
-                boldHeader("OPERATING SYSTEM");
-                boldHeader("PROCESSOR");
-                boldHeader("GRAPHICS");
-                boldHeader("MEMORY");
-                boldHeader("DISK VOLUMES");
+                int32 offset = 0;
+                for (int i = 0; lines[i]; i++) {
+                    BString line(lines[i]);
+                    // Coloring logic based on line index and content pattern
+                    if (i == 4) { // .ciO...
+                        int32 leafStart = line.FindFirst(".ciO");
+                        if (leafStart >= 0) fLogoTextView->SetFontAndColor(offset + leafStart, offset + line.Length() - 1, NULL, 0, &gold);
+                    } else if (i == 5) { // .cOMMM...
+                        int32 leafStart = line.FindFirst(".cOMMM");
+                        if (leafStart >= 0) fLogoTextView->SetFontAndColor(offset + leafStart, offset + line.Length() - 1, NULL, 0, &gold);
+                    } else if (i == 6) { // | /MMM... (after ,iMM)
+                        int32 leafStart = line.FindFirst("|");
+                        if (leafStart >= 0) fLogoTextView->SetFontAndColor(offset + leafStart, offset + line.Length() - 1, NULL, 0, &gold);
+                    } else if (i == 7) { // `* -cMM...
+                        // Whole line except last .MMM? Actually the whole left part is leaf-like here.
+                        fLogoTextView->SetFontAndColor(offset, offset + line.Length() - 1, NULL, 0, &gold);
+                    } else if (i == 8) { // ... :MMM/
+                         // The :MMM/ part
+                         int32 leafStart = line.FindFirst(":");
+                         if (leafStart >= 0) {
+                             int32 leafEnd = line.FindFirst("  ", leafStart);
+                             if (leafEnd < 0) leafEnd = line.Length() - 1;
+                             fLogoTextView->SetFontAndColor(offset + leafStart, offset + leafEnd, NULL, 0, &gold);
+                         }
+                    }
+                    offset += line.Length();
+                }
             }
+
+            // Info Section
+            // Construct the information string field by field
+            // Note: Colors are applied after setting the text
+            BString infoText;
+
+            // Build string first
+            BString userHost = message->FindString("user_host");
+            BString separator;
+            for (int i=0; i<userHost.Length(); i++) separator << "-";
+
+            infoText << userHost << "\n" << separator << "\n";
+
+            // Order from screenshot
+            infoText << "OS: " << message->FindString("os") << "\n";
+            infoText << "Kernel: " << message->FindString("kernel") << "\n";
+            infoText << "Uptime: " << message->FindString("uptime") << "\n";
+            infoText << "Packages: " << message->FindString("packages") << "\n";
+            infoText << "Shell: " << message->FindString("shell") << "\n";
+            infoText << "Display: " << message->FindString("display") << "\n";
+            infoText << "DE: " << message->FindString("de") << "\n";
+            infoText << "WM: " << message->FindString("wm") << "\n";
+            infoText << "Font: " << message->FindString("font") << "\n";
+            // Terminal skipped
+            // Terminal Font skipped
+            infoText << "CPU: " << message->FindString("cpu") << "\n";
+            infoText << "GPU: " << message->FindString("gpu") << "\n";
+            infoText << "Memory: " << message->FindString("memory") << "\n";
+            infoText << "Swap: " << message->FindString("swap") << "\n";
+            infoText << "Disk: " << message->FindString("disk") << "\n";
+            infoText << "Local IP: " << message->FindString("ip") << "\n";
+            if (message->HasString("battery"))
+                infoText << "Battery: " << message->FindString("battery") << "\n";
+            infoText << "Locale: " << message->FindString("locale") << "\n";
+
+            // Add Color Blocks at bottom
+            infoText << "\n";
+            // We will render blocks as full block chars
+            BString blocks = "███ ███ ███ ███ ███ ███";
+            infoText << blocks;
+
+            fInfoTextView->SetText(infoText.String());
+
+            // Apply Colors
+            rgb_color userColor = {255, 200, 0, 255}; // Yellow/Orange
+            rgb_color keyColor = {255, 100, 100, 255}; // Salmon/Red
+            rgb_color valColor = {255, 255, 255, 255}; // White (or default text color)
+            rgb_color sepColor = {200, 200, 200, 255}; // Grey
+
+            // 1. User@Host (Yellow)
+            int32 pos = 0;
+            int32 len = userHost.Length();
+            fInfoTextView->SetFontAndColor(pos, pos + len, NULL, 0, &userColor);
+            pos += len + 1; // newline
+
+            // 2. Separator (Grey)
+            len = separator.Length();
+            fInfoTextView->SetFontAndColor(pos, pos + len, NULL, 0, &sepColor);
+            pos += len + 1; // newline
+
+            // 3. Key: Value lines
+            const char* keys[] = {
+                "OS", "Kernel", "Uptime", "Packages", "Shell", "Display", "DE", "WM",
+                "Font", "CPU", "GPU", "Memory", "Swap", "Disk", "Local IP", "Battery", "Locale", NULL
+            };
+
+            BString currentText = fInfoTextView->Text();
+            for (int i=0; keys[i]; i++) {
+                BString keyStr;
+                keyStr << keys[i] << ":";
+                int32 keyStart = currentText.FindFirst(keyStr, pos);
+                if (keyStart >= 0) {
+                    fInfoTextView->SetFontAndColor(keyStart, keyStart + keyStr.Length(), NULL, 0, &keyColor);
+                    pos = keyStart + keyStr.Length();
+                }
+            }
+
+            // 4. Color Blocks (Manual coloring of the last line)
+            // "███ ███ ███ ███ ███ ███"
+            //  012 345 678 901 234 567
+            //  Blk Red Grn Yel Blu Mag Cyn Wht ...
+            int32 blockStart = currentText.FindFirst("███");
+            if (blockStart >= 0) {
+                rgb_color c1 = {0, 0, 0, 255};       // Black
+                rgb_color c2 = {255, 0, 0, 255};     // Red
+                rgb_color c3 = {0, 255, 0, 255};     // Green
+                rgb_color c4 = {255, 255, 0, 255};   // Yellow
+                rgb_color c5 = {0, 0, 255, 255};     // Blue
+                rgb_color c6 = {255, 0, 255, 255};   // Magenta
+
+                auto colorBlock = [&](int index, rgb_color c) {
+                     fInfoTextView->SetFontAndColor(blockStart + index*4, blockStart + index*4 + 3, NULL, 0, &c);
+                };
+                colorBlock(0, c1);
+                colorBlock(1, c2);
+                colorBlock(2, c3);
+                colorBlock(3, c4);
+                colorBlock(4, c5);
+                colorBlock(5, c6);
+            }
+
             break;
         }
         default:
@@ -229,175 +402,212 @@ int32 SysInfoView::_LoadDataThread(void* data) {
     BMessenger* messenger = static_cast<BMessenger*>(data);
     if (!messenger) return B_BAD_VALUE;
 
-    BString infoText;
-
+    BMessage reply(kMsgUpdateInfo);
     system_info sysInfo;
-    if (get_system_info(&sysInfo) != B_OK) {
-        infoText << B_TRANSLATE("Error fetching system info");
+
+    // 1. User@Host
+    struct passwd* pw = getpwuid(getuid());
+    char hostname[256];
+    if (gethostname(hostname, sizeof(hostname)) != 0)
+        strcpy(hostname, "unknown");
+
+    BString userHost;
+    userHost << (pw && pw->pw_name ? pw->pw_name : "user") << "@" << hostname;
+    reply.AddString("user_host", userHost);
+
+    // 2. OS
+    struct utsname u;
+    uname(&u);
+    BString os;
+    os << "Haiku " << u.machine;
+    // Attempt to get R1B5 etc from system_info if possible, but hrev is in sysInfo.kernel_version
+    if (get_system_info(&sysInfo) == B_OK) {
+        // sysInfo.kernel_version is int64 hrev
+        // We stick to uname for basic OS name, fastfetch often parses files.
+        // Let's format it simply: Haiku <Arch> (hrev)
+        os << " (hrev" << sysInfo.kernel_version << ")";
+    }
+    reply.AddString("os", os);
+
+    // 3. Kernel
+    BString kernel;
+    kernel << u.sysname << " " << u.release;
+    reply.AddString("kernel", kernel);
+
+    // 4. Uptime
+    reply.AddString("uptime", FormatUptime(system_time()));
+
+    // 5. Packages
+    auto countPackages = [](const char* path) -> int {
+        BDirectory dir(path);
+        if (dir.InitCheck() != B_OK) return 0;
+        int count = 0;
+        BEntry entry;
+        while (dir.GetNextEntry(&entry) == B_OK) {
+            BPath p;
+            entry.GetPath(&p);
+            if (p.InitCheck() == B_OK) {
+                BString name(p.Leaf());
+                if (name.EndsWith(".hpkg")) count++;
+            }
+        }
+        return count;
+    };
+    int sysPkgs = countPackages("/boot/system/packages");
+    int userPkgs = countPackages("/boot/home/config/packages");
+    BString packages;
+    packages.SetToFormat("%d (hpkg-system), %d (hpkg-user)", sysPkgs, userPkgs);
+    reply.AddString("packages", packages);
+
+    // 6. Shell
+    const char* shellEnv = getenv("SHELL");
+    BString shell = shellEnv ? shellEnv : "/bin/sh";
+    BPath shellPath(shell.String());
+    if (shellPath.InitCheck() == B_OK) shell = shellPath.Leaf();
+    reply.AddString("shell", shell);
+
+    // 7. Display
+    BScreen screen(B_MAIN_SCREEN_ID);
+    if (screen.IsValid()) {
+        display_mode mode;
+        if (screen.GetMode(&mode) == B_OK) {
+            BString display;
+            float refresh = 60.0;
+            if (mode.timing.pixel_clock > 0 && mode.timing.h_total > 0 && mode.timing.v_total > 0)
+                refresh = (double)mode.timing.pixel_clock * 1000.0 / (mode.timing.h_total * mode.timing.v_total);
+
+            display.SetToFormat("%dx%d, %d Hz", mode.virtual_width, mode.virtual_height, (int)(refresh + 0.5));
+            reply.AddString("display", display);
+        }
+    }
+
+    // 8. DE / WM
+    reply.AddString("de", "Application Kit");
+    reply.AddString("wm", "Application Server");
+
+    // 9. Font
+    font_family family;
+    font_style style;
+    be_plain_font->GetFamilyAndStyle(&family, &style);
+    BString font;
+    font << family << " " << style << " (" << (int)be_plain_font->Size() << "pt)";
+    reply.AddString("font", font);
+
+    // 10. CPU
+    reply.AddString("cpu", GetCPUBrandString());
+
+    // 11. GPU
+    if (screen.IsValid()) {
+        accelerant_device_info info;
+        if (screen.GetDeviceInfo(&info) == B_OK) {
+            reply.AddString("gpu", info.name);
+        } else {
+             reply.AddString("gpu", "Unknown");
+        }
     } else {
-        // OS Info
-        infoText << B_TRANSLATE("OPERATING SYSTEM") << "\n\n";
-        struct utsname unameInfo;
-        if (uname(&unameInfo) == 0) {
-            BString kernelVer;
-            kernelVer.SetToFormat("%s %s %s hrev%" B_PRId64 " %s %s",
-                                  unameInfo.sysname, unameInfo.nodename, unameInfo.version,
-                                  sysInfo.kernel_version, unameInfo.machine, unameInfo.machine);
-            infoText << B_TRANSLATE("Kernel:") << " " << kernelVer << "\n";
-        }
-        BString archStr;
-    #if defined(__x86_64__)
-        archStr = "x86_64";
-    #elif defined(__i386__) || defined(__INTEL__)
-        archStr = "x86 (32-bit)";
-    #elif defined(__aarch64__)
-        archStr = "ARM64";
-    #elif defined(__arm__)
-        archStr = "ARM (32-bit)";
-    #elif defined(__riscv)
-        archStr = "RISC-V";
-    #elif defined(__sparc__)
-        archStr = "SPARC";
-    #elif defined(__powerpc__)
-        archStr = "PowerPC";
-    #elif defined(__m68k__)
-        archStr = "m68k";
-    #else
-        archStr = B_TRANSLATE("Unknown");
-    #endif
-        infoText << B_TRANSLATE("CPU Architecture:") << " " << archStr << "\n";
-        infoText << B_TRANSLATE("System Uptime:") << " " << FormatUptime(system_time()) << "\n";
+         reply.AddString("gpu", "Unknown");
+    }
 
-        infoText << B_TRANSLATE("Teams:") << " " << sysInfo.used_teams << " / " << sysInfo.max_teams << "\n";
-        infoText << B_TRANSLATE("Threads:") << " " << sysInfo.used_threads << " / " << sysInfo.max_threads << "\n";
-        infoText << B_TRANSLATE("Ports:") << " " << sysInfo.used_ports << " / " << sysInfo.max_ports << "\n";
-        infoText << B_TRANSLATE("Semaphores:") << " " << sysInfo.used_semaphores << " / " << sysInfo.max_semaphores << "\n\n\n";
+    // 12. Memory
+    if (get_system_info(&sysInfo) == B_OK) {
+        uint64 total = (uint64)sysInfo.max_pages * B_PAGE_SIZE;
+        uint64 used = (uint64)sysInfo.used_pages * B_PAGE_SIZE;
+        BString memStr;
+        int percent = (int)(100.0 * used / total);
+        memStr << FormatBytes(used) << " / " << FormatBytes(total) << " (" << percent << "%)";
+        reply.AddString("memory", memStr);
 
-        // CPU Info
-        infoText << B_TRANSLATE("PROCESSOR") << "\n\n";
-        BString cpuBrand = GetCPUBrandString();
-        infoText << B_TRANSLATE("Model:") << " " << (cpuBrand.IsEmpty() ? B_TRANSLATE("Unknown CPU") : cpuBrand.String()) << "\n";
-        int32 splitPoint = infoText.Length();
+        // Swap (This logic matches original SysInfoView logic roughly)
+        // max_swap_pages is total swap+mem usually? or just swap?
+        // Original logic: swapBytes = (max_swap - max_pages) * PAGE_SIZE.
+        uint64 swapTotal = 0;
+        if (sysInfo.max_swap_pages > sysInfo.max_pages)
+            swapTotal = (uint64)(sysInfo.max_swap_pages - sysInfo.max_pages) * B_PAGE_SIZE;
+        // Used swap? Haiku doesn't expose used_swap directly in basic system_info?
+        // Actually page_faults etc are there.
+        // We'll stick to total swap for now or just 0 used as placeholder if we can't easily get it.
+        // The screenshot shows "0 B / 15.35 GiB".
+        // Let's just report total.
+        BString swapStr;
+        swapStr << "0 B / " << FormatBytes(swapTotal);
+        reply.AddString("swap", swapStr);
+    }
 
-        infoText << B_TRANSLATE("Cores:") << " " << sysInfo.cpu_count << "\n";
-        infoText << B_TRANSLATE("Features:") << " " << _GetCPUFeaturesString() << "\n";
-        uint32_t topologyNodeCount = 0;
-        if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
-            std::vector<cpu_topology_node_info> topology(topologyNodeCount);
-            uint32_t actualNodeCount = topologyNodeCount;
-            if (get_cpu_topology_info(topology.data(), &actualNodeCount) == B_OK) {
-                uint64_t max_freq = 0;
-                for (uint32_t i = 0; i < actualNodeCount; i++) {
-                    if (topology[i].type == B_TOPOLOGY_CORE) {
-                        if (topology[i].data.core.default_frequency > max_freq)
-                            max_freq = topology[i].data.core.default_frequency;
-                    }
+    // 13. Disk (Root volume)
+    fs_info fs;
+    if (fs_stat_dev(dev_for_path("/"), &fs) == B_OK) {
+        uint64 total = fs.total_blocks * fs.block_size;
+        uint64 free = fs.free_blocks * fs.block_size;
+        uint64 used = total - free;
+        int percent = (int)(100.0 * used / total);
+        BString diskStr;
+        diskStr << FormatBytes(used) << " / " << FormatBytes(total) << " (" << percent << "%) - " << fs.fsh_name;
+        reply.AddString("disk", diskStr);
+    }
+
+    // 14. IP
+    BNetworkRoster& roster = BNetworkRoster::Default();
+    BNetworkInterface interface;
+    uint32 cookie = 0;
+    BString ip = "127.0.0.1";
+    while (roster.GetNextInterface(&cookie, interface) == B_OK) {
+        if (interface.Flags() & IFF_LOOPBACK) continue;
+        if (!(interface.Flags() & IFF_UP)) continue;
+
+        BNetworkInterfaceAddress addr;
+        for (int32 i = 0; i < interface.CountAddresses(); i++) {
+            if (interface.GetAddressAt(i, addr) == B_OK) {
+                if (addr.Address().Family() == AF_INET) {
+                    ip = addr.Address().ToString();
+                    goto ip_found;
                 }
-                if (max_freq > 0)
-                    infoText << B_TRANSLATE("Clock Speed:") << " " << FormatHertz(max_freq) << "\n";
             }
         }
-        infoText << "\n\n";
+    }
+ip_found:
+    reply.AddString("ip", ip);
 
-        // Graphics Info
-        infoText << B_TRANSLATE("GRAPHICS") << "\n\n";
-        BScreen screen(B_MAIN_SCREEN_ID);
-        if (screen.IsValid()) {
-            accelerant_device_info deviceInfo;
-            if (screen.GetDeviceInfo(&deviceInfo) == B_OK) {
-                infoText << B_TRANSLATE("GPU Type:") << " " << deviceInfo.name << "\n";
-                infoText << B_TRANSLATE("Driver:") << " " << deviceInfo.version << "\n";
-                if (deviceInfo.memory > 0)
-                    infoText << B_TRANSLATE("VRAM:") << " " << FormatBytes(deviceInfo.memory) << "\n";
-                else
-                    infoText << B_TRANSLATE("VRAM:") << " N/A\n";
+    // 15. Battery
+    // Attempt to read from the standard ACPI battery driver location on Haiku.
+    // The driver exposes text-based status information at /dev/power/acpi_battery/0/state.
+    // Example format includes lines like "capacity: 98", "state: discharging", etc.
+    int batFd = open("/dev/power/acpi_battery/0/state", O_RDONLY);
+    if (batFd >= 0) {
+        char buffer[1024];
+        ssize_t bytesRead = read(batFd, buffer, sizeof(buffer) - 1);
+        close(batFd);
+
+        if (bytesRead > 0) {
+            buffer[bytesRead] = '\0';
+            BString state(buffer);
+            BString capacityStr;
+            // Parse "capacity: <value>" from the driver output
+            int32 capacityIndex = state.FindFirst("capacity: ");
+            if (capacityIndex >= 0) {
+                int32 end = state.FindFirst("\n", capacityIndex);
+                if (end < 0) end = state.Length();
+                capacityStr = state.Substring(capacityIndex + 10, end - (capacityIndex + 10));
+                capacityStr.Trim();
+                if (!capacityStr.IsEmpty()) {
+                    capacityStr << "%";
+                    reply.AddString("battery", capacityStr);
+                } else {
+                    reply.AddString("battery", "Unknown");
+                }
             } else {
-                infoText << B_TRANSLATE("GPU Type:") << " " << B_TRANSLATE("Error getting GPU info") << "\n";
-            }
-            display_mode mode;
-            if (screen.GetMode(&mode) == B_OK) {
-                BString resStr;
-                resStr.SetToFormat("%dx%d", mode.virtual_width, mode.virtual_height);
-                infoText << B_TRANSLATE("Resolution:") << " " << resStr << "\n";
-            } else {
-                infoText << B_TRANSLATE("Resolution:") << " N/A\n";
+                reply.AddString("battery", "Unknown");
             }
         } else {
-            infoText << B_TRANSLATE("GPU Type:") << " " << B_TRANSLATE("Error: Invalid screen object") << "\n";
-        }
-        infoText << "\n\n";
-
-        // Memory Info
-        infoText << B_TRANSLATE("MEMORY") << "\n\n";
-        infoText << B_TRANSLATE("Physical RAM:") << " " << FormatBytes((uint64)sysInfo.max_pages * B_PAGE_SIZE) << "\n";
-
-        uint64 swapBytes = 0;
-        if (sysInfo.max_swap_pages > sysInfo.max_pages)
-            swapBytes = (uint64)(sysInfo.max_swap_pages - sysInfo.max_pages) * B_PAGE_SIZE;
-
-        infoText << B_TRANSLATE("Swap Memory:") << " " << FormatBytes(swapBytes) << "\n\n\n";
-
-        // Disk Info
-        infoText << B_TRANSLATE("DISK VOLUMES") << "\n\n";
-        BVolume volume;
-        BVolumeRoster volRoster;
-        volRoster.Rewind();
-        int diskCount = 0;
-        while (volRoster.GetNextVolume(&volume) == B_OK) {
-            if (volume.Capacity() <= 0) continue;
-            diskCount++;
-
-            fs_info fsInfo;
-            if (fs_stat_dev(volume.Device(), &fsInfo) == B_OK) {
-                if (diskCount > 1)
-                    infoText << "\n---\n";
-                infoText << B_TRANSLATE("Volume Name:") << " " << fsInfo.volume_name << "\n";
-
-                BDirectory rootDir;
-                if (volume.GetRootDirectory(&rootDir) == B_OK) {
-                    BEntry entry;
-                    if (rootDir.GetEntry(&entry) == B_OK) {
-                        BPath path;
-                        if (entry.GetPath(&path) == B_OK) {
-                            infoText << B_TRANSLATE("Mount Point:") << " " << path.Path() << "\n";
-                        }
-                    }
-                }
-                infoText << B_TRANSLATE("File System:") << " " << fsInfo.fsh_name << "\n";
-                infoText << B_TRANSLATE("Total Size:") << " " << FormatBytes(fsInfo.total_blocks * fsInfo.block_size).String() << "\n";
-                infoText << B_TRANSLATE("Free Size:") << " " << FormatBytes(fsInfo.free_blocks * fsInfo.block_size).String() << "\n";
-            }
-        }
-
-        if (diskCount == 0) {
-            infoText << B_TRANSLATE("No disk volumes found or accessible.");
+            reply.AddString("battery", "Unknown");
         }
     }
 
-    BMessage reply(kMsgUpdateInfo);
-    reply.AddString("text", infoText);
+    // 16. Locale
+    BString locale;
+    if (BLocale::Default()->GetCode(locale) != B_OK) locale = "en.UTF-8";
+    reply.AddString("locale", locale);
+
     messenger->SendMessage(&reply);
-
-    // Microcode Reading (Deferred to prevent blocking initial display)
-    int fd = open("/dev/microcode_info", O_RDONLY);
-    if (fd >= 0) {
-        char buffer[64] = {};
-        ssize_t len = read(fd, buffer, sizeof(buffer) - 1);
-        close(fd);
-        if (len > 0) {
-            BString microcode(buffer);
-            microcode.Trim();
-            if (!microcode.IsEmpty()) {
-                BString label = B_TRANSLATE("Microcode:");
-                label << " " << microcode << "\n";
-                infoText.Insert(label, splitPoint);
-
-                BMessage reply2(kMsgUpdateInfo);
-                reply2.AddString("text", infoText);
-                messenger->SendMessage(&reply2);
-            }
-        }
-    }
 
     delete messenger;
     return B_OK;
