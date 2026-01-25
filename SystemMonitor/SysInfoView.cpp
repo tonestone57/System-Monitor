@@ -412,7 +412,7 @@ int32 SysInfoView::_LoadDataThread(void* data) {
         strcpy(hostname, "unknown");
 
     BString userHost;
-    userHost << (pw ? pw->pw_name : "user") << "@" << hostname;
+    userHost << (pw && pw->pw_name ? pw->pw_name : "user") << "@" << hostname;
     reply.AddString("user_host", userHost);
 
     // 2. OS
