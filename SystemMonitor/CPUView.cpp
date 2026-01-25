@@ -17,13 +17,13 @@
 
 CPUView::CPUView()
     : BView("CPUView", B_WILL_DRAW | B_PULSE_NEEDED),
-      fCpuCount(0),
-      fPreviousTimeSnapshot(0),
-      fCurrentUsage(0.0f),
       fSpeedValue(NULL),
       fProcessesValue(NULL),
       fThreadsValue(NULL),
-      fUptimeValue(NULL)
+      fUptimeValue(NULL),
+      fCpuCount(0),
+      fPreviousTimeSnapshot(0),
+      fCurrentUsage(0.0f)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     CreateLayout();

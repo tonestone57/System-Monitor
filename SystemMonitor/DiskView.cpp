@@ -73,8 +73,8 @@ public:
         float y = itemRect.bottom - fh.descent;
 
         auto drawTruncated = [&](const BString& str, float width) {
-             BString out;
-             font.TruncateString(&str, B_TRUNCATE_MIDDLE, width - 10, &out);
+             BString out = str;
+             font.TruncateString(&out, B_TRUNCATE_MIDDLE, width - 10);
              owner->DrawString(out.String(), BPoint(x, y));
              x += width;
         };
@@ -89,8 +89,8 @@ public:
         drawTruncated(fMount, kDiskMountWidth);
 
         // FS
-        BString fsTrunc;
-        font.TruncateString(&fFS, B_TRUNCATE_END, kDiskFSWidth - 10, &fsTrunc);
+        BString fsTrunc = fFS;
+        font.TruncateString(&fsTrunc, B_TRUNCATE_END, kDiskFSWidth - 10);
         owner->DrawString(fsTrunc.String(), BPoint(x, y));
         x += kDiskFSWidth;
 
@@ -112,6 +112,7 @@ private:
     uint64 fFree;
     double fPercent;
 
+public:
     static int CompareUsage(const void* first, const void* second) {
         const DiskListItem* item1 = *(const DiskListItem**)first;
         const DiskListItem* item2 = *(const DiskListItem**)second;
