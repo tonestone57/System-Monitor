@@ -53,6 +53,7 @@ public:
 
     void SaveState(BMessage& state);
     void LoadState(const BMessage& state);
+    void SetRefreshInterval(bigtime_t interval);
 
 private:
     static int32 UpdateThread(void* data);
@@ -65,7 +66,6 @@ private:
     void SetSelectedProcessPriority(int32 priority);
     void ShowContextMenu(BPoint screenPoint);
     BString GetUserName(uid_t uid, std::vector<char>& buffer);
-    void SetRefreshInterval(bigtime_t interval);
 
     BColumnListView* fProcessListView;
     BPopUpMenu* fContextMenu;

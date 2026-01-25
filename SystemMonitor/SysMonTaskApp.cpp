@@ -1,6 +1,7 @@
 #include <Application.h>
 #include <Window.h>
 #include <View.h>
+#include <Box.h>
 #include <Alert.h>
 #include <LayoutBuilder.h>
 #include <GroupView.h>
@@ -102,6 +103,12 @@ public:
             .AddGlue();
     }
 
+    void SetRefreshInterval(bigtime_t interval) {
+        if (fCpuGraph) fCpuGraph->SetRefreshInterval(interval);
+        if (fMemGraph) fMemGraph->SetRefreshInterval(interval);
+        if (fNetGraph) fNetGraph->SetRefreshInterval(interval);
+    }
+
 private:
     BView* _CreateCard(const char* label, BView* content) {
         BBox* card = new BBox(B_FANCY_BORDER, NULL);
@@ -123,12 +130,6 @@ private:
             fMemGraph->AddValue(system_time(), fStats->memoryUsage);
             fNetGraph->AddValue(system_time(), fStats->uploadSpeed + fStats->downloadSpeed);
         }
-    }
-
-    void SetRefreshInterval(bigtime_t interval) {
-        if (fCpuGraph) fCpuGraph->SetRefreshInterval(interval);
-        if (fMemGraph) fMemGraph->SetRefreshInterval(interval);
-        if (fNetGraph) fNetGraph->SetRefreshInterval(interval);
     }
 
 private:
