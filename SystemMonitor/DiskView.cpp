@@ -11,7 +11,7 @@
 #include <VolumeRoster.h>
 #include <fs_info.h>
 #include <private/interface/ColumnListView.h>
-#include <private/interface/ColumnTypes.h>
+#include "ColumnTypes.h"
 #include <Box.h>
 #include <Font.h>
 #include <set>
@@ -58,9 +58,9 @@ DiskView::DiskView()
                                         B_WILL_DRAW | B_NAVIGABLE,
                                         B_PLAIN_BORDER, true);
 
-    fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("Device"), 120, 50, 300, B_TRUNCATE_MIDDLE), kDeviceColumn);
-    fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("Mount Point"), 120, 50, 300, B_TRUNCATE_MIDDLE), kMountPointColumn);
-    fDiskListView->AddColumn(new BStringColumn(B_TRANSLATE("FS Type"), 80, 40, 150, B_TRUNCATE_END), kFSTypeColumn);
+    fDiskListView->AddColumn(new SysMonStringColumn(B_TRANSLATE("Device"), 120, 50, 300, B_TRUNCATE_MIDDLE), kDeviceColumn);
+    fDiskListView->AddColumn(new SysMonStringColumn(B_TRANSLATE("Mount Point"), 120, 50, 300, B_TRUNCATE_MIDDLE), kMountPointColumn);
+    fDiskListView->AddColumn(new SysMonStringColumn(B_TRANSLATE("FS Type"), 80, 40, 150, B_TRUNCATE_END), kFSTypeColumn);
     fDiskListView->AddColumn(new BSizeColumn(B_TRANSLATE("Total Size"), 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kTotalSizeColumn);
     fDiskListView->AddColumn(new BSizeColumn(B_TRANSLATE("Used Size"), 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kUsedSizeColumn);
     fDiskListView->AddColumn(new BSizeColumn(B_TRANSLATE("Free Size"), 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kFreeSizeColumn);
@@ -301,9 +301,9 @@ void DiskView::UpdateData(BMessage* message)
 		if (fDeviceRowMap.find(deviceID) == fDeviceRowMap.end()) {
 			// New device, create a new row
 			row = new BRow();
-			row->SetField(new BStringField(deviceName), kDeviceColumn);
-			row->SetField(new BStringField(mountPoint), kMountPointColumn);
-			row->SetField(new BStringField(fsType), kFSTypeColumn);
+			row->SetField(new SysMonStringField(deviceName), kDeviceColumn);
+			row->SetField(new SysMonStringField(mountPoint), kMountPointColumn);
+			row->SetField(new SysMonStringField(fsType), kFSTypeColumn);
 			row->SetField(new SizeField(totalSize), kTotalSizeColumn);
 			row->SetField(new SizeField(usedSize), kUsedSizeColumn);
 			row->SetField(new SizeField(freeSize), kFreeSizeColumn);
@@ -316,14 +316,14 @@ void DiskView::UpdateData(BMessage* message)
             bool changed = false;
             // Only update fields if changed (optimization)
             auto updateField = [&](int index, const char* newVal) {
-                BStringField* f = static_cast<BStringField*>(row->GetField(index));
+                SysMonStringField* f = static_cast<SysMonStringField*>(row->GetField(index));
                 if (f) {
                     if (strcmp(f->String(), newVal) != 0) {
                         f->SetString(newVal);
                         changed = true;
                     }
                 } else {
-                    row->SetField(new BStringField(newVal), index);
+                    row->SetField(new SysMonStringField(newVal), index);
                     changed = true;
                 }
             };

@@ -3,7 +3,7 @@
 #include "MonitorColumnTypes.h"
 #include <LayoutBuilder.h>
 #include <private/interface/ColumnListView.h>
-#include <private/interface/ColumnTypes.h>
+#include "ColumnTypes.h"
 #include <Button.h>
 #include <kernel/image.h>
 #include <pwd.h>
@@ -136,10 +136,10 @@ ProcessView::ProcessView()
                                            B_WILL_DRAW | B_NAVIGABLE,
                                            B_PLAIN_BORDER, true);
 
-    fPIDColumn = new BIntegerColumn(B_TRANSLATE("PID"), 60, 30, 100);
+    fPIDColumn = new SysMonIntegerColumn(B_TRANSLATE("PID"), 60, 30, 100);
     fProcessListView->AddColumn(fPIDColumn, kPIDColumn);
 
-    fNameColumn = new BStringColumn(B_TRANSLATE("Name"), 180, 50, 500, B_TRUNCATE_END);
+    fNameColumn = new SysMonStringColumn(B_TRANSLATE("Name"), 180, 50, 500, B_TRUNCATE_END);
     fProcessListView->AddColumn(fNameColumn, kProcessNameColumn);
 
     fCPUColumn = new BFloatColumn(B_TRANSLATE("Total CPU %"), 90, 50, 120, B_TRUNCATE_END, B_ALIGN_RIGHT);
@@ -148,13 +148,13 @@ ProcessView::ProcessView()
     fMemColumn = new BSizeColumn(B_TRANSLATE("Memory"), 100, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT);
     fProcessListView->AddColumn(fMemColumn, kMemoryUsageColumn);
 
-    fThreadsColumn = new BIntegerColumn(B_TRANSLATE("Threads"), 80, 40, 120, B_ALIGN_RIGHT);
+    fThreadsColumn = new SysMonIntegerColumn(B_TRANSLATE("Threads"), 80, 40, 120, B_ALIGN_RIGHT);
     fProcessListView->AddColumn(fThreadsColumn, kThreadCountColumn);
 
-    fStateColumn = new BStringColumn(B_TRANSLATE("State"), 80, 40, 150, B_TRUNCATE_END);
+    fStateColumn = new SysMonStringColumn(B_TRANSLATE("State"), 80, 40, 150, B_TRUNCATE_END);
     fProcessListView->AddColumn(fStateColumn, kStateColumn);
 
-    fUserColumn = new BStringColumn(B_TRANSLATE("User"), 80, 40, 150, B_TRUNCATE_END);
+    fUserColumn = new SysMonStringColumn(B_TRANSLATE("User"), 80, 40, 150, B_TRUNCATE_END);
     fProcessListView->AddColumn(fUserColumn, kUserNameColumn);
 
     fProcessListView->SetSortColumn(fCPUColumn, false, false);
@@ -367,7 +367,7 @@ void ProcessView::KillSelectedProcess() {
     BRow* selectedRow = fProcessListView->CurrentSelection();
     if (!selectedRow) return;
 
-    BIntegerField* pidField = static_cast<BIntegerField*>(selectedRow->GetField(kPIDColumn));
+    SysMonIntegerField* pidField = static_cast<SysMonIntegerField*>(selectedRow->GetField(kPIDColumn));
     if (!pidField) return;
 
     team_id team = pidField->Value();
@@ -375,7 +375,7 @@ void ProcessView::KillSelectedProcess() {
     BString alertMsg;
     alertMsg.SetToFormat(B_TRANSLATE("Are you sure you want to kill process %d (%s)?"),
                          (int)team,
-                         ((BStringField*)selectedRow->GetField(kProcessNameColumn))->String());
+                         ((SysMonStringField*)selectedRow->GetField(kProcessNameColumn))->String());
     BAlert* confirmAlert = new BAlert(B_TRANSLATE("Confirm Kill"), alertMsg.String(), B_TRANSLATE("Kill"), B_TRANSLATE("Cancel"),
                                       NULL, B_WIDTH_AS_USUAL, B_WARNING_ALERT);
 
@@ -387,7 +387,7 @@ void ProcessView::KillSelectedProcess() {
 void ProcessView::SuspendSelectedProcess() {
     BRow* selectedRow = fProcessListView->CurrentSelection();
     if (!selectedRow) return;
-    BIntegerField* pidField = static_cast<BIntegerField*>(selectedRow->GetField(kPIDColumn));
+    SysMonIntegerField* pidField = static_cast<SysMonIntegerField*>(selectedRow->GetField(kPIDColumn));
     if (!pidField) return;
     team_id team = pidField->Value();
     send_signal(team, SIGSTOP);
@@ -396,7 +396,7 @@ void ProcessView::SuspendSelectedProcess() {
 void ProcessView::ResumeSelectedProcess() {
     BRow* selectedRow = fProcessListView->CurrentSelection();
     if (!selectedRow) return;
-    BIntegerField* pidField = static_cast<BIntegerField*>(selectedRow->GetField(kPIDColumn));
+    SysMonIntegerField* pidField = static_cast<SysMonIntegerField*>(selectedRow->GetField(kPIDColumn));
     if (!pidField) return;
     team_id team = pidField->Value();
     send_signal(team, SIGCONT);
@@ -405,7 +405,7 @@ void ProcessView::ResumeSelectedProcess() {
 void ProcessView::SetSelectedProcessPriority(int32 priority) {
     BRow* selectedRow = fProcessListView->CurrentSelection();
     if (!selectedRow) return;
-    BIntegerField* pidField = static_cast<BIntegerField*>(selectedRow->GetField(kPIDColumn));
+    SysMonIntegerField* pidField = static_cast<SysMonIntegerField*>(selectedRow->GetField(kPIDColumn));
     if (!pidField) return;
     team_id team = pidField->Value();
 
@@ -434,7 +434,7 @@ void ProcessView::FilterRows()
         bool match = true;
 
         if (filtering) {
-            BStringField* nameField = static_cast<BStringField*>(row->GetField(kProcessNameColumn));
+            SysMonStringField* nameField = static_cast<SysMonStringField*>(row->GetField(kProcessNameColumn));
             BString name(nameField->String());
             BString idStr; idStr << id;
             if (name.IFindFirst(searchText) == B_ERROR && idStr.IFindFirst(searchText) == B_ERROR) {
@@ -485,13 +485,13 @@ void ProcessView::Update(BMessage* message)
         BRow* row;
         if (fTeamRowMap.find(info.id) == fTeamRowMap.end()) {
             row = new BRow();
-            row->SetField(new BIntegerField(info.id), kPIDColumn);
-            row->SetField(new BStringField(info.name), kProcessNameColumn);
-            row->SetField(new BStringField(stateStr), kStateColumn);
+            row->SetField(new SysMonIntegerField(info.id), kPIDColumn);
+            row->SetField(new SysMonStringField(info.name), kProcessNameColumn);
+            row->SetField(new SysMonStringField(stateStr), kStateColumn);
             row->SetField(new FloatField(info.cpuUsage), kCPUUsageColumn);
             row->SetField(new SizeField(info.memoryUsageBytes), kMemoryUsageColumn);
-            row->SetField(new BIntegerField(info.threadCount), kThreadCountColumn);
-            row->SetField(new BStringField(info.userName), kUserNameColumn);
+            row->SetField(new SysMonIntegerField(info.threadCount), kThreadCountColumn);
+            row->SetField(new SysMonStringField(info.userName), kUserNameColumn);
             // Don't AddRow here yet, wait for filter check
             fTeamRowMap[info.id] = row;
         } else {
@@ -500,14 +500,14 @@ void ProcessView::Update(BMessage* message)
 
             // Helper lambda for updating fields
             auto updateStrField = [&](int index, const char* newVal) {
-                BStringField* f = static_cast<BStringField*>(row->GetField(index));
+                SysMonStringField* f = static_cast<SysMonStringField*>(row->GetField(index));
                 if (f) {
                     if (strcmp(f->String(), newVal) != 0) {
                         f->SetString(newVal);
                         changed = true;
                     }
                 } else {
-                    row->SetField(new BStringField(newVal), index);
+                    row->SetField(new SysMonStringField(newVal), index);
                     changed = true;
                 }
             };
@@ -540,14 +540,14 @@ void ProcessView::Update(BMessage* message)
             }
 
             // Threads
-            BIntegerField* threadsField = static_cast<BIntegerField*>(row->GetField(kThreadCountColumn));
+            SysMonIntegerField* threadsField = static_cast<SysMonIntegerField*>(row->GetField(kThreadCountColumn));
             if (threadsField) {
                 if (threadsField->Value() != (int32)info.threadCount) {
                     threadsField->SetValue(info.threadCount);
                     changed = true;
                 }
             } else {
-                row->SetField(new BIntegerField(info.threadCount), kThreadCountColumn);
+                row->SetField(new SysMonIntegerField(info.threadCount), kThreadCountColumn);
                 changed = true;
             }
 

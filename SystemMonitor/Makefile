@@ -21,7 +21,8 @@ SRCS = \
 	SysInfoView.cpp \
 	DataHistory.cpp \
 	ActivityGraphView.cpp \
-	Utils.cpp
+	Utils.cpp \
+	ColumnTypes.cpp
 
 # Resource definition files
 # RDEFS = SysMonTask.rdef

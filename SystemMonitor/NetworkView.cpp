@@ -3,7 +3,7 @@
 #include "MonitorColumnTypes.h"
 #include <LayoutBuilder.h>
 #include <private/interface/ColumnListView.h>
-#include <private/interface/ColumnTypes.h>
+#include "ColumnTypes.h"
 #include <Box.h>
 #include <Font.h>
 #include <Autolock.h>
@@ -61,9 +61,9 @@ NetworkView::NetworkView()
                                              B_PLAIN_BORDER, true);
 
     // Setup columns
-    fInterfaceListView->AddColumn(new BStringColumn(B_TRANSLATE("Name"), 100, 50, 200, B_TRUNCATE_END), kInterfaceNameColumn);
-    fInterfaceListView->AddColumn(new BStringColumn(B_TRANSLATE("Type"), 80, 40, 150, B_TRUNCATE_END), kInterfaceTypeColumn);
-    fInterfaceListView->AddColumn(new BStringColumn(B_TRANSLATE("Address"), 120, 50, 300, B_TRUNCATE_END), kInterfaceAddressColumn);
+    fInterfaceListView->AddColumn(new SysMonStringColumn(B_TRANSLATE("Name"), 100, 50, 200, B_TRUNCATE_END), kInterfaceNameColumn);
+    fInterfaceListView->AddColumn(new SysMonStringColumn(B_TRANSLATE("Type"), 80, 40, 150, B_TRUNCATE_END), kInterfaceTypeColumn);
+    fInterfaceListView->AddColumn(new SysMonStringColumn(B_TRANSLATE("Address"), 120, 50, 300, B_TRUNCATE_END), kInterfaceAddressColumn);
     fInterfaceListView->AddColumn(new BSizeColumn(B_TRANSLATE("Sent"), 90, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kBytesSentColumn);
     fInterfaceListView->AddColumn(new BSizeColumn(B_TRANSLATE("Recv"), 90, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kBytesRecvColumn);
     fInterfaceListView->AddColumn(new BSpeedColumn(B_TRANSLATE("TX Speed"), 90, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kSendSpeedColumn);
@@ -227,9 +227,9 @@ void NetworkView::UpdateData(BMessage* message)
             auto rowIt = fInterfaceRowMap.find(name);
             if (rowIt == fInterfaceRowMap.end()) {
                 row = new BRow();
-                row->SetField(new BStringField(name), kInterfaceNameColumn);
-                row->SetField(new BStringField(typeStr), kInterfaceTypeColumn);
-                row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
+                row->SetField(new SysMonStringField(name), kInterfaceNameColumn);
+                row->SetField(new SysMonStringField(typeStr), kInterfaceTypeColumn);
+                row->SetField(new SysMonStringField(addressStr), kInterfaceAddressColumn);
                 row->SetField(new SizeField(currentSent), kBytesSentColumn);
                 row->SetField(new SizeField(currentReceived), kBytesRecvColumn);
                 row->SetField(new SpeedField(sendSpeedBytes), kSendSpeedColumn);
@@ -240,25 +240,25 @@ void NetworkView::UpdateData(BMessage* message)
                 row = rowIt->second;
                 bool changed = false;
 
-                BStringField* field = static_cast<BStringField*>(row->GetField(kInterfaceTypeColumn));
+                SysMonStringField* field = static_cast<SysMonStringField*>(row->GetField(kInterfaceTypeColumn));
                 if (field != NULL) {
                     if (strcmp(field->String(), typeStr.String()) != 0) {
                         field->SetString(typeStr);
                         changed = true;
                     }
                 } else {
-                    row->SetField(new BStringField(typeStr), kInterfaceTypeColumn);
+                    row->SetField(new SysMonStringField(typeStr), kInterfaceTypeColumn);
                     changed = true;
                 }
 
-                field = static_cast<BStringField*>(row->GetField(kInterfaceAddressColumn));
+                field = static_cast<SysMonStringField*>(row->GetField(kInterfaceAddressColumn));
                 if (field != NULL) {
                     if (strcmp(field->String(), addressStr.String()) != 0) {
                         field->SetString(addressStr);
                         changed = true;
                     }
                 } else {
-                    row->SetField(new BStringField(addressStr), kInterfaceAddressColumn);
+                    row->SetField(new SysMonStringField(addressStr), kInterfaceAddressColumn);
                     changed = true;
                 }
 

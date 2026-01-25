@@ -1,15 +1,15 @@
 #ifndef MONITORCOLUMNTYPES_H
 #define MONITORCOLUMNTYPES_H
 
-#include <ColumnTypes.h>
+#include "ColumnTypes.h"
 #include <cstdio>
 #include "Utils.h"
 
 // --- Float / Percentage Column ---
 
-class FloatField : public BStringField {
+class FloatField : public SysMonStringField {
 public:
-    FloatField(float value) : BStringField(""), fValue(value) {
+    FloatField(float value) : SysMonStringField(""), fValue(value) {
         UpdateString();
     }
     void SetValue(float value) {
@@ -27,11 +27,11 @@ private:
     float fValue;
 };
 
-class BFloatColumn : public BStringColumn {
+class BFloatColumn : public SysMonStringColumn {
 public:
     BFloatColumn(const char* title, float width, float minWidth, float maxWidth,
                 uint32 truncate, alignment align = B_ALIGN_LEFT)
-        : BStringColumn(title, width, minWidth, maxWidth, truncate, align) {}
+        : SysMonStringColumn(title, width, minWidth, maxWidth, truncate, align) {}
 
     virtual int CompareFields(BField* field1, BField* field2) {
         float val1 = ((FloatField*)field1)->Value();
@@ -44,9 +44,9 @@ public:
 
 // --- Size (Bytes) Column ---
 
-class SizeField : public BStringField {
+class SizeField : public SysMonStringField {
 public:
-    SizeField(uint64 value) : BStringField(""), fValue(value) {
+    SizeField(uint64 value) : SysMonStringField(""), fValue(value) {
         UpdateString();
     }
     void SetValue(uint64 value) {
@@ -62,11 +62,11 @@ private:
     uint64 fValue;
 };
 
-class BSizeColumn : public BStringColumn {
+class BSizeColumn : public SysMonStringColumn {
 public:
     BSizeColumn(const char* title, float width, float minWidth, float maxWidth,
                    uint32 truncate, alignment align = B_ALIGN_LEFT)
-        : BStringColumn(title, width, minWidth, maxWidth, truncate, align) {}
+        : SysMonStringColumn(title, width, minWidth, maxWidth, truncate, align) {}
 
     virtual int CompareFields(BField* field1, BField* field2) {
         uint64 val1 = ((SizeField*)field1)->Value();
@@ -79,9 +79,9 @@ public:
 
 // --- Speed (Bytes/sec) Column ---
 
-class SpeedField : public BStringField {
+class SpeedField : public SysMonStringField {
 public:
-    SpeedField(uint64 value) : BStringField(""), fValue(value) {
+    SpeedField(uint64 value) : SysMonStringField(""), fValue(value) {
         UpdateString();
     }
     void SetValue(uint64 value) {
@@ -99,11 +99,11 @@ private:
     uint64 fValue;
 };
 
-class BSpeedColumn : public BStringColumn {
+class BSpeedColumn : public SysMonStringColumn {
 public:
     BSpeedColumn(const char* title, float width, float minWidth, float maxWidth,
                    uint32 truncate, alignment align = B_ALIGN_LEFT)
-        : BStringColumn(title, width, minWidth, maxWidth, truncate, align) {}
+        : SysMonStringColumn(title, width, minWidth, maxWidth, truncate, align) {}
 
     virtual int CompareFields(BField* field1, BField* field2) {
         uint64 val1 = ((SpeedField*)field1)->Value();
