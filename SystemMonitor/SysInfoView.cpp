@@ -262,6 +262,8 @@ void SysInfoView::MessageReceived(BMessage* message)
             }
 
             // Info Section
+            // Construct the information string field by field
+            // Note: Colors are applied after setting the text
             BString infoText;
 
             // Build string first
@@ -565,8 +567,10 @@ int32 SysInfoView::_LoadDataThread(void* data) {
 ip_found:
     reply.AddString("ip", ip);
 
-    // 15. Battery (Try generic location)
-    // /dev/power/acpi_battery/0/state
+    // 15. Battery
+    // Attempt to read from the standard ACPI battery driver location on Haiku.
+    // The driver exposes text-based status information at /dev/power/acpi_battery/0/state.
+    // Example format includes lines like "capacity: 98", "state: discharging", etc.
     int batFd = open("/dev/power/acpi_battery/0/state", O_RDONLY);
     if (batFd >= 0) {
         char buffer[1024];
@@ -577,6 +581,7 @@ ip_found:
             buffer[bytesRead] = '\0';
             BString state(buffer);
             BString capacityStr;
+            // Parse "capacity: <value>" from the driver output
             int32 capacityIndex = state.FindFirst("capacity: ");
             if (capacityIndex >= 0) {
                 int32 end = state.FindFirst("\n", capacityIndex);
