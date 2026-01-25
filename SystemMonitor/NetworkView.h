@@ -5,8 +5,8 @@
 #include <Locker.h>
 #include <String.h>
 #include <map>
-#include <set>
 #include <string>
+#include <set>
 #include <atomic>
 #include "ActivityGraphView.h"
 
