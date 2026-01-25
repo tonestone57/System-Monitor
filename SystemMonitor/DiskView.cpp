@@ -1,6 +1,5 @@
 #include "DiskView.h"
 #include "Utils.h"
-#include "MonitorColumnTypes.h"
 #include <LayoutBuilder.h>
 #include <StringView.h>
 #include <OS.h>
@@ -10,8 +9,8 @@
 #include <Path.h>
 #include <VolumeRoster.h>
 #include <fs_info.h>
-#include <private/interface/ColumnListView.h>
-#include "ColumnTypes.h"
+#include <ListView.h>
+#include <ListItem.h>
 #include <Box.h>
 #include <Font.h>
 #include <set>
@@ -21,16 +20,95 @@
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "DiskView"
 
-// Define column constants for BColumnListView
-enum {
-    kDeviceColumn,
-    kMountPointColumn,
-    kFSTypeColumn,
-    kTotalSizeColumn,
-    kFreeSizeColumn,
-    kUsedSizeColumn,
-    kUsagePercentageColumn
+const float kDiskDeviceWidth = 120;
+const float kDiskMountWidth = 120;
+const float kDiskFSWidth = 80;
+const float kDiskTotalWidth = 100;
+const float kDiskUsedWidth = 100;
+const float kDiskFreeWidth = 100;
+const float kDiskPercentWidth = 80;
+
+class DiskListItem : public BListItem {
+public:
+    DiskListItem(const BString& device, const BString& mount, const BString& fs,
+                 uint64 total, uint64 used, uint64 free, double percent)
+        : BListItem(),
+          fDevice(device), fMount(mount), fFS(fs),
+          fTotal(total), fUsed(used), fFree(free), fPercent(percent)
+    {
+    }
+
+    void Update(const BString& device, const BString& mount, const BString& fs,
+                 uint64 total, uint64 used, uint64 free, double percent) {
+        fDevice = device;
+        fMount = mount;
+        fFS = fs;
+        fTotal = total;
+        fUsed = used;
+        fFree = free;
+        fPercent = percent;
+    }
+
+    virtual void DrawItem(BView* owner, BRect itemRect, bool complete = false) {
+        if (IsSelected() || complete) {
+            rgb_color color;
+            if (IsSelected()) color = ui_color(B_LIST_SELECTED_BACKGROUND_COLOR);
+            else color = ui_color(B_LIST_BACKGROUND_COLOR);
+            owner->SetHighColor(color);
+            owner->FillRect(itemRect);
+        }
+
+        rgb_color textColor;
+        if (IsSelected()) textColor = ui_color(B_LIST_SELECTED_ITEM_TEXT_COLOR);
+        else textColor = ui_color(B_LIST_ITEM_TEXT_COLOR);
+        owner->SetHighColor(textColor);
+
+        float x = itemRect.left + 5;
+        float y = itemRect.bottom - 3;
+        BFont font;
+        owner->GetFont(&font);
+
+        auto drawTruncated = [&](const BString& str, float width) {
+             BString out;
+             font.TruncateString(&str, B_TRUNCATE_MIDDLE, width - 10, &out);
+             owner->DrawString(out.String(), BPoint(x, y));
+             x += width;
+        };
+
+        auto drawRight = [&](const BString& str, float width) {
+             float w = owner->StringWidth(str.String());
+             owner->DrawString(str.String(), BPoint(x + width - w - 5, y));
+             x += width;
+        };
+
+        drawTruncated(fDevice, kDiskDeviceWidth);
+        drawTruncated(fMount, kDiskMountWidth);
+
+        // FS
+        BString fsTrunc;
+        font.TruncateString(&fFS, B_TRUNCATE_END, kDiskFSWidth - 10, &fsTrunc);
+        owner->DrawString(fsTrunc.String(), BPoint(x, y));
+        x += kDiskFSWidth;
+
+        drawRight(FormatBytes(fTotal), kDiskTotalWidth);
+        drawRight(FormatBytes(fUsed), kDiskUsedWidth);
+        drawRight(FormatBytes(fFree), kDiskFreeWidth);
+
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%.1f%%", fPercent);
+        drawRight(buf, kDiskPercentWidth);
+    }
+
+private:
+    BString fDevice;
+    BString fMount;
+    BString fFS;
+    uint64 fTotal;
+    uint64 fUsed;
+    uint64 fFree;
+    double fPercent;
 };
+
 
 DiskView::DiskView()
     : BView("DiskView", B_WILL_DRAW | B_PULSE_NEEDED),
@@ -44,47 +122,46 @@ DiskView::DiskView()
     fDiskInfoBox = new BBox("DiskInfoBox");
     fDiskInfoBox->SetLabel(B_TRANSLATE("Disk Volumes"));
 
-    // Calculate proper positioning for ColumnListView inside BBox
-    BRect clvRect = fDiskInfoBox->Bounds();
-    clvRect.InsetBy(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+    // Header view
+    BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);
+    headerView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     
-    // Adjust for label height
-    font_height fh;
-    fDiskInfoBox->GetFontHeight(&fh);
-    clvRect.top += fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING;
+    auto addHeader = [&](const char* label, float width, alignment align = B_ALIGN_LEFT) {
+        BStringView* sv = new BStringView(NULL, label);
+        sv->SetExplicitMinSize(BSize(width, B_SIZE_UNSET));
+        sv->SetExplicitMaxSize(BSize(width, B_SIZE_UNSET));
+        sv->SetAlignment(align);
+        sv->SetFont(be_bold_font);
+        headerView->AddChild(sv);
+    };
 
-    fDiskListView = new BColumnListView(clvRect, "disk_clv",
-                                        B_FOLLOW_ALL_SIDES,
-                                        B_WILL_DRAW | B_NAVIGABLE,
-                                        B_PLAIN_BORDER, true);
+    addHeader(B_TRANSLATE("Device"), kDiskDeviceWidth);
+    addHeader(B_TRANSLATE("Mount Point"), kDiskMountWidth);
+    addHeader(B_TRANSLATE("FS Type"), kDiskFSWidth);
+    addHeader(B_TRANSLATE("Total"), kDiskTotalWidth, B_ALIGN_RIGHT);
+    addHeader(B_TRANSLATE("Used"), kDiskUsedWidth, B_ALIGN_RIGHT);
+    addHeader(B_TRANSLATE("Free"), kDiskFreeWidth, B_ALIGN_RIGHT);
+    addHeader(B_TRANSLATE("Usage"), kDiskPercentWidth, B_ALIGN_RIGHT);
 
-    fDiskListView->AddColumn(new SysMonStringColumn(B_TRANSLATE("Device"), 120, 50, 300, B_TRUNCATE_MIDDLE), kDeviceColumn);
-    fDiskListView->AddColumn(new SysMonStringColumn(B_TRANSLATE("Mount Point"), 120, 50, 300, B_TRUNCATE_MIDDLE), kMountPointColumn);
-    fDiskListView->AddColumn(new SysMonStringColumn(B_TRANSLATE("FS Type"), 80, 40, 150, B_TRUNCATE_END), kFSTypeColumn);
-    fDiskListView->AddColumn(new BSizeColumn(B_TRANSLATE("Total Size"), 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kTotalSizeColumn);
-    fDiskListView->AddColumn(new BSizeColumn(B_TRANSLATE("Used Size"), 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kUsedSizeColumn);
-    fDiskListView->AddColumn(new BSizeColumn(B_TRANSLATE("Free Size"), 100, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kFreeSizeColumn);
-    fDiskListView->AddColumn(new BFloatColumn(B_TRANSLATE("Usage %"), 80, 40, 100, B_TRUNCATE_END, B_ALIGN_RIGHT), kUsagePercentageColumn);
+    headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20));
 
-    fDiskListView->SetSortColumn(fDiskListView->ColumnAt(kMountPointColumn), true, true);
+    fDiskListView = new BListView("disk_list", B_SINGLE_SELECTION_LIST, B_WILL_DRAW | B_NAVIGABLE);
 
-    // Add explanatory note
     BStringView* noteView = new BStringView("io_note", B_TRANSLATE("Real-time Disk I/O monitoring is not supported on this system."));
     noteView->SetAlignment(B_ALIGN_CENTER);
     BFont font(be_plain_font);
-    font.SetSize(font.Size() * 0.9f); // Slightly smaller
+    font.SetSize(font.Size() * 0.9f);
     noteView->SetFont(&font);
-    noteView->SetHighColor(ui_color(B_CONTROL_TEXT_COLOR)); // Ensure visibility
+    noteView->SetHighColor(ui_color(B_CONTROL_TEXT_COLOR));
 
-    // Use layout to properly position the ColumnListView
     BLayoutBuilder::Group<>(fDiskInfoBox, B_VERTICAL, 0)
-        .SetInsets(B_USE_DEFAULT_SPACING, fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING, 
+        .SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING + 15, // Approx font height
                    B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
+        .Add(headerView)
         .Add(fDiskListView)
         .AddStrut(B_USE_DEFAULT_SPACING)
         .Add(noteView);
 
-    // Main layout for the DiskView
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
         .SetInsets(0)
         .Add(fDiskInfoBox)
@@ -99,6 +176,19 @@ DiskView::~DiskView()
         status_t dummy;
         wait_for_thread(fUpdateThread, &dummy);
     }
+
+    for (int32 i = 0; i < fDiskListView->CountItems(); i++) {
+        delete fDiskListView->ItemAt(i);
+    }
+    fDiskListView->MakeEmpty();
+    // No need to delete items in map if they are same pointers as in list,
+    // but safer to clear map.
+    for (auto& pair : fDeviceItemMap) {
+         // If item was removed from list but kept in map, we must delete it.
+         // In UpdateData, we manage this explicitly.
+         // Here, we can just clear map.
+    }
+    fDeviceItemMap.clear();
 }
 
 void DiskView::AttachedToWindow()
@@ -155,7 +245,6 @@ status_t DiskView::GetDiskInfo(BVolume& volume, DiskInfo& info) {
     info.freeSize = fsInfo.free_blocks * fsInfo.block_size;
     info.fileSystemType = fsInfo.fsh_name;
 
-    // Get mount point
     BDirectory mountDir;
     status = volume.GetRootDirectory(&mountDir);
     if (status != B_OK) {
@@ -173,7 +262,6 @@ status_t DiskView::GetDiskInfo(BVolume& volume, DiskInfo& info) {
     }
     info.mountPoint = mountPath.Path();
 
-    // Use volume name if available, otherwise device name
     char volumeName[B_FILE_NAME_LENGTH];
     if (volume.GetName(volumeName) == B_OK && strlen(volumeName) > 0) {
         info.deviceName = volumeName;
@@ -193,11 +281,9 @@ int32 DiskView::UpdateThread(void* data)
         if (err != B_OK) {
             if (view->fTerminated) break;
             if (err == B_INTERRUPTED) continue;
-            // If the semaphore is bad (e.g. deleted), we must exit
             break;
         }
 
-        // Drain the semaphore
         int32 count;
         if (get_sem_count(view->fScanSem, &count) == B_OK && count > 0)
             acquire_sem_etc(view->fScanSem, count, B_RELATIVE_TIMEOUT, 0);
@@ -246,6 +332,8 @@ void DiskView::UpdateData(BMessage* message)
     type_code type;
     message->GetInfo("volume", &type, &count);
 
+    bool listChanged = false;
+
     for (int32 i = 0; i < count; i++) {
         BMessage volMsg;
         if (message->FindMessage("volume", i, &volMsg) != B_OK) continue;
@@ -267,92 +355,36 @@ void DiskView::UpdateData(BMessage* message)
         if (totalSize > 0) {
             usagePercent = (double)usedSize / totalSize * 100.0;
         }
-        // Helper lambda for size fields
-        auto setSizeField = [&](BRow* row, int index, uint64 val) {
-            SizeField* field = static_cast<SizeField*>(row->GetField(index));
-            if (field) {
-                if (field->Value() != val) {
-                    field->SetValue(val);
-                    return true;
-                }
-            } else {
-                row->SetField(new SizeField(val), index);
-                return true;
-            }
-            return false;
-        };
 
-        // Helper for float/percent
-        auto setFloatField = [&](BRow* row, int index, float val) {
-             FloatField* field = static_cast<FloatField*>(row->GetField(index));
-             if (field) {
-                 if (field->Value() != val) {
-                     field->SetValue(val);
-                     return true;
-                 }
-             } else {
-                 row->SetField(new FloatField(val), index);
-                 return true;
-             }
-             return false;
-        };
-
-		BRow* row;
-		if (fDeviceRowMap.find(deviceID) == fDeviceRowMap.end()) {
-			// New device, create a new row
-			row = new BRow();
-			row->SetField(new SysMonStringField(deviceName), kDeviceColumn);
-			row->SetField(new SysMonStringField(mountPoint), kMountPointColumn);
-			row->SetField(new SysMonStringField(fsType), kFSTypeColumn);
-			row->SetField(new SizeField(totalSize), kTotalSizeColumn);
-			row->SetField(new SizeField(usedSize), kUsedSizeColumn);
-			row->SetField(new SizeField(freeSize), kFreeSizeColumn);
-			row->SetField(new FloatField(usagePercent), kUsagePercentageColumn);
-			fDiskListView->AddRow(row);
-			fDeviceRowMap[deviceID] = row;
+		DiskListItem* item;
+		if (fDeviceItemMap.find(deviceID) == fDeviceItemMap.end()) {
+			item = new DiskListItem(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent);
+			fDiskListView->AddItem(item);
+			fDeviceItemMap[deviceID] = item;
+            listChanged = true;
 		} else {
-			// Existing device, update the row
-			row = fDeviceRowMap[deviceID];
-            bool changed = false;
-            // Only update fields if changed (optimization)
-            auto updateField = [&](int index, const char* newVal) {
-                SysMonStringField* f = static_cast<SysMonStringField*>(row->GetField(index));
-                if (f) {
-                    if (strcmp(f->String(), newVal) != 0) {
-                        f->SetString(newVal);
-                        changed = true;
-                    }
-                } else {
-                    row->SetField(new SysMonStringField(newVal), index);
-                    changed = true;
-                }
-            };
-
-            updateField(kDeviceColumn, deviceName);
-            updateField(kMountPointColumn, mountPoint);
-            updateField(kFSTypeColumn, fsType);
-
-            if (setSizeField(row, kTotalSizeColumn, totalSize)) changed = true;
-            if (setSizeField(row, kUsedSizeColumn, usedSize)) changed = true;
-            if (setSizeField(row, kFreeSizeColumn, freeSize)) changed = true;
-            if (setFloatField(row, kUsagePercentageColumn, usagePercent)) changed = true;
-
-            if (changed)
-			    fDiskListView->UpdateRow(row);
+			item = fDeviceItemMap[deviceID];
+            // Ideally check for changes before calling Invalidate
+            item->Update(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent);
 		}
     }
 
-	// Remove devices that are no longer present
-	for (auto it = fDeviceRowMap.begin(); it != fDeviceRowMap.end();) {
+	for (auto it = fDeviceItemMap.begin(); it != fDeviceItemMap.end();) {
 		if (activeDevices.find(it->first) == activeDevices.end()) {
-			BRow* row = it->second;
-			fDiskListView->RemoveRow(row);
-			delete row;
-			it = fDeviceRowMap.erase(it);
+			DiskListItem* item = it->second;
+			fDiskListView->RemoveItem(item);
+			delete item;
+			it = fDeviceItemMap.erase(it);
+            listChanged = true;
 		} else {
 			++it;
 		}
 	}
+
+    if (listChanged)
+        fDiskListView->Invalidate();
+    else
+        fDiskListView->Invalidate(); // Refresh stats
 
     fLocker.Unlock();
 }

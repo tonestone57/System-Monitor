@@ -1,9 +1,9 @@
 #include "NetworkView.h"
 #include "Utils.h"
-#include "MonitorColumnTypes.h"
 #include <LayoutBuilder.h>
-#include <private/interface/ColumnListView.h>
-#include "ColumnTypes.h"
+#include <ListView.h>
+#include <ListItem.h>
+#include <StringView.h>
 #include <Box.h>
 #include <Font.h>
 #include <Autolock.h>
@@ -21,16 +21,89 @@
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "NetworkView"
 
-// Column identifiers
-enum {
-    kInterfaceNameColumn,
-    kInterfaceTypeColumn,
-    kInterfaceAddressColumn,
-    kBytesSentColumn,
-    kBytesRecvColumn,
-    kSendSpeedColumn,
-    kRecvSpeedColumn
+const float kNetNameWidth = 100;
+const float kNetTypeWidth = 80;
+const float kNetAddrWidth = 120;
+const float kNetSentWidth = 90;
+const float kNetRecvWidth = 90;
+const float kNetTxSpeedWidth = 90;
+const float kNetRxSpeedWidth = 90;
+
+class InterfaceListItem : public BListItem {
+public:
+    InterfaceListItem(const BString& name, const BString& type, const BString& addr,
+                      uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed)
+        : BListItem(),
+          fName(name), fType(type), fAddr(addr),
+          fSent(sent), fRecv(recv), fTxSpeed(txSpeed), fRxSpeed(rxSpeed)
+    {
+    }
+
+    void Update(const BString& name, const BString& type, const BString& addr,
+                      uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed)
+    {
+        fName = name;
+        fType = type;
+        fAddr = addr;
+        fSent = sent;
+        fRecv = recv;
+        fTxSpeed = txSpeed;
+        fRxSpeed = rxSpeed;
+    }
+
+    virtual void DrawItem(BView* owner, BRect itemRect, bool complete = false) {
+        if (IsSelected() || complete) {
+            rgb_color color;
+            if (IsSelected()) color = ui_color(B_LIST_SELECTED_BACKGROUND_COLOR);
+            else color = ui_color(B_LIST_BACKGROUND_COLOR);
+            owner->SetHighColor(color);
+            owner->FillRect(itemRect);
+        }
+
+        rgb_color textColor;
+        if (IsSelected()) textColor = ui_color(B_LIST_SELECTED_ITEM_TEXT_COLOR);
+        else textColor = ui_color(B_LIST_ITEM_TEXT_COLOR);
+        owner->SetHighColor(textColor);
+
+        float x = itemRect.left + 5;
+        float y = itemRect.bottom - 3;
+        BFont font;
+        owner->GetFont(&font);
+
+        auto drawTruncated = [&](const BString& str, float width) {
+             BString out;
+             font.TruncateString(&str, B_TRUNCATE_END, width - 10, &out);
+             owner->DrawString(out.String(), BPoint(x, y));
+             x += width;
+        };
+
+        auto drawRight = [&](const BString& str, float width) {
+             float w = owner->StringWidth(str.String());
+             owner->DrawString(str.String(), BPoint(x + width - w - 5, y));
+             x += width;
+        };
+
+        drawTruncated(fName, kNetNameWidth);
+        drawTruncated(fType, kNetTypeWidth);
+        drawTruncated(fAddr, kNetAddrWidth);
+
+        drawRight(FormatBytes(fSent), kNetSentWidth);
+        drawRight(FormatBytes(fRecv), kNetRecvWidth);
+
+        drawRight(FormatSpeed(fTxSpeed, 1000000), kNetTxSpeedWidth);
+        drawRight(FormatSpeed(fRxSpeed, 1000000), kNetRxSpeedWidth);
+    }
+
+private:
+    BString fName;
+    BString fType;
+    BString fAddr;
+    uint64 fSent;
+    uint64 fRecv;
+    uint64 fTxSpeed;
+    uint64 fRxSpeed;
 };
+
 
 NetworkView::NetworkView()
     : BView("NetworkView", B_WILL_DRAW | B_PULSE_NEEDED),
@@ -48,32 +121,35 @@ NetworkView::NetworkView()
     auto* netBox = new BBox("NetworkInterfacesBox");
     netBox->SetLabel(B_TRANSLATE("Network Interfaces"));
 
-    font_height fh;
-    netBox->GetFontHeight(&fh);
+    // Header View
+    BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);
+    headerView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
-    BRect clvRect = netBox->Bounds();
-    clvRect.top += fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING;
-    clvRect.InsetBy(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+    auto addHeader = [&](const char* label, float width, alignment align = B_ALIGN_LEFT) {
+        BStringView* sv = new BStringView(NULL, label);
+        sv->SetExplicitMinSize(BSize(width, B_SIZE_UNSET));
+        sv->SetExplicitMaxSize(BSize(width, B_SIZE_UNSET));
+        sv->SetAlignment(align);
+        sv->SetFont(be_bold_font);
+        headerView->AddChild(sv);
+    };
 
-    fInterfaceListView = new BColumnListView(clvRect, "interface_clv",
-                                             B_FOLLOW_ALL_SIDES,
-                                             B_WILL_DRAW | B_NAVIGABLE,
-                                             B_PLAIN_BORDER, true);
+    addHeader(B_TRANSLATE("Name"), kNetNameWidth);
+    addHeader(B_TRANSLATE("Type"), kNetTypeWidth);
+    addHeader(B_TRANSLATE("Address"), kNetAddrWidth);
+    addHeader(B_TRANSLATE("Sent"), kNetSentWidth, B_ALIGN_RIGHT);
+    addHeader(B_TRANSLATE("Recv"), kNetRecvWidth, B_ALIGN_RIGHT);
+    addHeader(B_TRANSLATE("TX Speed"), kNetTxSpeedWidth, B_ALIGN_RIGHT);
+    addHeader(B_TRANSLATE("RX Speed"), kNetRxSpeedWidth, B_ALIGN_RIGHT);
 
-    // Setup columns
-    fInterfaceListView->AddColumn(new SysMonStringColumn(B_TRANSLATE("Name"), 100, 50, 200, B_TRUNCATE_END), kInterfaceNameColumn);
-    fInterfaceListView->AddColumn(new SysMonStringColumn(B_TRANSLATE("Type"), 80, 40, 150, B_TRUNCATE_END), kInterfaceTypeColumn);
-    fInterfaceListView->AddColumn(new SysMonStringColumn(B_TRANSLATE("Address"), 120, 50, 300, B_TRUNCATE_END), kInterfaceAddressColumn);
-    fInterfaceListView->AddColumn(new BSizeColumn(B_TRANSLATE("Sent"), 90, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kBytesSentColumn);
-    fInterfaceListView->AddColumn(new BSizeColumn(B_TRANSLATE("Recv"), 90, 50, 200, B_TRUNCATE_END, B_ALIGN_RIGHT), kBytesRecvColumn);
-    fInterfaceListView->AddColumn(new BSpeedColumn(B_TRANSLATE("TX Speed"), 90, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kSendSpeedColumn);
-    fInterfaceListView->AddColumn(new BSpeedColumn(B_TRANSLATE("RX Speed"), 90, 50, 150, B_TRUNCATE_END, B_ALIGN_RIGHT), kRecvSpeedColumn);
+    headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20));
 
-    fInterfaceListView->SetSortColumn(fInterfaceListView->ColumnAt(kInterfaceNameColumn), true, true);
+    fInterfaceListView = new BListView("interface_list", B_SINGLE_SELECTION_LIST, B_WILL_DRAW | B_NAVIGABLE);
 
     BLayoutBuilder::Group<>(netBox, B_VERTICAL, 0)
-        .SetInsets(B_USE_DEFAULT_SPACING, fh.ascent + fh.descent + fh.leading + B_USE_DEFAULT_SPACING, 
+        .SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING + 15,
                    B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
+        .Add(headerView)
         .Add(fInterfaceListView);
 
     fDownloadGraph = new ActivityGraphView("download_graph", {0, 0, 0, 0}, B_MENU_SELECTION_BACKGROUND_COLOR);
@@ -95,6 +171,12 @@ NetworkView::~NetworkView()
         status_t dummy;
         wait_for_thread(fUpdateThread, &dummy);
     }
+
+    for (int32 i = 0; i < fInterfaceListView->CountItems(); i++) {
+        delete fInterfaceListView->ItemAt(i);
+    }
+    fInterfaceListView->MakeEmpty();
+    fInterfaceItemMap.clear();
 }
 
 void NetworkView::AttachedToWindow()
@@ -153,6 +235,8 @@ void NetworkView::UpdateData(BMessage* message)
     type_code type;
     message->GetInfo("net_info", &type, &count);
 
+    bool listChanged = false;
+
     for (int32 i = 0; i < count; i++) {
         const NetworkInfo* info;
         ssize_t size;
@@ -193,82 +277,16 @@ void NetworkView::UpdateData(BMessage* message)
             rec.bytesReceived = currentReceived;
             rec.lastUpdateTime = currentTime;
 
-            // Helper for size fields
-            auto setSizeField = [&](BRow* row, int index, uint64 val) {
-                SizeField* field = static_cast<SizeField*>(row->GetField(index));
-                if (field) {
-                    if (field->Value() != val) {
-                        field->SetValue(val);
-                        return true;
-                    }
-                } else {
-                    row->SetField(new SizeField(val), index);
-                    return true;
-                }
-                return false;
-            };
-
-            // Helper for speed fields
-            auto setSpeedField = [&](BRow* row, int index, uint64 val) {
-                SpeedField* field = static_cast<SpeedField*>(row->GetField(index));
-                if (field) {
-                    if (field->Value() != val) {
-                        field->SetValue(val);
-                        return true;
-                    }
-                } else {
-                    row->SetField(new SpeedField(val), index);
-                    return true;
-                }
-                return false;
-            };
-
-            BRow* row;
-            auto rowIt = fInterfaceRowMap.find(name);
-            if (rowIt == fInterfaceRowMap.end()) {
-                row = new BRow();
-                row->SetField(new SysMonStringField(name), kInterfaceNameColumn);
-                row->SetField(new SysMonStringField(typeStr), kInterfaceTypeColumn);
-                row->SetField(new SysMonStringField(addressStr), kInterfaceAddressColumn);
-                row->SetField(new SizeField(currentSent), kBytesSentColumn);
-                row->SetField(new SizeField(currentReceived), kBytesRecvColumn);
-                row->SetField(new SpeedField(sendSpeedBytes), kSendSpeedColumn);
-                row->SetField(new SpeedField(recvSpeedBytes), kRecvSpeedColumn);
-                fInterfaceListView->AddRow(row);
-                fInterfaceRowMap[name] = row;
+            InterfaceListItem* item;
+            auto rowIt = fInterfaceItemMap.find(name);
+            if (rowIt == fInterfaceItemMap.end()) {
+                item = new InterfaceListItem(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes);
+                fInterfaceListView->AddItem(item);
+                fInterfaceItemMap[name] = item;
+                listChanged = true;
             } else {
-                row = rowIt->second;
-                bool changed = false;
-
-                SysMonStringField* field = static_cast<SysMonStringField*>(row->GetField(kInterfaceTypeColumn));
-                if (field != NULL) {
-                    if (strcmp(field->String(), typeStr.String()) != 0) {
-                        field->SetString(typeStr);
-                        changed = true;
-                    }
-                } else {
-                    row->SetField(new SysMonStringField(typeStr), kInterfaceTypeColumn);
-                    changed = true;
-                }
-
-                field = static_cast<SysMonStringField*>(row->GetField(kInterfaceAddressColumn));
-                if (field != NULL) {
-                    if (strcmp(field->String(), addressStr.String()) != 0) {
-                        field->SetString(addressStr);
-                        changed = true;
-                    }
-                } else {
-                    row->SetField(new SysMonStringField(addressStr), kInterfaceAddressColumn);
-                    changed = true;
-                }
-
-                if (setSizeField(row, kBytesSentColumn, currentSent)) changed = true;
-                if (setSizeField(row, kBytesRecvColumn, currentReceived)) changed = true;
-                if (setSpeedField(row, kSendSpeedColumn, sendSpeedBytes)) changed = true;
-                if (setSpeedField(row, kRecvSpeedColumn, recvSpeedBytes)) changed = true;
-
-                if (changed)
-                    fInterfaceListView->UpdateRow(row);
+                item = rowIt->second;
+                item->Update(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes);
             }
         }
     }
@@ -280,17 +298,24 @@ void NetworkView::UpdateData(BMessage* message)
 		else
 			++it;
 	}
-	for (auto it = fInterfaceRowMap.begin(); it != fInterfaceRowMap.end();) {
+	for (auto it = fInterfaceItemMap.begin(); it != fInterfaceItemMap.end();) {
 		if (activeInterfaces.find(it->first) == activeInterfaces.end()) {
-			BRow* row = it->second;
-			fInterfaceListView->RemoveRow(row);
-			delete row;
-			it = fInterfaceRowMap.erase(it);
+			InterfaceListItem* item = it->second;
+			fInterfaceListView->RemoveItem(item);
+			delete item;
+			it = fInterfaceItemMap.erase(it);
+            listChanged = true;
 		} else {
 			++it;
 		}
 	}
     
+    if (listChanged)
+        fInterfaceListView->Invalidate();
+    else
+        fInterfaceListView->Invalidate(); // Refresh stats
+
+
     // Update graphs
     if (fUploadGraph && fDownloadGraph) {
         bigtime_t dt = currentTime - fPreviousStatsMap["__total__"].lastUpdateTime;
@@ -398,4 +423,13 @@ void NetworkView::SetRefreshInterval(bigtime_t interval)
         fUploadGraph->SetRefreshInterval(interval);
     if (fDownloadGraph)
         fDownloadGraph->SetRefreshInterval(interval);
+}
+
+BString NetworkView::FormatBytes(uint64 bytes)
+{
+    // Duplicate of Utils::FormatBytes?
+    // Let's just use Utils::FormatBytes if available.
+    // The previous code called FormatBytes(fValue) inside SizeField.
+    // Utils.h has FormatBytes.
+    return ::FormatBytes(bytes);
 }

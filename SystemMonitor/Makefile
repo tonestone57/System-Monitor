@@ -21,8 +21,7 @@ SRCS = \
 	SysInfoView.cpp \
 	DataHistory.cpp \
 	ActivityGraphView.cpp \
-	Utils.cpp \
-	ColumnTypes.cpp
+	Utils.cpp
 
 # Resource definition files
 # RDEFS = SysMonTask.rdef
@@ -31,7 +30,7 @@ SRCS = \
 # RSRCS =
 
 # Libraries to link against
-LIBS = be tracker columnlistview network bnetapi localestub $(STDCPPLIBS)
+LIBS = be tracker network bnetapi localestub $(STDCPPLIBS)
 
 # Additional object files to link against
 EXTRA_OBJS =

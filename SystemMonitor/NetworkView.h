@@ -9,8 +9,9 @@
 #include <atomic>
 #include "ActivityGraphView.h"
 
-class BColumnListView;
-class BRow;
+class BListView;
+class BListItem;
+class InterfaceListItem; // Forward declaration
 class ActivityGraphView;
 
 struct InterfaceStatsRecord {
@@ -49,7 +50,7 @@ private:
     void UpdateData(BMessage* message);
     BString FormatBytes(uint64 bytes);
     
-    BColumnListView* fInterfaceListView;
+    BListView* fInterfaceListView;
     ActivityGraphView* fDownloadGraph;
     ActivityGraphView* fUploadGraph;
     
@@ -62,7 +63,7 @@ private:
     };
 
     std::map<BString, InterfaceStatsRecord, BStringLess> fPreviousStatsMap;
-    std::map<BString, BRow*, BStringLess> fInterfaceRowMap;
+    std::map<BString, InterfaceListItem*, BStringLess> fInterfaceItemMap;
     float fUploadSpeed;
     float fDownloadSpeed;
 

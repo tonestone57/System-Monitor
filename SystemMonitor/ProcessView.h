@@ -14,10 +14,9 @@
 #include <atomic>
 #include <kernel/OS.h>
 
-class BColumnListView;
+class BListView;
 class BMenuItem;
-class BRow;
-class BColumn;
+class BListItem;
 
 #include <kernel/OS.h>
 
@@ -37,6 +36,7 @@ struct ProcessInfo {
 const uint32 MSG_PROCESS_DATA_UPDATE = 'pdup';
 const uint32 MSG_SEARCH_UPDATED = 'srch';
 
+class ProcessListItem; // Forward declaration
 
 class ProcessView : public BView {
 public:
@@ -46,7 +46,6 @@ public:
     virtual void AttachedToWindow();
     virtual void DetachedFromWindow();
     virtual void MessageReceived(BMessage* message);
-    virtual void MouseDown(BPoint where);
     virtual void KeyDown(const char* bytes, int32 numBytes);
     virtual void Hide();
     virtual void Show();
@@ -67,21 +66,13 @@ private:
     void ShowContextMenu(BPoint screenPoint);
     BString GetUserName(uid_t uid, std::vector<char>& buffer);
 
-    BColumnListView* fProcessListView;
+    BListView* fProcessListView;
     BPopUpMenu* fContextMenu;
     BTextControl* fSearchControl;
-
-    BColumn* fPIDColumn;
-    BColumn* fNameColumn;
-    BColumn* fStateColumn;
-    BColumn* fCPUColumn;
-    BColumn* fMemColumn;
-    BColumn* fThreadsColumn;
-    BColumn* fUserColumn;
     
     std::unordered_map<thread_id, bigtime_t> fThreadTimeMap;
-    std::unordered_map<team_id, BRow*> fTeamRowMap;
-    std::unordered_set<BRow*> fVisibleRows;
+    std::unordered_map<team_id, ProcessListItem*> fTeamItemMap;
+    // std::unordered_set<ProcessListItem*> fVisibleItems; // Not easily tracked with BListView unless we manage addition/removal manually
 
     // Optimization members
     std::unordered_set<uid_t> fActiveUIDs;

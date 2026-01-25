@@ -9,8 +9,9 @@
 #include <atomic>
 
 class BBox;
-class BColumnListView;
-class BRow;
+class BListView;
+class BListItem;
+class DiskListItem; // Forward declaration
 
 struct DiskInfo {
     BString deviceName;
@@ -40,10 +41,10 @@ private:
     status_t GetDiskInfo(BVolume& volume, DiskInfo& info);
     
     BBox* fDiskInfoBox;
-    BColumnListView* fDiskListView;
+    BListView* fDiskListView;
     
     BLocker fLocker;
-	std::map<dev_t, BRow*> fDeviceRowMap;
+	std::map<dev_t, DiskListItem*> fDeviceItemMap;
 
     thread_id fUpdateThread;
     sem_id fScanSem;
