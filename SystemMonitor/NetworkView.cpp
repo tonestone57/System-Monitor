@@ -106,6 +106,16 @@ private:
     uint64 fRecv;
     uint64 fTxSpeed;
     uint64 fRxSpeed;
+
+    static int CompareSpeed(const void* first, const void* second) {
+        const InterfaceListItem* item1 = *(const InterfaceListItem**)first;
+        const InterfaceListItem* item2 = *(const InterfaceListItem**)second;
+        uint64 s1 = item1->fTxSpeed + item1->fRxSpeed;
+        uint64 s2 = item2->fTxSpeed + item2->fRxSpeed;
+        if (s1 > s2) return -1;
+        if (s1 < s2) return 1;
+        return 0;
+    }
 };
 
 
@@ -320,6 +330,7 @@ void NetworkView::UpdateData(BMessage* message)
 		}
 	}
     
+    fInterfaceListView->SortItems(InterfaceListItem::CompareSpeed);
     fInterfaceListView->Invalidate();
 
     // Update graphs

@@ -108,14 +108,6 @@ public:
         // User
         BString userStr(fInfo.userName);
         BString truncatedUser;
-        // Reuse font from previous GetFont call or get again? GetFont is cheap but local variable font is safer.
-        // We defined 'font' above in Name block, but that scope might be open or closed depending on braces.
-        // Let's check braces.
-        // Name block didn't introduce braces. So 'font' variable is available if it was declared at function scope or outside 'if'.
-        // In my previous replace, I declared BFont font; inside the function body.
-        // Let's be safe and assume font is available or redeclare if scope issue.
-        // Actually, previous replace was inside DrawItem method body, not inside a block.
-        // So 'font' is available.
         font.TruncateString(&userStr, B_TRUNCATE_END, kUserWidth - 10, &truncatedUser);
         owner->DrawString(truncatedUser.String(), BPoint(x, y));
     }

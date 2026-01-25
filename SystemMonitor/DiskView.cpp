@@ -111,6 +111,14 @@ private:
     uint64 fUsed;
     uint64 fFree;
     double fPercent;
+
+    static int CompareUsage(const void* first, const void* second) {
+        const DiskListItem* item1 = *(const DiskListItem**)first;
+        const DiskListItem* item2 = *(const DiskListItem**)second;
+        if (item1->fPercent > item2->fPercent) return -1;
+        if (item1->fPercent < item2->fPercent) return 1;
+        return 0;
+    }
 };
 
 
@@ -389,7 +397,7 @@ void DiskView::UpdateData(BMessage* message)
 			++it;
 		}
 	}
-
+    fDiskListView->SortItems(DiskListItem::CompareUsage);
     fDiskListView->Invalidate();
 
     fLocker.Unlock();
