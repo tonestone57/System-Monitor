@@ -21,13 +21,13 @@
 #include <Invoker.h>
 #include <Messenger.h>
 #include <Catalog.h>
+#include <ScrollView.h>
 #include <Autolock.h>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "ProcessView"
 
 // Define constants for columns (used for drawing)
-// We will use fixed widths for now or a simple header view
 const float kPIDWidth = 60;
 const float kNameWidth = 180;
 const float kStateWidth = 80;
@@ -66,8 +66,10 @@ public:
         else textColor = ui_color(B_LIST_ITEM_TEXT_COLOR);
         owner->SetHighColor(textColor);
 
+        font_height fh;
+        owner->GetFont(&fh);
         float x = itemRect.left + 5;
-        float y = itemRect.bottom - 3;
+        float y = itemRect.bottom - fh.descent;
 
         // PID
         BString pidStr; pidStr << fInfo.id;
@@ -123,6 +125,14 @@ public:
 
     // For searching
     const ProcessInfo& Info() const { return fInfo; }
+
+    static int CompareCPU(const void* first, const void* second) {
+        const ProcessListItem* item1 = *(const ProcessListItem**)first;
+        const ProcessListItem* item2 = *(const ProcessListItem**)second;
+        if (item1->fInfo.cpuUsage > item2->fInfo.cpuUsage) return -1;
+        if (item1->fInfo.cpuUsage < item2->fInfo.cpuUsage) return 1;
+        return 0;
+    }
 
 private:
     ProcessInfo fInfo;
@@ -197,6 +207,7 @@ ProcessView::ProcessView()
     fSearchControl->SetModificationMessage(new BMessage(MSG_SEARCH_UPDATED));
 
     fProcessListView = new ProcessListView("process_list");
+    BScrollView* processScrollView = new BScrollView("process_scroll", fProcessListView, 0, false, true, true);
 
     // Cache translated strings
     fStrRunning = B_TRANSLATE("Running");
@@ -243,7 +254,7 @@ ProcessView::ProcessView()
         .SetInsets(0)
         .Add(fSearchControl)
         .Add(headerView)
-        .Add(fProcessListView)
+        .Add(processScrollView)
     .End();
 }
 
@@ -258,26 +269,8 @@ ProcessView::~ProcessView()
     }
     delete fContextMenu;
 
-    // BListView owns the items if we call MakeEmpty in the dtor? No, BListView doesn't delete items by default unless we iterate.
-    // Actually, common practice:
-    for (int32 i = 0; i < fProcessListView->CountItems(); i++) {
-        delete fProcessListView->ItemAt(i);
-    }
-    // Also clear the map
-    // Items in map but not in list (filtered out)?
-    for (auto& pair : fTeamItemMap) {
-        // If it's not in the list, we still need to delete it.
-        // We can check if it's in list or just delete all from map.
-        // But duplicates? No, map is unique.
-        // Wait, items in list are pointers to items in map.
-        // So we should delete from map.
-
-        // However, list view also holds pointers.
-        // Best approach:
-        // Clear list view without deleting items.
-        // Delete all items in map.
-    }
     fProcessListView->MakeEmpty(); // Just clears pointers
+    fVisibleItems.clear();
     for (auto& pair : fTeamItemMap) {
         delete pair.second;
     }
@@ -498,6 +491,7 @@ void ProcessView::FilterRows()
     // We have to remove them from the list but keep them in fTeamItemMap.
 
     fProcessListView->MakeEmpty(); // Clear visualization (pointers only)
+    fVisibleItems.clear();
 
     for (auto& pair : fTeamItemMap) {
         team_id id = pair.first;
@@ -514,10 +508,12 @@ void ProcessView::FilterRows()
 
         if (match) {
             fProcessListView->AddItem(item);
+            fVisibleItems.insert(item);
         }
     }
 
     // Restore selection? Too hard for now.
+    fProcessListView->SortItems(ProcessListItem::CompareCPU);
     fProcessListView->Invalidate();
 }
 
@@ -567,14 +563,12 @@ void ProcessView::Update(BMessage* message)
             }
             if (match) {
                 fProcessListView->AddItem(item);
+                fVisibleItems.insert(item);
                 listChanged = true;
             }
         } else {
             item = fTeamItemMap[info.id];
             item->Update(info, stateStr);
-            // Invalidate item if visible
-            // fProcessListView->InvalidateItem(fProcessListView->IndexOf(item));
-            // Too expensive to search index every time?
         }
     }
 
@@ -582,8 +576,9 @@ void ProcessView::Update(BMessage* message)
 	for (auto it = fTeamItemMap.begin(); it != fTeamItemMap.end();) {
         if (fActivePIDs.find(it->first) == fActivePIDs.end()) {
 			ProcessListItem* item = it->second;
-            if (fProcessListView->HasItem(item)) {
+            if (fVisibleItems.find(item) != fVisibleItems.end()) {
                 fProcessListView->RemoveItem(item);
+                fVisibleItems.erase(item);
                 listChanged = true;
             }
 			delete item;
@@ -603,12 +598,8 @@ void ProcessView::Update(BMessage* message)
         }
     }
 
-    if (listChanged)
-        fProcessListView->Invalidate();
-    else {
-        // Just invalidate the list view to redraw updates (cpu usage etc)
-        fProcessListView->Invalidate();
-    }
+    fProcessListView->SortItems(ProcessListItem::CompareCPU);
+    fProcessListView->Invalidate();
 }
 
 int32 ProcessView::UpdateThread(void* data)

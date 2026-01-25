@@ -17,6 +17,7 @@
 #include "ActivityGraphView.h"
 #include <Messenger.h>
 #include <Catalog.h>
+#include <ScrollView.h>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "NetworkView"
@@ -65,10 +66,13 @@ public:
         else textColor = ui_color(B_LIST_ITEM_TEXT_COLOR);
         owner->SetHighColor(textColor);
 
-        float x = itemRect.left + 5;
-        float y = itemRect.bottom - 3;
         BFont font;
         owner->GetFont(&font);
+        font_height fh;
+        font.GetHeight(&fh);
+
+        float x = itemRect.left + 5;
+        float y = itemRect.bottom - fh.descent;
 
         auto drawTruncated = [&](const BString& str, float width) {
              BString out;
@@ -145,12 +149,13 @@ NetworkView::NetworkView()
     headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20));
 
     fInterfaceListView = new BListView("interface_list", B_SINGLE_SELECTION_LIST, B_WILL_DRAW | B_NAVIGABLE);
+    BScrollView* netScrollView = new BScrollView("net_scroll", fInterfaceListView, 0, false, true, true);
 
     BLayoutBuilder::Group<>(netBox, B_VERTICAL, 0)
         .SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING + 15,
                    B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
         .Add(headerView)
-        .Add(fInterfaceListView);
+        .Add(netScrollView);
 
     fDownloadGraph = new ActivityGraphView("download_graph", {0, 0, 0, 0}, B_MENU_SELECTION_BACKGROUND_COLOR);
     fUploadGraph = new ActivityGraphView("upload_graph", {0, 0, 0, 0}, B_FAILURE_COLOR);
@@ -177,6 +182,7 @@ NetworkView::~NetworkView()
     }
     fInterfaceListView->MakeEmpty();
     fInterfaceItemMap.clear();
+    fVisibleItems.clear();
 }
 
 void NetworkView::AttachedToWindow()
@@ -283,6 +289,7 @@ void NetworkView::UpdateData(BMessage* message)
                 item = new InterfaceListItem(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes);
                 fInterfaceListView->AddItem(item);
                 fInterfaceItemMap[name] = item;
+                fVisibleItems.insert(item);
                 listChanged = true;
             } else {
                 item = rowIt->second;
@@ -301,7 +308,10 @@ void NetworkView::UpdateData(BMessage* message)
 	for (auto it = fInterfaceItemMap.begin(); it != fInterfaceItemMap.end();) {
 		if (activeInterfaces.find(it->first) == activeInterfaces.end()) {
 			InterfaceListItem* item = it->second;
-			fInterfaceListView->RemoveItem(item);
+            if (fVisibleItems.find(item) != fVisibleItems.end()) {
+			    fInterfaceListView->RemoveItem(item);
+                fVisibleItems.erase(item);
+            }
 			delete item;
 			it = fInterfaceItemMap.erase(it);
             listChanged = true;
@@ -310,11 +320,7 @@ void NetworkView::UpdateData(BMessage* message)
 		}
 	}
     
-    if (listChanged)
-        fInterfaceListView->Invalidate();
-    else
-        fInterfaceListView->Invalidate(); // Refresh stats
-
+    fInterfaceListView->Invalidate();
 
     // Update graphs
     if (fUploadGraph && fDownloadGraph) {

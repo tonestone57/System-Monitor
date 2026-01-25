@@ -16,6 +16,7 @@
 #include <set>
 #include <Messenger.h>
 #include <Catalog.h>
+#include <ScrollView.h>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "DiskView"
@@ -63,10 +64,13 @@ public:
         else textColor = ui_color(B_LIST_ITEM_TEXT_COLOR);
         owner->SetHighColor(textColor);
 
-        float x = itemRect.left + 5;
-        float y = itemRect.bottom - 3;
         BFont font;
         owner->GetFont(&font);
+        font_height fh;
+        font.GetHeight(&fh);
+
+        float x = itemRect.left + 5;
+        float y = itemRect.bottom - fh.descent;
 
         auto drawTruncated = [&](const BString& str, float width) {
              BString out;
@@ -146,6 +150,7 @@ DiskView::DiskView()
     headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20));
 
     fDiskListView = new BListView("disk_list", B_SINGLE_SELECTION_LIST, B_WILL_DRAW | B_NAVIGABLE);
+    BScrollView* diskScrollView = new BScrollView("disk_scroll", fDiskListView, 0, false, true, true);
 
     BStringView* noteView = new BStringView("io_note", B_TRANSLATE("Real-time Disk I/O monitoring is not supported on this system."));
     noteView->SetAlignment(B_ALIGN_CENTER);
@@ -158,7 +163,7 @@ DiskView::DiskView()
         .SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING + 15, // Approx font height
                    B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
         .Add(headerView)
-        .Add(fDiskListView)
+        .Add(diskScrollView)
         .AddStrut(B_USE_DEFAULT_SPACING)
         .Add(noteView);
 
@@ -177,18 +182,18 @@ DiskView::~DiskView()
         wait_for_thread(fUpdateThread, &dummy);
     }
 
-    for (int32 i = 0; i < fDiskListView->CountItems(); i++) {
-        delete fDiskListView->ItemAt(i);
-    }
+    // fDiskListView owns the items? No, BListView doesn't own items by default unless we iterate.
+    // However, if we empty it, we lose the pointers to items that are also in the map.
+    // Correct approach: Empty list without deletion, then delete from map/visible set.
+    // Or just clear map since they are same pointers.
+    // But we need to delete the objects.
     fDiskListView->MakeEmpty();
-    // No need to delete items in map if they are same pointers as in list,
-    // but safer to clear map.
+
     for (auto& pair : fDeviceItemMap) {
-         // If item was removed from list but kept in map, we must delete it.
-         // In UpdateData, we manage this explicitly.
-         // Here, we can just clear map.
+        delete pair.second;
     }
     fDeviceItemMap.clear();
+    fVisibleItems.clear();
 }
 
 void DiskView::AttachedToWindow()
@@ -361,6 +366,7 @@ void DiskView::UpdateData(BMessage* message)
 			item = new DiskListItem(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent);
 			fDiskListView->AddItem(item);
 			fDeviceItemMap[deviceID] = item;
+            fVisibleItems.insert(item);
             listChanged = true;
 		} else {
 			item = fDeviceItemMap[deviceID];
@@ -372,7 +378,10 @@ void DiskView::UpdateData(BMessage* message)
 	for (auto it = fDeviceItemMap.begin(); it != fDeviceItemMap.end();) {
 		if (activeDevices.find(it->first) == activeDevices.end()) {
 			DiskListItem* item = it->second;
-			fDiskListView->RemoveItem(item);
+            if (fVisibleItems.find(item) != fVisibleItems.end()) {
+			    fDiskListView->RemoveItem(item);
+                fVisibleItems.erase(item);
+            }
 			delete item;
 			it = fDeviceItemMap.erase(it);
             listChanged = true;
@@ -381,10 +390,7 @@ void DiskView::UpdateData(BMessage* message)
 		}
 	}
 
-    if (listChanged)
-        fDiskListView->Invalidate();
-    else
-        fDiskListView->Invalidate(); // Refresh stats
+    fDiskListView->Invalidate();
 
     fLocker.Unlock();
 }

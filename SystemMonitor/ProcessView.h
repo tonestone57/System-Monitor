@@ -72,7 +72,7 @@ private:
     
     std::unordered_map<thread_id, bigtime_t> fThreadTimeMap;
     std::unordered_map<team_id, ProcessListItem*> fTeamItemMap;
-    // std::unordered_set<ProcessListItem*> fVisibleItems; // Not easily tracked with BListView unless we manage addition/removal manually
+    std::unordered_set<ProcessListItem*> fVisibleItems;
 
     // Optimization members
     std::unordered_set<uid_t> fActiveUIDs;

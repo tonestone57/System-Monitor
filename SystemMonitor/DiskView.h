@@ -45,6 +45,7 @@ private:
     
     BLocker fLocker;
 	std::map<dev_t, DiskListItem*> fDeviceItemMap;
+    std::set<DiskListItem*> fVisibleItems;
 
     thread_id fUpdateThread;
     sem_id fScanSem;

@@ -64,6 +64,7 @@ private:
 
     std::map<BString, InterfaceStatsRecord, BStringLess> fPreviousStatsMap;
     std::map<BString, InterfaceListItem*, BStringLess> fInterfaceItemMap;
+    std::set<InterfaceListItem*> fVisibleItems;
     float fUploadSpeed;
     float fDownloadSpeed;
 
