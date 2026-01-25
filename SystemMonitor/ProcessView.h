@@ -80,7 +80,7 @@ private:
     BColumn* fUserColumn;
     
     std::unordered_map<thread_id, bigtime_t> fThreadTimeMap;
-	std::unordered_map<team_id, BRow*> fTeamRowMap;
+    std::unordered_map<team_id, BRow*> fTeamRowMap;
     std::unordered_set<BRow*> fVisibleRows;
 
     // Optimization members

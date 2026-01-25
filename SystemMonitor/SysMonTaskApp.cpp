@@ -168,41 +168,41 @@ PerformanceView::PerformanceView()
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
-        BSplitView* splitView = new BSplitView(B_HORIZONTAL, B_USE_DEFAULT_SPACING);
-        splitView->SetInsets(B_USE_DEFAULT_SPACING);
+    BSplitView* splitView = new BSplitView(B_HORIZONTAL, B_USE_DEFAULT_SPACING);
+    splitView->SetInsets(B_USE_DEFAULT_SPACING);
 
-        fSummaryView = new SummaryView(&fStats);
+    fSummaryView = new SummaryView(&fStats);
 
-        BTabView* tabView = new BTabView("tab_view", B_WIDTH_FROM_WIDEST);
-        fRightPane = tabView;
+    BTabView* tabView = new BTabView("tab_view", B_WIDTH_FROM_WIDEST);
+    fRightPane = tabView;
 
-        fCPUView = new CPUView();
-        fMemView = new MemView();
-        fNetworkView = new NetworkView();
-        fDiskView = new DiskView();
-        fGPUView = new GPUView();
+    fCPUView = new CPUView();
+    fMemView = new MemView();
+    fNetworkView = new NetworkView();
+    fDiskView = new DiskView();
+    fGPUView = new GPUView();
 
-        tabView->AddTab(fCPUView);
-        tabView->TabAt(0)->SetLabel(B_TRANSLATE("CPU"));
-        tabView->AddTab(fMemView);
-        tabView->TabAt(1)->SetLabel(B_TRANSLATE("Memory"));
-        tabView->AddTab(fNetworkView);
-        tabView->TabAt(2)->SetLabel(B_TRANSLATE("Network"));
-        tabView->AddTab(fDiskView);
-        tabView->TabAt(3)->SetLabel(B_TRANSLATE("Disk"));
-        tabView->AddTab(fGPUView);
-        tabView->TabAt(4)->SetLabel(B_TRANSLATE("GPU"));
+    tabView->AddTab(fCPUView);
+    tabView->TabAt(0)->SetLabel(B_TRANSLATE("CPU"));
+    tabView->AddTab(fMemView);
+    tabView->TabAt(1)->SetLabel(B_TRANSLATE("Memory"));
+    tabView->AddTab(fNetworkView);
+    tabView->TabAt(2)->SetLabel(B_TRANSLATE("Network"));
+    tabView->AddTab(fDiskView);
+    tabView->TabAt(3)->SetLabel(B_TRANSLATE("Disk"));
+    tabView->AddTab(fGPUView);
+    tabView->TabAt(4)->SetLabel(B_TRANSLATE("GPU"));
 
-        splitView->AddChild(fSummaryView);
-        splitView->AddChild(fRightPane);
+    splitView->AddChild(fSummaryView);
+    splitView->AddChild(fRightPane);
 
-        splitView->SetItemWeight(0, 0.25f, false);
+    splitView->SetItemWeight(0, 0.25f, false);
 
-        fSplitView = splitView;
+    fSplitView = splitView;
 
-        BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
-            .Add(splitView)
-            .End();
+    BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
+        .Add(splitView)
+        .End();
 }
 
 void PerformanceView::AttachedToWindow()
