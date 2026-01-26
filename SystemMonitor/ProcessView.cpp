@@ -38,17 +38,59 @@ const float kUserWidth = 80;
 
 namespace {
 
-class ProcessListItem : public BListItem {
+class ClickableHeaderView : public BStringView {
 public:
-    ProcessListItem(const ProcessInfo& info, const char* stateStr)
-        : BListItem()
+    ClickableHeaderView(const char* label, float width, int32 mode)
+        : BStringView(NULL, label), fMode(mode)
     {
-        Update(info, stateStr);
+        SetExplicitMinSize(BSize(width, B_SIZE_UNSET));
+        SetExplicitMaxSize(BSize(width, B_SIZE_UNSET));
+        SetAlignment(B_ALIGN_LEFT);
+        SetFont(be_bold_font);
+        SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     }
 
-    void Update(const ProcessInfo& info, const char* stateStr) {
+    virtual void MouseDown(BPoint where) {
+        if (Window()) {
+            BMessenger target(Parent()->Parent()); // Target ProcessView (Header -> Group -> ProcessView)
+            BMessage msg(MSG_HEADER_CLICKED);
+            msg.AddInt32("mode", fMode);
+            target.SendMessage(&msg);
+        }
+    }
+
+private:
+    int32 fMode;
+};
+
+class ProcessListItem : public BListItem {
+public:
+    ProcessListItem(const ProcessInfo& info, const char* stateStr, const BFont* font)
+        : BListItem()
+    {
+        Update(info, stateStr, font);
+    }
+
+    void Update(const ProcessInfo& info, const char* stateStr, const BFont* font) {
         fInfo = info;
-        fStateStr = stateStr;
+
+        // Cache display strings
+        fCachedPID.SetToFormat("%" B_PRId32, fInfo.id);
+        fCachedName = fInfo.name;
+        fCachedState = stateStr;
+        fCachedCPU.SetToFormat("%.1f", fInfo.cpuUsage);
+        fCachedMem = FormatBytes(fInfo.memoryUsageBytes);
+        fCachedThreads.SetToFormat("%" B_PRIu32, fInfo.threadCount);
+        fCachedUser = fInfo.userName;
+
+        // Truncate strings if font is provided
+        if (font) {
+            font->TruncateString(&fCachedName, B_TRUNCATE_END, kNameWidth - 10, &fTruncatedName);
+            font->TruncateString(&fCachedUser, B_TRUNCATE_END, kUserWidth - 10, &fTruncatedUser);
+        } else {
+            fTruncatedName = fCachedName;
+            fTruncatedUser = fCachedUser;
+        }
     }
 
     virtual void DrawItem(BView* owner, BRect itemRect, bool complete = false) {
@@ -72,44 +114,31 @@ public:
         float y = itemRect.bottom - fh.descent;
 
         // PID
-        BString pidStr; pidStr << fInfo.id;
-        owner->DrawString(pidStr.String(), BPoint(x, y));
+        owner->DrawString(fCachedPID.String(), BPoint(x, y));
         x += kPIDWidth;
 
         // Name
-        BString nameStr(fInfo.name);
-        BString truncatedName;
-        BFont font;
-        owner->GetFont(&font);
-        font.TruncateString(&nameStr, B_TRUNCATE_END, kNameWidth - 10, &truncatedName);
-        owner->DrawString(truncatedName.String(), BPoint(x, y));
+        owner->DrawString(fTruncatedName.String(), BPoint(x, y));
         x += kNameWidth;
 
         // State
-        owner->DrawString(fStateStr.String(), BPoint(x, y));
+        owner->DrawString(fCachedState.String(), BPoint(x, y));
         x += kStateWidth;
 
         // CPU
-        char cpuBuf[32];
-        snprintf(cpuBuf, sizeof(cpuBuf), "%.1f", fInfo.cpuUsage);
-        owner->DrawString(cpuBuf, BPoint(x, y));
+        owner->DrawString(fCachedCPU.String(), BPoint(x, y));
         x += kCPUWidth;
 
         // Mem
-        BString memStr = FormatBytes(fInfo.memoryUsageBytes);
-        owner->DrawString(memStr.String(), BPoint(x, y));
+        owner->DrawString(fCachedMem.String(), BPoint(x, y));
         x += kMemWidth;
 
         // Threads
-        BString threadsStr; threadsStr << fInfo.threadCount;
-        owner->DrawString(threadsStr.String(), BPoint(x, y));
+        owner->DrawString(fCachedThreads.String(), BPoint(x, y));
         x += kThreadsWidth;
 
         // User
-        BString userStr(fInfo.userName);
-        BString truncatedUser;
-        font.TruncateString(&userStr, B_TRUNCATE_END, kUserWidth - 10, &truncatedUser);
-        owner->DrawString(truncatedUser.String(), BPoint(x, y));
+        owner->DrawString(fTruncatedUser.String(), BPoint(x, y));
     }
 
     team_id TeamID() const { return fInfo.id; }
@@ -126,9 +155,48 @@ public:
         return 0;
     }
 
+    static int ComparePID(const void* first, const void* second) {
+        const ProcessListItem* item1 = *(const ProcessListItem**)first;
+        const ProcessListItem* item2 = *(const ProcessListItem**)second;
+        if (item1->fInfo.id < item2->fInfo.id) return -1;
+        if (item1->fInfo.id > item2->fInfo.id) return 1;
+        return 0;
+    }
+
+    static int CompareName(const void* first, const void* second) {
+        const ProcessListItem* item1 = *(const ProcessListItem**)first;
+        const ProcessListItem* item2 = *(const ProcessListItem**)second;
+        return strcasecmp(item1->fInfo.name, item2->fInfo.name);
+    }
+
+    static int CompareMem(const void* first, const void* second) {
+        const ProcessListItem* item1 = *(const ProcessListItem**)first;
+        const ProcessListItem* item2 = *(const ProcessListItem**)second;
+        if (item1->fInfo.memoryUsageBytes > item2->fInfo.memoryUsageBytes) return -1;
+        if (item1->fInfo.memoryUsageBytes < item2->fInfo.memoryUsageBytes) return 1;
+        return 0;
+    }
+
+    static int CompareThreads(const void* first, const void* second) {
+        const ProcessListItem* item1 = *(const ProcessListItem**)first;
+        const ProcessListItem* item2 = *(const ProcessListItem**)second;
+        if (item1->fInfo.threadCount > item2->fInfo.threadCount) return -1;
+        if (item1->fInfo.threadCount < item2->fInfo.threadCount) return 1;
+        return 0;
+    }
+
 private:
     ProcessInfo fInfo;
-    BString fStateStr;
+    BString fCachedPID;
+    BString fCachedName;
+    BString fCachedState;
+    BString fCachedCPU;
+    BString fCachedMem;
+    BString fCachedThreads;
+    BString fCachedUser;
+
+    BString fTruncatedName;
+    BString fTruncatedUser;
 };
 
 class ProcessListView : public BListView {
@@ -189,7 +257,8 @@ ProcessView::ProcessView()
       fFilterID(""),
       fUpdateThread(B_ERROR),
       fTerminated(false),
-      fIsHidden(false)
+      fIsHidden(false),
+      fSortMode(SORT_BY_CPU)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -223,22 +292,18 @@ ProcessView::ProcessView()
     headerView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
     // Helper to add header label
-    auto addHeader = [&](const char* label, float width) {
-        BStringView* sv = new BStringView(NULL, label);
-        sv->SetExplicitMinSize(BSize(width, B_SIZE_UNSET));
-        sv->SetExplicitMaxSize(BSize(width, B_SIZE_UNSET));
-        sv->SetAlignment(B_ALIGN_LEFT);
-        sv->SetFont(be_bold_font);
+    auto addHeader = [&](const char* label, float width, int32 mode) {
+        ClickableHeaderView* sv = new ClickableHeaderView(label, width, mode);
         headerView->AddChild(sv);
     };
 
-    addHeader(B_TRANSLATE("PID"), kPIDWidth);
-    addHeader(B_TRANSLATE("Name"), kNameWidth);
-    addHeader(B_TRANSLATE("State"), kStateWidth);
-    addHeader(B_TRANSLATE("CPU%"), kCPUWidth);
-    addHeader(B_TRANSLATE("Mem"), kMemWidth);
-    addHeader(B_TRANSLATE("Thds"), kThreadsWidth);
-    addHeader(B_TRANSLATE("User"), kUserWidth);
+    addHeader(B_TRANSLATE("PID"), kPIDWidth, SORT_BY_PID);
+    addHeader(B_TRANSLATE("Name"), kNameWidth, SORT_BY_NAME);
+    addHeader(B_TRANSLATE("State"), kStateWidth, SORT_BY_PID); // No sort by state for now
+    addHeader(B_TRANSLATE("CPU%"), kCPUWidth, SORT_BY_CPU);
+    addHeader(B_TRANSLATE("Mem"), kMemWidth, SORT_BY_MEM);
+    addHeader(B_TRANSLATE("Thds"), kThreadsWidth, SORT_BY_THREADS);
+    addHeader(B_TRANSLATE("User"), kUserWidth, SORT_BY_PID); // No sort by user for now
 
     headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20));
 
@@ -346,6 +411,14 @@ void ProcessView::MessageReceived(BMessage* message)
                         errAlert->Go(NULL);
                     }
                 }
+            }
+            break;
+        }
+        case MSG_HEADER_CLICKED: {
+            int32 mode;
+            if (message->FindInt32("mode", &mode) == B_OK) {
+                fSortMode = (ProcessSortMode)mode;
+                FilterRows(); // Trigger sort
             }
             break;
         }
@@ -491,9 +564,10 @@ void ProcessView::FilterRows()
         bool match = true;
 
         if (filtering) {
-            BString name(item->Info().name);
-            BString idStr; idStr << id;
-            if (name.IFindFirst(searchText) == B_ERROR && idStr.IFindFirst(searchText) == B_ERROR) {
+            fFilterName.SetTo(item->Info().name);
+            fFilterID.SetToFormat("%" B_PRId32, id);
+
+            if (fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
                 match = false;
             }
         }
@@ -505,7 +579,13 @@ void ProcessView::FilterRows()
     }
 
     // Restore selection? Too hard for now.
-    fProcessListView->SortItems(ProcessListItem::CompareCPU);
+    switch (fSortMode) {
+        case SORT_BY_PID: fProcessListView->SortItems(ProcessListItem::ComparePID); break;
+        case SORT_BY_NAME: fProcessListView->SortItems(ProcessListItem::CompareName); break;
+        case SORT_BY_MEM: fProcessListView->SortItems(ProcessListItem::CompareMem); break;
+        case SORT_BY_THREADS: fProcessListView->SortItems(ProcessListItem::CompareThreads); break;
+        case SORT_BY_CPU: default: fProcessListView->SortItems(ProcessListItem::CompareCPU); break;
+    }
     fProcessListView->Invalidate();
 }
 
@@ -527,6 +607,10 @@ void ProcessView::Update(BMessage* message)
 
     bool listChanged = false;
 
+    // Get font once
+    BFont font;
+    fProcessListView->GetFont(&font);
+
     // First pass: Update existing items or create new ones
     for (size_t i = 0; i < count; i++) {
         const ProcessInfo& info = infos[i];
@@ -541,15 +625,15 @@ void ProcessView::Update(BMessage* message)
 
         ProcessListItem* item;
         if (fTeamItemMap.find(info.id) == fTeamItemMap.end()) {
-            item = new ProcessListItem(info, stateStr);
+            item = new ProcessListItem(info, stateStr, &font);
             fTeamItemMap[info.id] = item;
 
             // Check filter before adding
             bool match = true;
             if (filtering) {
-                 BString name(info.name);
-                 BString idStr; idStr << info.id;
-                 if (name.IFindFirst(searchText) == B_ERROR && idStr.IFindFirst(searchText) == B_ERROR) {
+                 fFilterName.SetTo(info.name);
+                 fFilterID.SetToFormat("%" B_PRId32, info.id);
+                 if (fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
                      match = false;
                  }
             }
@@ -560,7 +644,7 @@ void ProcessView::Update(BMessage* message)
             }
         } else {
             item = fTeamItemMap[info.id];
-            item->Update(info, stateStr);
+            item->Update(info, stateStr, &font);
         }
     }
 
@@ -590,7 +674,13 @@ void ProcessView::Update(BMessage* message)
         }
     }
 
-    fProcessListView->SortItems(ProcessListItem::CompareCPU);
+    switch (fSortMode) {
+        case SORT_BY_PID: fProcessListView->SortItems(ProcessListItem::ComparePID); break;
+        case SORT_BY_NAME: fProcessListView->SortItems(ProcessListItem::CompareName); break;
+        case SORT_BY_MEM: fProcessListView->SortItems(ProcessListItem::CompareMem); break;
+        case SORT_BY_THREADS: fProcessListView->SortItems(ProcessListItem::CompareThreads); break;
+        case SORT_BY_CPU: default: fProcessListView->SortItems(ProcessListItem::CompareCPU); break;
+    }
     fProcessListView->Invalidate();
 }
 

@@ -64,6 +64,7 @@ MemView::MemView()
     fCacheGraphView = new ActivityGraphView("cacheGraph", {0, 0, 0, 0}, B_MENU_SELECTION_BACKGROUND_COLOR);
     fCacheGraphView->SetExplicitMinSize(BSize(0, 60));
     fCacheGraphView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 100));
+    fCacheGraphView->SetManualScale(0, 100);
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
         .SetInsets(B_USE_DEFAULT_SPACING)

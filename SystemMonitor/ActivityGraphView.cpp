@@ -10,7 +10,10 @@ ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_wh
 	fColor(color),
     fSystemColor(systemColor),
 	fOffscreen(NULL),
-	fResolution(1000000)
+	fResolution(1000000),
+	fManualScale(false),
+	fManualMin(0),
+	fManualMax(0)
 {
 	fHistory = new DataHistory(10 * 60000000LL, 1000000);
 }
@@ -126,6 +129,16 @@ ActivityGraphView::SetRefreshInterval(bigtime_t interval)
 
 
 void
+ActivityGraphView::SetManualScale(int64 min, int64 max)
+{
+	fManualScale = true;
+	fManualMin = min;
+	fManualMax = max;
+	Invalidate();
+}
+
+
+void
 ActivityGraphView::Draw(BRect updateRect)
 {
 	_DrawHistory();
@@ -173,8 +186,14 @@ ActivityGraphView::_DrawHistory()
                  view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
             }
 
-			int64 min = fHistory->MinimumValue();
-			int64 max = fHistory->MaximumValue();
+			int64 min, max;
+			if (fManualScale) {
+				min = fManualMin;
+				max = fManualMax;
+			} else {
+				min = fHistory->MinimumValue();
+				max = fHistory->MaximumValue();
+			}
 			int64 range = max - min;
 
             // Calculate points

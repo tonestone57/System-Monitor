@@ -32,15 +32,14 @@ const float kDiskPercentWidth = 80;
 class DiskListItem : public BListItem {
 public:
     DiskListItem(const BString& device, const BString& mount, const BString& fs,
-                 uint64 total, uint64 used, uint64 free, double percent)
-        : BListItem(),
-          fDevice(device), fMount(mount), fFS(fs),
-          fTotal(total), fUsed(used), fFree(free), fPercent(percent)
+                 uint64 total, uint64 used, uint64 free, double percent, const BFont* font)
+        : BListItem()
     {
+        Update(device, mount, fs, total, used, free, percent, font);
     }
 
     void Update(const BString& device, const BString& mount, const BString& fs,
-                 uint64 total, uint64 used, uint64 free, double percent) {
+                 uint64 total, uint64 used, uint64 free, double percent, const BFont* font) {
         fDevice = device;
         fMount = mount;
         fFS = fs;
@@ -48,6 +47,21 @@ public:
         fUsed = used;
         fFree = free;
         fPercent = percent;
+
+        fCachedTotal = FormatBytes(fTotal);
+        fCachedUsed = FormatBytes(fUsed);
+        fCachedFree = FormatBytes(fFree);
+        fCachedPercent.SetToFormat("%.1f%%", fPercent);
+
+        if (font) {
+            font->TruncateString(&fDevice, B_TRUNCATE_MIDDLE, kDiskDeviceWidth - 10, &fTruncatedDevice);
+            font->TruncateString(&fMount, B_TRUNCATE_MIDDLE, kDiskMountWidth - 10, &fTruncatedMount);
+            font->TruncateString(&fFS, B_TRUNCATE_END, kDiskFSWidth - 10, &fTruncatedFS);
+        } else {
+            fTruncatedDevice = fDevice;
+            fTruncatedMount = fMount;
+            fTruncatedFS = fFS;
+        }
     }
 
     virtual void DrawItem(BView* owner, BRect itemRect, bool complete = false) {
@@ -64,20 +78,10 @@ public:
         else textColor = ui_color(B_LIST_ITEM_TEXT_COLOR);
         owner->SetHighColor(textColor);
 
-        BFont font;
-        owner->GetFont(&font);
         font_height fh;
-        font.GetHeight(&fh);
-
+        owner->GetFont(&fh);
         float x = itemRect.left + 5;
         float y = itemRect.bottom - fh.descent;
-
-        auto drawTruncated = [&](const BString& str, float width) {
-             BString out = str;
-             font.TruncateString(&out, B_TRUNCATE_MIDDLE, width - 10);
-             owner->DrawString(out.String(), BPoint(x, y));
-             x += width;
-        };
 
         auto drawRight = [&](const BString& str, float width) {
              float w = owner->StringWidth(str.String());
@@ -85,22 +89,19 @@ public:
              x += width;
         };
 
-        drawTruncated(fDevice, kDiskDeviceWidth);
-        drawTruncated(fMount, kDiskMountWidth);
+        owner->DrawString(fTruncatedDevice.String(), BPoint(x, y));
+        x += kDiskDeviceWidth;
 
-        // FS
-        BString fsTrunc = fFS;
-        font.TruncateString(&fsTrunc, B_TRUNCATE_END, kDiskFSWidth - 10);
-        owner->DrawString(fsTrunc.String(), BPoint(x, y));
+        owner->DrawString(fTruncatedMount.String(), BPoint(x, y));
+        x += kDiskMountWidth;
+
+        owner->DrawString(fTruncatedFS.String(), BPoint(x, y));
         x += kDiskFSWidth;
 
-        drawRight(FormatBytes(fTotal), kDiskTotalWidth);
-        drawRight(FormatBytes(fUsed), kDiskUsedWidth);
-        drawRight(FormatBytes(fFree), kDiskFreeWidth);
-
-        char buf[32];
-        snprintf(buf, sizeof(buf), "%.1f%%", fPercent);
-        drawRight(buf, kDiskPercentWidth);
+        drawRight(fCachedTotal, kDiskTotalWidth);
+        drawRight(fCachedUsed, kDiskUsedWidth);
+        drawRight(fCachedFree, kDiskFreeWidth);
+        drawRight(fCachedPercent, kDiskPercentWidth);
     }
 
     static int CompareUsage(const void* first, const void* second) {
@@ -119,6 +120,15 @@ private:
     uint64 fUsed;
     uint64 fFree;
     double fPercent;
+
+    BString fCachedTotal;
+    BString fCachedUsed;
+    BString fCachedFree;
+    BString fCachedPercent;
+
+    BString fTruncatedDevice;
+    BString fTruncatedMount;
+    BString fTruncatedFS;
 };
 
 
@@ -347,6 +357,10 @@ void DiskView::UpdateData(BMessage* message)
 
     bool listChanged = false;
 
+    // Get Font once
+    BFont font;
+    fDiskListView->GetFont(&font);
+
     for (int32 i = 0; i < count; i++) {
         BMessage volMsg;
         if (message->FindMessage("volume", i, &volMsg) != B_OK) continue;
@@ -371,7 +385,7 @@ void DiskView::UpdateData(BMessage* message)
 
 		DiskListItem* item;
 		if (fDeviceItemMap.find(deviceID) == fDeviceItemMap.end()) {
-			item = new DiskListItem(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent);
+			item = new DiskListItem(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font);
 			fDiskListView->AddItem(item);
 			fDeviceItemMap[deviceID] = item;
             fVisibleItems.insert(item);
@@ -379,7 +393,7 @@ void DiskView::UpdateData(BMessage* message)
 		} else {
 			item = fDeviceItemMap[deviceID];
             // Ideally check for changes before calling Invalidate
-            item->Update(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent);
+            item->Update(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font);
 		}
     }
 

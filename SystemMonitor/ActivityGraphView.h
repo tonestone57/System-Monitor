@@ -19,6 +19,7 @@ public:
 
 			void		AddValue(bigtime_t time, int64 value);
 			void		SetRefreshInterval(bigtime_t interval);
+			void		SetManualScale(int64 min, int64 max);
 
 private:
 			void		_UpdateOffscreenBitmap();
@@ -32,6 +33,10 @@ private:
 	DataHistory*		fHistory;
 	bigtime_t			fResolution;
 	std::vector<BPoint>	fPoints;
+
+	bool				fManualScale;
+	int64				fManualMin;
+	int64				fManualMax;
 };
 
 #endif // ACTIVITYGRAPHVIEW_H
