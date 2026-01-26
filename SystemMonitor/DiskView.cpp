@@ -361,7 +361,7 @@ void DiskView::UpdateData(BMessage* message)
 
     // Get Font once
     BFont font;
-    GetFont(&font);
+    fDiskListView->GetFont(&font);
 
     for (int32 i = 0; i < count; i++) {
         BMessage volMsg;

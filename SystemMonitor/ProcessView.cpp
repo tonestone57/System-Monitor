@@ -545,7 +545,7 @@ void ProcessView::Update(BMessage* message)
 
     // Get font once
     BFont font;
-    GetFont(&font);
+    fProcessListView->GetFont(&font);
 
     // First pass: Update existing items or create new ones
     for (size_t i = 0; i < count; i++) {

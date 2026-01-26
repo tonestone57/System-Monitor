@@ -276,7 +276,7 @@ void NetworkView::UpdateData(BMessage* message)
 
     // Get Font once
     BFont font;
-    GetFont(&font);
+    fInterfaceListView->GetFont(&font);
 
     for (int32 i = 0; i < count; i++) {
         const NetworkInfo* info;
