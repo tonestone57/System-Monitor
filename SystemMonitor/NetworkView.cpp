@@ -33,15 +33,14 @@ const float kNetRxSpeedWidth = 90;
 class InterfaceListItem : public BListItem {
 public:
     InterfaceListItem(const BString& name, const BString& type, const BString& addr,
-                      uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed)
-        : BListItem(),
-          fName(name), fType(type), fAddr(addr),
-          fSent(sent), fRecv(recv), fTxSpeed(txSpeed), fRxSpeed(rxSpeed)
+                      uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed, const BFont* font)
+        : BListItem()
     {
+        Update(name, type, addr, sent, recv, txSpeed, rxSpeed, font);
     }
 
     void Update(const BString& name, const BString& type, const BString& addr,
-                      uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed)
+                      uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed, const BFont* font)
     {
         fName = name;
         fType = type;
@@ -50,6 +49,21 @@ public:
         fRecv = recv;
         fTxSpeed = txSpeed;
         fRxSpeed = rxSpeed;
+
+        fCachedSent = ::FormatBytes(fSent);
+        fCachedRecv = ::FormatBytes(fRecv);
+        fCachedTxSpeed = FormatSpeed(fTxSpeed, 1000000);
+        fCachedRxSpeed = FormatSpeed(fRxSpeed, 1000000);
+
+        if (font) {
+            font->TruncateString(&fName, B_TRUNCATE_END, kNetNameWidth - 10, &fTruncatedName);
+            font->TruncateString(&fType, B_TRUNCATE_END, kNetTypeWidth - 10, &fTruncatedType);
+            font->TruncateString(&fAddr, B_TRUNCATE_END, kNetAddrWidth - 10, &fTruncatedAddr);
+        } else {
+            fTruncatedName = fName;
+            fTruncatedType = fType;
+            fTruncatedAddr = fAddr;
+        }
     }
 
     virtual void DrawItem(BView* owner, BRect itemRect, bool complete = false) {
@@ -74,28 +88,26 @@ public:
         float x = itemRect.left + 5;
         float y = itemRect.bottom - fh.descent;
 
-        auto drawTruncated = [&](const BString& str, float width) {
-             BString out;
-             font.TruncateString(&str, B_TRUNCATE_END, width - 10, &out);
-             owner->DrawString(out.String(), BPoint(x, y));
-             x += width;
-        };
-
         auto drawRight = [&](const BString& str, float width) {
              float w = owner->StringWidth(str.String());
              owner->DrawString(str.String(), BPoint(x + width - w - 5, y));
              x += width;
         };
 
-        drawTruncated(fName, kNetNameWidth);
-        drawTruncated(fType, kNetTypeWidth);
-        drawTruncated(fAddr, kNetAddrWidth);
+        owner->DrawString(fTruncatedName.String(), BPoint(x, y));
+        x += kNetNameWidth;
 
-        drawRight(FormatBytes(fSent), kNetSentWidth);
-        drawRight(FormatBytes(fRecv), kNetRecvWidth);
+        owner->DrawString(fTruncatedType.String(), BPoint(x, y));
+        x += kNetTypeWidth;
 
-        drawRight(FormatSpeed(fTxSpeed, 1000000), kNetTxSpeedWidth);
-        drawRight(FormatSpeed(fRxSpeed, 1000000), kNetRxSpeedWidth);
+        owner->DrawString(fTruncatedAddr.String(), BPoint(x, y));
+        x += kNetAddrWidth;
+
+        drawRight(fCachedSent, kNetSentWidth);
+        drawRight(fCachedRecv, kNetRecvWidth);
+
+        drawRight(fCachedTxSpeed, kNetTxSpeedWidth);
+        drawRight(fCachedRxSpeed, kNetRxSpeedWidth);
     }
 
 private:
@@ -106,6 +118,15 @@ private:
     uint64 fRecv;
     uint64 fTxSpeed;
     uint64 fRxSpeed;
+
+    BString fCachedSent;
+    BString fCachedRecv;
+    BString fCachedTxSpeed;
+    BString fCachedRxSpeed;
+
+    BString fTruncatedName;
+    BString fTruncatedType;
+    BString fTruncatedAddr;
 
     static int CompareSpeed(const void* first, const void* second) {
         const InterfaceListItem* item1 = *(const InterfaceListItem**)first;
@@ -253,6 +274,10 @@ void NetworkView::UpdateData(BMessage* message)
 
     bool listChanged = false;
 
+    // Get Font once
+    BFont font;
+    GetFont(&font);
+
     for (int32 i = 0; i < count; i++) {
         const NetworkInfo* info;
         ssize_t size;
@@ -296,14 +321,14 @@ void NetworkView::UpdateData(BMessage* message)
             InterfaceListItem* item;
             auto rowIt = fInterfaceItemMap.find(name);
             if (rowIt == fInterfaceItemMap.end()) {
-                item = new InterfaceListItem(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes);
+                item = new InterfaceListItem(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes, &font);
                 fInterfaceListView->AddItem(item);
                 fInterfaceItemMap[name] = item;
                 fVisibleItems.insert(item);
                 listChanged = true;
             } else {
                 item = rowIt->second;
-                item->Update(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes);
+                item->Update(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes, &font);
             }
         }
     }

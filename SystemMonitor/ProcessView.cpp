@@ -40,15 +40,34 @@ namespace {
 
 class ProcessListItem : public BListItem {
 public:
-    ProcessListItem(const ProcessInfo& info, const char* stateStr)
+    ProcessListItem(const ProcessInfo& info, const char* stateStr, const BFont* font)
         : BListItem()
     {
-        Update(info, stateStr);
+        Update(info, stateStr, font);
     }
 
-    void Update(const ProcessInfo& info, const char* stateStr) {
+    void Update(const ProcessInfo& info, const char* stateStr, const BFont* font) {
         fInfo = info;
-        fStateStr = stateStr;
+
+        // Cache display strings
+        fCachedPID.SetToFormat("%" B_PRId32, fInfo.id);
+        fCachedName = fInfo.name;
+        fCachedState = stateStr;
+        char cpuBuf[32];
+        snprintf(cpuBuf, sizeof(cpuBuf), "%.1f", fInfo.cpuUsage);
+        fCachedCPU = cpuBuf;
+        fCachedMem = FormatBytes(fInfo.memoryUsageBytes);
+        fCachedThreads.SetToFormat("%" B_PRIu32, fInfo.threadCount);
+        fCachedUser = fInfo.userName;
+
+        // Truncate strings if font is provided
+        if (font) {
+            font->TruncateString(&fCachedName, B_TRUNCATE_END, kNameWidth - 10, &fTruncatedName);
+            font->TruncateString(&fCachedUser, B_TRUNCATE_END, kUserWidth - 10, &fTruncatedUser);
+        } else {
+            fTruncatedName = fCachedName;
+            fTruncatedUser = fCachedUser;
+        }
     }
 
     virtual void DrawItem(BView* owner, BRect itemRect, bool complete = false) {
@@ -72,44 +91,31 @@ public:
         float y = itemRect.bottom - fh.descent;
 
         // PID
-        BString pidStr; pidStr << fInfo.id;
-        owner->DrawString(pidStr.String(), BPoint(x, y));
+        owner->DrawString(fCachedPID.String(), BPoint(x, y));
         x += kPIDWidth;
 
         // Name
-        BString nameStr(fInfo.name);
-        BString truncatedName;
-        BFont font;
-        owner->GetFont(&font);
-        font.TruncateString(&nameStr, B_TRUNCATE_END, kNameWidth - 10, &truncatedName);
-        owner->DrawString(truncatedName.String(), BPoint(x, y));
+        owner->DrawString(fTruncatedName.String(), BPoint(x, y));
         x += kNameWidth;
 
         // State
-        owner->DrawString(fStateStr.String(), BPoint(x, y));
+        owner->DrawString(fCachedState.String(), BPoint(x, y));
         x += kStateWidth;
 
         // CPU
-        char cpuBuf[32];
-        snprintf(cpuBuf, sizeof(cpuBuf), "%.1f", fInfo.cpuUsage);
-        owner->DrawString(cpuBuf, BPoint(x, y));
+        owner->DrawString(fCachedCPU.String(), BPoint(x, y));
         x += kCPUWidth;
 
         // Mem
-        BString memStr = FormatBytes(fInfo.memoryUsageBytes);
-        owner->DrawString(memStr.String(), BPoint(x, y));
+        owner->DrawString(fCachedMem.String(), BPoint(x, y));
         x += kMemWidth;
 
         // Threads
-        BString threadsStr; threadsStr << fInfo.threadCount;
-        owner->DrawString(threadsStr.String(), BPoint(x, y));
+        owner->DrawString(fCachedThreads.String(), BPoint(x, y));
         x += kThreadsWidth;
 
         // User
-        BString userStr(fInfo.userName);
-        BString truncatedUser;
-        font.TruncateString(&userStr, B_TRUNCATE_END, kUserWidth - 10, &truncatedUser);
-        owner->DrawString(truncatedUser.String(), BPoint(x, y));
+        owner->DrawString(fTruncatedUser.String(), BPoint(x, y));
     }
 
     team_id TeamID() const { return fInfo.id; }
@@ -128,7 +134,16 @@ public:
 
 private:
     ProcessInfo fInfo;
-    BString fStateStr;
+    BString fCachedPID;
+    BString fCachedName;
+    BString fCachedState;
+    BString fCachedCPU;
+    BString fCachedMem;
+    BString fCachedThreads;
+    BString fCachedUser;
+
+    BString fTruncatedName;
+    BString fTruncatedUser;
 };
 
 class ProcessListView : public BListView {
@@ -491,9 +506,10 @@ void ProcessView::FilterRows()
         bool match = true;
 
         if (filtering) {
-            BString name(item->Info().name);
-            BString idStr; idStr << id;
-            if (name.IFindFirst(searchText) == B_ERROR && idStr.IFindFirst(searchText) == B_ERROR) {
+            fFilterName.SetTo(item->Info().name);
+            fFilterID.SetToFormat("%" B_PRId32, id);
+
+            if (fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
                 match = false;
             }
         }
@@ -527,6 +543,10 @@ void ProcessView::Update(BMessage* message)
 
     bool listChanged = false;
 
+    // Get font once
+    BFont font;
+    GetFont(&font);
+
     // First pass: Update existing items or create new ones
     for (size_t i = 0; i < count; i++) {
         const ProcessInfo& info = infos[i];
@@ -541,15 +561,15 @@ void ProcessView::Update(BMessage* message)
 
         ProcessListItem* item;
         if (fTeamItemMap.find(info.id) == fTeamItemMap.end()) {
-            item = new ProcessListItem(info, stateStr);
+            item = new ProcessListItem(info, stateStr, &font);
             fTeamItemMap[info.id] = item;
 
             // Check filter before adding
             bool match = true;
             if (filtering) {
-                 BString name(info.name);
-                 BString idStr; idStr << info.id;
-                 if (name.IFindFirst(searchText) == B_ERROR && idStr.IFindFirst(searchText) == B_ERROR) {
+                 fFilterName.SetTo(info.name);
+                 fFilterID.SetToFormat("%" B_PRId32, info.id);
+                 if (fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
                      match = false;
                  }
             }
@@ -560,7 +580,7 @@ void ProcessView::Update(BMessage* message)
             }
         } else {
             item = fTeamItemMap[info.id];
-            item->Update(info, stateStr);
+            item->Update(info, stateStr, &font);
         }
     }
 
