@@ -51,9 +51,7 @@ public:
         fCachedTotal = FormatBytes(fTotal);
         fCachedUsed = FormatBytes(fUsed);
         fCachedFree = FormatBytes(fFree);
-        char buf[32];
-        snprintf(buf, sizeof(buf), "%.1f%%", fPercent);
-        fCachedPercent = buf;
+        fCachedPercent.SetToFormat("%.1f%%", fPercent);
 
         if (font) {
             font->TruncateString(&fDevice, B_TRUNCATE_MIDDLE, kDiskDeviceWidth - 10, &fTruncatedDevice);

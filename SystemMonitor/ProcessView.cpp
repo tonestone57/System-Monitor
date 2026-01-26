@@ -53,9 +53,7 @@ public:
         fCachedPID.SetToFormat("%" B_PRId32, fInfo.id);
         fCachedName = fInfo.name;
         fCachedState = stateStr;
-        char cpuBuf[32];
-        snprintf(cpuBuf, sizeof(cpuBuf), "%.1f", fInfo.cpuUsage);
-        fCachedCPU = cpuBuf;
+        fCachedCPU.SetToFormat("%.1f", fInfo.cpuUsage);
         fCachedMem = FormatBytes(fInfo.memoryUsageBytes);
         fCachedThreads.SetToFormat("%" B_PRIu32, fInfo.threadCount);
         fCachedUser = fInfo.userName;
