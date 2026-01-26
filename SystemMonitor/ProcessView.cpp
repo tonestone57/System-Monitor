@@ -38,6 +38,31 @@ const float kUserWidth = 80;
 
 namespace {
 
+class ClickableHeaderView : public BStringView {
+public:
+    ClickableHeaderView(const char* label, float width, int32 mode)
+        : BStringView(NULL, label), fMode(mode)
+    {
+        SetExplicitMinSize(BSize(width, B_SIZE_UNSET));
+        SetExplicitMaxSize(BSize(width, B_SIZE_UNSET));
+        SetAlignment(B_ALIGN_LEFT);
+        SetFont(be_bold_font);
+        SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+    }
+
+    virtual void MouseDown(BPoint where) {
+        if (Window()) {
+            BMessenger target(Parent()->Parent()); // Target ProcessView (Header -> Group -> ProcessView)
+            BMessage msg(MSG_HEADER_CLICKED);
+            msg.AddInt32("mode", fMode);
+            target.SendMessage(&msg);
+        }
+    }
+
+private:
+    int32 fMode;
+};
+
 class ProcessListItem : public BListItem {
 public:
     ProcessListItem(const ProcessInfo& info, const char* stateStr, const BFont* font)
@@ -130,6 +155,36 @@ public:
         return 0;
     }
 
+    static int ComparePID(const void* first, const void* second) {
+        const ProcessListItem* item1 = *(const ProcessListItem**)first;
+        const ProcessListItem* item2 = *(const ProcessListItem**)second;
+        if (item1->fInfo.id < item2->fInfo.id) return -1;
+        if (item1->fInfo.id > item2->fInfo.id) return 1;
+        return 0;
+    }
+
+    static int CompareName(const void* first, const void* second) {
+        const ProcessListItem* item1 = *(const ProcessListItem**)first;
+        const ProcessListItem* item2 = *(const ProcessListItem**)second;
+        return strcasecmp(item1->fInfo.name, item2->fInfo.name);
+    }
+
+    static int CompareMem(const void* first, const void* second) {
+        const ProcessListItem* item1 = *(const ProcessListItem**)first;
+        const ProcessListItem* item2 = *(const ProcessListItem**)second;
+        if (item1->fInfo.memoryUsageBytes > item2->fInfo.memoryUsageBytes) return -1;
+        if (item1->fInfo.memoryUsageBytes < item2->fInfo.memoryUsageBytes) return 1;
+        return 0;
+    }
+
+    static int CompareThreads(const void* first, const void* second) {
+        const ProcessListItem* item1 = *(const ProcessListItem**)first;
+        const ProcessListItem* item2 = *(const ProcessListItem**)second;
+        if (item1->fInfo.threadCount > item2->fInfo.threadCount) return -1;
+        if (item1->fInfo.threadCount < item2->fInfo.threadCount) return 1;
+        return 0;
+    }
+
 private:
     ProcessInfo fInfo;
     BString fCachedPID;
@@ -202,7 +257,8 @@ ProcessView::ProcessView()
       fFilterID(""),
       fUpdateThread(B_ERROR),
       fTerminated(false),
-      fIsHidden(false)
+      fIsHidden(false),
+      fSortMode(SORT_BY_CPU)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -236,22 +292,18 @@ ProcessView::ProcessView()
     headerView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
     // Helper to add header label
-    auto addHeader = [&](const char* label, float width) {
-        BStringView* sv = new BStringView(NULL, label);
-        sv->SetExplicitMinSize(BSize(width, B_SIZE_UNSET));
-        sv->SetExplicitMaxSize(BSize(width, B_SIZE_UNSET));
-        sv->SetAlignment(B_ALIGN_LEFT);
-        sv->SetFont(be_bold_font);
+    auto addHeader = [&](const char* label, float width, int32 mode) {
+        ClickableHeaderView* sv = new ClickableHeaderView(label, width, mode);
         headerView->AddChild(sv);
     };
 
-    addHeader(B_TRANSLATE("PID"), kPIDWidth);
-    addHeader(B_TRANSLATE("Name"), kNameWidth);
-    addHeader(B_TRANSLATE("State"), kStateWidth);
-    addHeader(B_TRANSLATE("CPU%"), kCPUWidth);
-    addHeader(B_TRANSLATE("Mem"), kMemWidth);
-    addHeader(B_TRANSLATE("Thds"), kThreadsWidth);
-    addHeader(B_TRANSLATE("User"), kUserWidth);
+    addHeader(B_TRANSLATE("PID"), kPIDWidth, SORT_BY_PID);
+    addHeader(B_TRANSLATE("Name"), kNameWidth, SORT_BY_NAME);
+    addHeader(B_TRANSLATE("State"), kStateWidth, SORT_BY_PID); // No sort by state for now
+    addHeader(B_TRANSLATE("CPU%"), kCPUWidth, SORT_BY_CPU);
+    addHeader(B_TRANSLATE("Mem"), kMemWidth, SORT_BY_MEM);
+    addHeader(B_TRANSLATE("Thds"), kThreadsWidth, SORT_BY_THREADS);
+    addHeader(B_TRANSLATE("User"), kUserWidth, SORT_BY_PID); // No sort by user for now
 
     headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20));
 
@@ -359,6 +411,14 @@ void ProcessView::MessageReceived(BMessage* message)
                         errAlert->Go(NULL);
                     }
                 }
+            }
+            break;
+        }
+        case MSG_HEADER_CLICKED: {
+            int32 mode;
+            if (message->FindInt32("mode", &mode) == B_OK) {
+                fSortMode = (ProcessSortMode)mode;
+                FilterRows(); // Trigger sort
             }
             break;
         }
@@ -519,7 +579,13 @@ void ProcessView::FilterRows()
     }
 
     // Restore selection? Too hard for now.
-    fProcessListView->SortItems(ProcessListItem::CompareCPU);
+    switch (fSortMode) {
+        case SORT_BY_PID: fProcessListView->SortItems(ProcessListItem::ComparePID); break;
+        case SORT_BY_NAME: fProcessListView->SortItems(ProcessListItem::CompareName); break;
+        case SORT_BY_MEM: fProcessListView->SortItems(ProcessListItem::CompareMem); break;
+        case SORT_BY_THREADS: fProcessListView->SortItems(ProcessListItem::CompareThreads); break;
+        case SORT_BY_CPU: default: fProcessListView->SortItems(ProcessListItem::CompareCPU); break;
+    }
     fProcessListView->Invalidate();
 }
 
@@ -608,7 +674,13 @@ void ProcessView::Update(BMessage* message)
         }
     }
 
-    fProcessListView->SortItems(ProcessListItem::CompareCPU);
+    switch (fSortMode) {
+        case SORT_BY_PID: fProcessListView->SortItems(ProcessListItem::ComparePID); break;
+        case SORT_BY_NAME: fProcessListView->SortItems(ProcessListItem::CompareName); break;
+        case SORT_BY_MEM: fProcessListView->SortItems(ProcessListItem::CompareMem); break;
+        case SORT_BY_THREADS: fProcessListView->SortItems(ProcessListItem::CompareThreads); break;
+        case SORT_BY_CPU: default: fProcessListView->SortItems(ProcessListItem::CompareCPU); break;
+    }
     fProcessListView->Invalidate();
 }
 

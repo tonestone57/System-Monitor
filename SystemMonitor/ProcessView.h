@@ -35,6 +35,15 @@ struct ProcessInfo {
 
 const uint32 MSG_PROCESS_DATA_UPDATE = 'pdup';
 const uint32 MSG_SEARCH_UPDATED = 'srch';
+const uint32 MSG_HEADER_CLICKED = 'head';
+
+enum ProcessSortMode {
+    SORT_BY_PID,
+    SORT_BY_NAME,
+    SORT_BY_CPU,
+    SORT_BY_MEM,
+    SORT_BY_THREADS
+};
 
 class ProcessListItem; // Forward declaration
 
@@ -94,6 +103,8 @@ private:
     sem_id fQuitSem;
     std::atomic<bool> fTerminated;
     std::atomic<bool> fIsHidden;
+
+    ProcessSortMode fSortMode;
 };
 
 #endif // PROCESSVIEW_H
