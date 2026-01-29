@@ -23,7 +23,9 @@ CPUView::CPUView()
       fUptimeValue(NULL),
       fCpuCount(0),
       fPreviousTimeSnapshot(0),
-      fCurrentUsage(0.0f)
+      fCurrentUsage(0.0f),
+      fLastUsedTeams(-1),
+      fLastUsedThreads(-1)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     CreateLayout();
@@ -245,11 +247,17 @@ void CPUView::UpdateData()
     // Update Info
     system_info sysInfo;
     if (get_system_info(&sysInfo) == B_OK) {
-        BString procStr; procStr << sysInfo.used_teams;
-        fProcessesValue->SetText(procStr.String());
+        if (sysInfo.used_teams != fLastUsedTeams) {
+            fLastUsedTeams = sysInfo.used_teams;
+            fCachedProcesses.SetToFormat("%" B_PRId32, fLastUsedTeams);
+            fProcessesValue->SetText(fCachedProcesses.String());
+        }
 
-        BString threadStr; threadStr << sysInfo.used_threads;
-        fThreadsValue->SetText(threadStr.String());
+        if (sysInfo.used_threads != fLastUsedThreads) {
+            fLastUsedThreads = sysInfo.used_threads;
+            fCachedThreads.SetToFormat("%" B_PRId32, fLastUsedThreads);
+            fThreadsValue->SetText(fCachedThreads.String());
+        }
 
         fUptimeValue->SetText(::FormatUptime(system_time()).String());
     }
