@@ -8,6 +8,7 @@
 #include <string>
 #include <set>
 #include <atomic>
+#include <Font.h>
 #include "ActivityGraphView.h"
 
 class BListView;
@@ -68,6 +69,8 @@ private:
     std::set<InterfaceListItem*> fVisibleItems;
     float fUploadSpeed;
     float fDownloadSpeed;
+
+    BFont fCachedFont;
 
     thread_id fUpdateThread;
     sem_id fScanSem;

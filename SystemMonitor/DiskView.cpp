@@ -35,11 +35,19 @@ public:
                  uint64 total, uint64 used, uint64 free, double percent, const BFont* font)
         : BListItem()
     {
-        Update(device, mount, fs, total, used, free, percent, font);
+        Update(device, mount, fs, total, used, free, percent, font, true);
     }
 
     void Update(const BString& device, const BString& mount, const BString& fs,
-                 uint64 total, uint64 used, uint64 free, double percent, const BFont* font) {
+                 uint64 total, uint64 used, uint64 free, double percent, const BFont* font, bool force = false) {
+        bool deviceChanged = force || fDevice != device;
+        bool mountChanged = force || fMount != mount;
+        bool fsChanged = force || fFS != fs;
+        bool totalChanged = force || fTotal != total;
+        bool usedChanged = force || fUsed != used;
+        bool freeChanged = force || fFree != free;
+        bool percentChanged = force || fPercent != percent;
+
         fDevice = device;
         fMount = mount;
         fFS = fs;
@@ -48,19 +56,34 @@ public:
         fFree = free;
         fPercent = percent;
 
-        fCachedTotal = FormatBytes(fTotal);
-        fCachedUsed = FormatBytes(fUsed);
-        fCachedFree = FormatBytes(fFree);
-        fCachedPercent.SetToFormat("%.1f%%", fPercent);
+        if (totalChanged)
+            fCachedTotal = FormatBytes(fTotal);
+        if (usedChanged)
+            fCachedUsed = FormatBytes(fUsed);
+        if (freeChanged)
+            fCachedFree = FormatBytes(fFree);
+        if (percentChanged)
+            fCachedPercent.SetToFormat("%.1f%%", fPercent);
 
-        if (font) {
-            font->TruncateString(&fDevice, B_TRUNCATE_MIDDLE, kDiskDeviceWidth - 10, &fTruncatedDevice);
-            font->TruncateString(&fMount, B_TRUNCATE_MIDDLE, kDiskMountWidth - 10, &fTruncatedMount);
-            font->TruncateString(&fFS, B_TRUNCATE_END, kDiskFSWidth - 10, &fTruncatedFS);
-        } else {
-            fTruncatedDevice = fDevice;
-            fTruncatedMount = fMount;
-            fTruncatedFS = fFS;
+        if (deviceChanged) {
+            if (font)
+                font->TruncateString(&fDevice, B_TRUNCATE_MIDDLE, kDiskDeviceWidth - 10, &fTruncatedDevice);
+            else
+                fTruncatedDevice = fDevice;
+        }
+
+        if (mountChanged) {
+            if (font)
+                font->TruncateString(&fMount, B_TRUNCATE_MIDDLE, kDiskMountWidth - 10, &fTruncatedMount);
+            else
+                fTruncatedMount = fMount;
+        }
+
+        if (fsChanged) {
+            if (font)
+                font->TruncateString(&fFS, B_TRUNCATE_END, kDiskFSWidth - 10, &fTruncatedFS);
+            else
+                fTruncatedFS = fFS;
         }
     }
 
@@ -361,6 +384,10 @@ void DiskView::UpdateData(BMessage* message)
     BFont font;
     fDiskListView->GetFont(&font);
 
+    bool fontChanged = (font != fCachedFont);
+    if (fontChanged)
+        fCachedFont = font;
+
     for (int32 i = 0; i < count; i++) {
         BMessage volMsg;
         if (message->FindMessage("volume", i, &volMsg) != B_OK) continue;
@@ -393,7 +420,7 @@ void DiskView::UpdateData(BMessage* message)
 		} else {
 			item = fDeviceItemMap[deviceID];
             // Ideally check for changes before calling Invalidate
-            item->Update(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font);
+            item->Update(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font, fontChanged);
 		}
     }
 
