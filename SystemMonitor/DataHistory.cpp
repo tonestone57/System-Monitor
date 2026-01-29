@@ -1,10 +1,9 @@
 #include "DataHistory.h"
+#include <limits.h>
 
 DataHistory::DataHistory(bigtime_t memorize, bigtime_t interval)
 	:
 	fBuffer(memorize > 0 && interval > 0 ? memorize / interval : 100),
-	fMinimumValue(0),
-	fMaximumValue(0),
 	fRefreshInterval(interval),
 	fLastIndex(-1)
 {
@@ -19,27 +18,36 @@ DataHistory::~DataHistory()
 void
 DataHistory::AddValue(bigtime_t time, int64 value)
 {
-	bool wasEmpty = fBuffer.IsEmpty();
-	data_item* oldest = NULL;
-	if ((size_t)fBuffer.CountItems() == fBuffer.Size())
-		oldest = fBuffer.ItemAt(0);
+	bool full = (size_t)fBuffer.CountItems() == fBuffer.Size();
+	bigtime_t oldestTime = 0;
+	if (full) {
+		data_item* oldest = fBuffer.ItemAt(0);
+		if (oldest != NULL)
+			oldestTime = oldest->time;
+	}
 
 	data_item item = {time, value};
 	fBuffer.AddItem(item);
 
-	if (wasEmpty) {
-		fMinimumValue = value;
-		fMaximumValue = value;
-		return;
+	// Maintain Min Deque (increasing)
+	while (!fMinDeque.empty() && fMinDeque.back().value >= value) {
+		fMinDeque.pop_back();
 	}
+	fMinDeque.push_back(item);
 
-	if (value < fMinimumValue)
-		fMinimumValue = value;
-	if (value > fMaximumValue)
-		fMaximumValue = value;
+	// Maintain Max Deque (decreasing)
+	while (!fMaxDeque.empty() && fMaxDeque.back().value <= value) {
+		fMaxDeque.pop_back();
+	}
+	fMaxDeque.push_back(item);
 
-	if (oldest != NULL && (oldest->value == fMinimumValue || oldest->value == fMaximumValue))
-		_RecalculateMinMax();
+	if (full) {
+		if (!fMinDeque.empty() && fMinDeque.front().time == oldestTime)
+			fMinDeque.pop_front();
+
+		if (!fMaxDeque.empty() && fMaxDeque.front().time == oldestTime)
+			fMaxDeque.pop_front();
+	}
 }
 
 
@@ -84,14 +92,18 @@ DataHistory::ValueAt(bigtime_t time)
 int64
 DataHistory::MaximumValue() const
 {
-	return fMaximumValue;
+	if (fMaxDeque.empty())
+		return 0;
+	return fMaxDeque.front().value;
 }
 
 
 int64
 DataHistory::MinimumValue() const
 {
-	return fMinimumValue;
+	if (fMinDeque.empty())
+		return 0;
+	return fMinDeque.front().value;
 }
 
 
@@ -115,9 +127,6 @@ DataHistory::End() const
 }
 
 
-#include <limits.h>
-
-
 void
 DataHistory::SetRefreshInterval(bigtime_t interval)
 {
@@ -131,21 +140,36 @@ DataHistory::SetRefreshInterval(bigtime_t interval)
 	size_t newSize = duration / interval;
 	if (newSize < 10) newSize = 10;
 
-	if (fBuffer.SetSize(newSize) == B_OK)
+	if (fBuffer.SetSize(newSize) == B_OK) {
 		fRefreshInterval = interval;
+		_ResetDeques();
+	}
 }
 
 
 void
-DataHistory::_RecalculateMinMax()
+DataHistory::_ResetDeques()
 {
-	fMinimumValue = LLONG_MAX;
-	fMaximumValue = LLONG_MIN;
-	for (int32 i = 0; i < fBuffer.CountItems(); i++) {
+	fMinDeque.clear();
+	fMaxDeque.clear();
+
+	int32 count = fBuffer.CountItems();
+	for (int32 i = 0; i < count; i++) {
 		data_item* item = fBuffer.ItemAt(i);
-		if (item->value < fMinimumValue)
-			fMinimumValue = item->value;
-		if (item->value > fMaximumValue)
-			fMaximumValue = item->value;
+		if (item == NULL) continue;
+
+		int64 value = item->value;
+
+		// Maintain Min Deque
+		while (!fMinDeque.empty() && fMinDeque.back().value >= value) {
+			fMinDeque.pop_back();
+		}
+		fMinDeque.push_back(*item);
+
+		// Maintain Max Deque
+		while (!fMaxDeque.empty() && fMaxDeque.back().value <= value) {
+			fMaxDeque.pop_back();
+		}
+		fMaxDeque.push_back(*item);
 	}
 }
