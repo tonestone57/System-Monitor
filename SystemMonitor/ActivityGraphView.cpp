@@ -207,8 +207,9 @@ ActivityGraphView::_DrawHistory()
 
                 points[0] = BPoint(frame.left, frame.bottom);
 
+                int32 searchIndex = 0;
                 for (uint32 i = 0; i < steps; i++) {
-                    int64 value = fHistory->ValueAt(now - (steps - 1 - i) * timeStep);
+                    int64 value = fHistory->ValueAt(now - (steps - 1 - i) * timeStep, &searchIndex);
                     float y;
                     if (range == 0)
                         y = frame.Height() / 2;

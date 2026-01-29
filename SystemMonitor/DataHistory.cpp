@@ -52,9 +52,12 @@ DataHistory::AddValue(bigtime_t time, int64 value)
 
 
 int64
-DataHistory::ValueAt(bigtime_t time)
+DataHistory::ValueAt(bigtime_t time, int32* hintIndex)
 {
 	int32 left = 0;
+	if (hintIndex != NULL && *hintIndex >= 0)
+		left = *hintIndex;
+
 	int32 right = fBuffer.CountItems() - 1;
 	data_item* item = NULL;
 
@@ -67,10 +70,16 @@ DataHistory::ValueAt(bigtime_t time)
 			right = index - 1;
 		} else {
 			data_item* nextItem = fBuffer.ItemAt(index + 1);
-			if (nextItem == NULL)
+			if (nextItem == NULL) {
+				if (hintIndex != NULL)
+					*hintIndex = index;
 				return item->value;
+			}
 			if (nextItem->time > time) {
 				// found item
+				if (hintIndex != NULL)
+					*hintIndex = index;
+
 				int64 value = item->value;
 				// Prevent division by zero if multiple samples have the same timestamp
 				if (nextItem->time > item->time) {

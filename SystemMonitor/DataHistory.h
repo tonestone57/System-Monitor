@@ -17,7 +17,7 @@ public:
 
 			void		AddValue(bigtime_t time, int64 value);
 
-			int64		ValueAt(bigtime_t time);
+			int64		ValueAt(bigtime_t time, int32* hintIndex = NULL);
 			int64		MaximumValue() const;
 			int64		MinimumValue() const;
 			bigtime_t	Start() const;
