@@ -2,6 +2,7 @@
 #define DATAHISTORY_H
 
 #include <OS.h>
+#include <deque>
 #include "CircularBuffer.h"
 
 struct data_item {
@@ -25,12 +26,12 @@ public:
 			void		SetRefreshInterval(bigtime_t interval);
 
 private:
-			void		_RecalculateMinMax();
+			void		_ResetDeques();
 
 private:
 	CircularBuffer<data_item> fBuffer;
-	int64				fMinimumValue;
-	int64				fMaximumValue;
+	std::deque<data_item> fMinDeque;
+	std::deque<data_item> fMaxDeque;
 	bigtime_t			fRefreshInterval;
 	int32				fLastIndex;
 };
