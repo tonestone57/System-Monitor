@@ -280,7 +280,8 @@ ProcessView::ProcessView()
       fUpdateThread(B_ERROR),
       fTerminated(false),
       fIsHidden(false),
-      fSortMode(SORT_BY_CPU)
+      fSortMode(SORT_BY_CPU),
+      fCurrentGeneration(0)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -716,7 +717,6 @@ int32 ProcessView::UpdateThread(void* data)
     ProcessView* view = static_cast<ProcessView*>(data);
     BMessenger target(view);
 
-	std::unordered_set<thread_id> activeThreads;
     std::vector<ProcessInfo> procList;
     procList.reserve(128);
 
@@ -731,7 +731,7 @@ int32 ProcessView::UpdateThread(void* data)
             continue;
         }
 
-		activeThreads.clear();
+        view->fCurrentGeneration++;
         procList.clear();
 
         bigtime_t currentSystemTime = system_time();
@@ -782,7 +782,6 @@ int32 ProcessView::UpdateThread(void* data)
             bool isReady = false;
 
             while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
-				activeThreads.insert(tInfo.thread);
                 bigtime_t threadTime = tInfo.user_time + tInfo.kernel_time;
 
                 if (tInfo.state == B_THREAD_RUNNING) isRunning = true;
@@ -790,15 +789,16 @@ int32 ProcessView::UpdateThread(void* data)
 
                 auto it = view->fThreadTimeMap.find(tInfo.thread);
                 if (it != view->fThreadTimeMap.end()) {
-                    bigtime_t threadTimeDelta = threadTime - it->second;
+                    bigtime_t threadTimeDelta = threadTime - it->second.time;
                     if (threadTimeDelta < 0) threadTimeDelta = 0;
 
                     if (strstr(tInfo.name, "idle thread") == NULL) {
                         teamActiveTimeDelta += threadTimeDelta;
                     }
-                    it->second = threadTime;
+                    it->second.time = threadTime;
+                    it->second.generation = view->fCurrentGeneration;
                 } else {
-                    view->fThreadTimeMap.emplace(tInfo.thread, threadTime);
+                    view->fThreadTimeMap.emplace(tInfo.thread, ThreadState{threadTime, view->fCurrentGeneration});
                 }
             }
 
@@ -822,7 +822,7 @@ int32 ProcessView::UpdateThread(void* data)
         }
 
 		for (auto it = view->fThreadTimeMap.begin(); it != view->fThreadTimeMap.end();) {
-			if (activeThreads.find(it->first) == activeThreads.end())
+			if (it->second.generation != view->fCurrentGeneration)
 				it = view->fThreadTimeMap.erase(it);
 			else
 				++it;
