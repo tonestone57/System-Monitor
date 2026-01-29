@@ -8,6 +8,7 @@
 #include <map>
 #include <set>
 #include <atomic>
+#include <Font.h>
 
 class BBox;
 class BListView;
@@ -47,6 +48,8 @@ private:
     BLocker fLocker;
 	std::map<dev_t, DiskListItem*> fDeviceItemMap;
     std::set<DiskListItem*> fVisibleItems;
+
+    BFont fCachedFont;
 
     thread_id fUpdateThread;
     sem_id fScanSem;

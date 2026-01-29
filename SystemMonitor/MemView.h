@@ -35,6 +35,14 @@ private:
     
     BLocker fLocker;
     float fCurrentUsage;
+
+    uint64 fLastUsedBytes;
+    uint64 fLastFreeBytes;
+    uint64 fLastCachedBytes;
+
+    BString fCachedUsedStr;
+    BString fCachedFreeStr;
+    BString fCachedCachedStr;
 };
 
 #endif // MEMVIEW_H

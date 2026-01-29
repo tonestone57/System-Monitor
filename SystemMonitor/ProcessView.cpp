@@ -68,28 +68,50 @@ public:
     ProcessListItem(const ProcessInfo& info, const char* stateStr, const BFont* font)
         : BListItem()
     {
-        Update(info, stateStr, font);
+        Update(info, stateStr, font, true);
     }
 
-    void Update(const ProcessInfo& info, const char* stateStr, const BFont* font) {
+    void Update(const ProcessInfo& info, const char* stateStr, const BFont* font, bool force = false) {
+        bool nameChanged = force || strcmp(fInfo.name, info.name) != 0;
+        bool userChanged = force || strcmp(fInfo.userName, info.userName) != 0;
+        bool stateChanged = force || fCachedState != stateStr;
+        bool cpuChanged = force || fInfo.cpuUsage != info.cpuUsage;
+        bool memChanged = force || fInfo.memoryUsageBytes != info.memoryUsageBytes;
+        bool threadsChanged = force || fInfo.threadCount != info.threadCount;
+        bool pidChanged = force || fInfo.id != info.id;
+
         fInfo = info;
 
         // Cache display strings
-        fCachedPID.SetToFormat("%" B_PRId32, fInfo.id);
-        fCachedName = fInfo.name;
-        fCachedState = stateStr;
-        fCachedCPU.SetToFormat("%.1f", fInfo.cpuUsage);
-        fCachedMem = FormatBytes(fInfo.memoryUsageBytes);
-        fCachedThreads.SetToFormat("%" B_PRIu32, fInfo.threadCount);
-        fCachedUser = fInfo.userName;
+        if (pidChanged)
+            fCachedPID.SetToFormat("%" B_PRId32, fInfo.id);
 
-        // Truncate strings if font is provided
-        if (font) {
-            font->TruncateString(&fCachedName, B_TRUNCATE_END, kNameWidth - 10, &fTruncatedName);
-            font->TruncateString(&fCachedUser, B_TRUNCATE_END, kUserWidth - 10, &fTruncatedUser);
-        } else {
-            fTruncatedName = fCachedName;
-            fTruncatedUser = fCachedUser;
+        if (nameChanged) {
+            fCachedName = fInfo.name;
+            if (font)
+                font->TruncateString(&fCachedName, B_TRUNCATE_END, kNameWidth - 10, &fTruncatedName);
+            else
+                fTruncatedName = fCachedName;
+        }
+
+        if (stateChanged)
+            fCachedState = stateStr;
+
+        if (cpuChanged)
+            fCachedCPU.SetToFormat("%.1f", fInfo.cpuUsage);
+
+        if (memChanged)
+            fCachedMem = FormatBytes(fInfo.memoryUsageBytes);
+
+        if (threadsChanged)
+            fCachedThreads.SetToFormat("%" B_PRIu32, fInfo.threadCount);
+
+        if (userChanged) {
+            fCachedUser = fInfo.userName;
+            if (font)
+                font->TruncateString(&fCachedUser, B_TRUNCATE_END, kUserWidth - 10, &fTruncatedUser);
+            else
+                fTruncatedUser = fCachedUser;
         }
     }
 
@@ -258,7 +280,8 @@ ProcessView::ProcessView()
       fUpdateThread(B_ERROR),
       fTerminated(false),
       fIsHidden(false),
-      fSortMode(SORT_BY_CPU)
+      fSortMode(SORT_BY_CPU),
+      fCurrentGeneration(0)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -611,6 +634,10 @@ void ProcessView::Update(BMessage* message)
     BFont font;
     fProcessListView->GetFont(&font);
 
+    bool fontChanged = (font != fCachedFont);
+    if (fontChanged)
+        fCachedFont = font;
+
     // First pass: Update existing items or create new ones
     for (size_t i = 0; i < count; i++) {
         const ProcessInfo& info = infos[i];
@@ -644,7 +671,7 @@ void ProcessView::Update(BMessage* message)
             }
         } else {
             item = fTeamItemMap[info.id];
-            item->Update(info, stateStr, &font);
+            item->Update(info, stateStr, &font, fontChanged);
         }
     }
 
@@ -690,7 +717,6 @@ int32 ProcessView::UpdateThread(void* data)
     ProcessView* view = static_cast<ProcessView*>(data);
     BMessenger target(view);
 
-	std::unordered_set<thread_id> activeThreads;
     std::vector<ProcessInfo> procList;
     procList.reserve(128);
 
@@ -705,7 +731,7 @@ int32 ProcessView::UpdateThread(void* data)
             continue;
         }
 
-		activeThreads.clear();
+        view->fCurrentGeneration++;
         procList.clear();
 
         bigtime_t currentSystemTime = system_time();
@@ -756,7 +782,6 @@ int32 ProcessView::UpdateThread(void* data)
             bool isReady = false;
 
             while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
-				activeThreads.insert(tInfo.thread);
                 bigtime_t threadTime = tInfo.user_time + tInfo.kernel_time;
 
                 if (tInfo.state == B_THREAD_RUNNING) isRunning = true;
@@ -764,15 +789,16 @@ int32 ProcessView::UpdateThread(void* data)
 
                 auto it = view->fThreadTimeMap.find(tInfo.thread);
                 if (it != view->fThreadTimeMap.end()) {
-                    bigtime_t threadTimeDelta = threadTime - it->second;
+                    bigtime_t threadTimeDelta = threadTime - it->second.time;
                     if (threadTimeDelta < 0) threadTimeDelta = 0;
 
                     if (strstr(tInfo.name, "idle thread") == NULL) {
                         teamActiveTimeDelta += threadTimeDelta;
                     }
-                    it->second = threadTime;
+                    it->second.time = threadTime;
+                    it->second.generation = view->fCurrentGeneration;
                 } else {
-                    view->fThreadTimeMap.emplace(tInfo.thread, threadTime);
+                    view->fThreadTimeMap.emplace(tInfo.thread, ThreadState{threadTime, view->fCurrentGeneration});
                 }
             }
 
@@ -796,7 +822,7 @@ int32 ProcessView::UpdateThread(void* data)
         }
 
 		for (auto it = view->fThreadTimeMap.begin(); it != view->fThreadTimeMap.end();) {
-			if (activeThreads.find(it->first) == activeThreads.end())
+			if (it->second.generation != view->fCurrentGeneration)
 				it = view->fThreadTimeMap.erase(it);
 			else
 				++it;

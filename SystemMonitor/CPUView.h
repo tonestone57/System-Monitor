@@ -45,6 +45,11 @@ private:
     BLocker fLocker;
     bigtime_t fPreviousTimeSnapshot;
     float fCurrentUsage;
+
+    int32 fLastUsedTeams;
+    int32 fLastUsedThreads;
+    BString fCachedProcesses;
+    BString fCachedThreads;
 };
 
 #endif // CPUVIEW_H

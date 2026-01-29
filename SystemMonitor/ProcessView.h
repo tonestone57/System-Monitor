@@ -13,6 +13,7 @@
 #include <unordered_set>
 #include <atomic>
 #include <kernel/OS.h>
+#include <Font.h>
 
 class BListView;
 class BMenuItem;
@@ -78,8 +79,13 @@ private:
     BListView* fProcessListView;
     BPopUpMenu* fContextMenu;
     BTextControl* fSearchControl;
+
+    struct ThreadState {
+        bigtime_t time;
+        int32 generation;
+    };
     
-    std::unordered_map<thread_id, bigtime_t> fThreadTimeMap;
+    std::unordered_map<thread_id, ThreadState> fThreadTimeMap;
     std::unordered_map<team_id, ProcessListItem*> fTeamItemMap;
     std::unordered_set<ProcessListItem*> fVisibleItems;
 
@@ -105,6 +111,8 @@ private:
     std::atomic<bool> fIsHidden;
 
     ProcessSortMode fSortMode;
+    BFont fCachedFont;
+    int32 fCurrentGeneration;
 };
 
 #endif // PROCESSVIEW_H

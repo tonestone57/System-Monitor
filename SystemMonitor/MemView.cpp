@@ -22,7 +22,10 @@
 MemView::MemView()
     : BView("MemoryView", B_WILL_DRAW | B_PULSE_NEEDED),
       fCacheGraphView(NULL),
-      fCurrentUsage(0.0f)
+      fCurrentUsage(0.0f),
+      fLastUsedBytes(0),
+      fLastFreeBytes(0),
+      fLastCachedBytes(0)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -113,9 +116,23 @@ void MemView::UpdateData()
         uint64 cachedBytes = ((uint64)sysInfo.cached_pages + (uint64)sysInfo.block_cache_pages) * B_PAGE_SIZE;
 
         // Total memory is set in AttachedToWindow
-        fUsedMemValue->SetText(::FormatBytes(usedBytes));
-        fFreeMemValue->SetText(::FormatBytes(freeBytes));
-        fCachedMemValue->SetText(::FormatBytes(cachedBytes));
+        if (usedBytes != fLastUsedBytes) {
+            fLastUsedBytes = usedBytes;
+            fCachedUsedStr = ::FormatBytes(usedBytes);
+            fUsedMemValue->SetText(fCachedUsedStr.String());
+        }
+
+        if (freeBytes != fLastFreeBytes) {
+            fLastFreeBytes = freeBytes;
+            fCachedFreeStr = ::FormatBytes(freeBytes);
+            fFreeMemValue->SetText(fCachedFreeStr.String());
+        }
+
+        if (cachedBytes != fLastCachedBytes) {
+            fLastCachedBytes = cachedBytes;
+            fCachedCachedStr = ::FormatBytes(cachedBytes);
+            fCachedMemValue->SetText(fCachedCachedStr.String());
+        }
 
         if (totalBytes > 0) {
             float usedPercent = (float)usedBytes / totalBytes * 100.0f;

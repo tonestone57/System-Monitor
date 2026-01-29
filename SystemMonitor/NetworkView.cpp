@@ -36,12 +36,20 @@ public:
                       uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed, const BFont* font)
         : BListItem()
     {
-        Update(name, type, addr, sent, recv, txSpeed, rxSpeed, font);
+        Update(name, type, addr, sent, recv, txSpeed, rxSpeed, font, true);
     }
 
     void Update(const BString& name, const BString& type, const BString& addr,
-                      uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed, const BFont* font)
+                      uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed, const BFont* font, bool force = false)
     {
+        bool nameChanged = force || fName != name;
+        bool typeChanged = force || fType != type;
+        bool addrChanged = force || fAddr != addr;
+        bool sentChanged = force || fSent != sent;
+        bool recvChanged = force || fRecv != recv;
+        bool txSpeedChanged = force || fTxSpeed != txSpeed;
+        bool rxSpeedChanged = force || fRxSpeed != rxSpeed;
+
         fName = name;
         fType = type;
         fAddr = addr;
@@ -50,19 +58,34 @@ public:
         fTxSpeed = txSpeed;
         fRxSpeed = rxSpeed;
 
-        fCachedSent = ::FormatBytes(fSent);
-        fCachedRecv = ::FormatBytes(fRecv);
-        fCachedTxSpeed = FormatSpeed(fTxSpeed, 1000000);
-        fCachedRxSpeed = FormatSpeed(fRxSpeed, 1000000);
+        if (sentChanged)
+            fCachedSent = ::FormatBytes(fSent);
+        if (recvChanged)
+            fCachedRecv = ::FormatBytes(fRecv);
+        if (txSpeedChanged)
+            fCachedTxSpeed = FormatSpeed(fTxSpeed, 1000000);
+        if (rxSpeedChanged)
+            fCachedRxSpeed = FormatSpeed(fRxSpeed, 1000000);
 
-        if (font) {
-            font->TruncateString(&fName, B_TRUNCATE_END, kNetNameWidth - 10, &fTruncatedName);
-            font->TruncateString(&fType, B_TRUNCATE_END, kNetTypeWidth - 10, &fTruncatedType);
-            font->TruncateString(&fAddr, B_TRUNCATE_END, kNetAddrWidth - 10, &fTruncatedAddr);
-        } else {
-            fTruncatedName = fName;
-            fTruncatedType = fType;
-            fTruncatedAddr = fAddr;
+        if (nameChanged) {
+            if (font)
+                font->TruncateString(&fName, B_TRUNCATE_END, kNetNameWidth - 10, &fTruncatedName);
+            else
+                fTruncatedName = fName;
+        }
+
+        if (typeChanged) {
+            if (font)
+                font->TruncateString(&fType, B_TRUNCATE_END, kNetTypeWidth - 10, &fTruncatedType);
+            else
+                fTruncatedType = fType;
+        }
+
+        if (addrChanged) {
+            if (font)
+                font->TruncateString(&fAddr, B_TRUNCATE_END, kNetAddrWidth - 10, &fTruncatedAddr);
+            else
+                fTruncatedAddr = fAddr;
         }
     }
 
@@ -278,6 +301,10 @@ void NetworkView::UpdateData(BMessage* message)
     BFont font;
     fInterfaceListView->GetFont(&font);
 
+    bool fontChanged = (font != fCachedFont);
+    if (fontChanged)
+        fCachedFont = font;
+
     for (int32 i = 0; i < count; i++) {
         const NetworkInfo* info;
         ssize_t size;
@@ -328,7 +355,7 @@ void NetworkView::UpdateData(BMessage* message)
                 listChanged = true;
             } else {
                 item = rowIt->second;
-                item->Update(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes, &font);
+                item->Update(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes, &font, fontChanged);
             }
         }
     }
