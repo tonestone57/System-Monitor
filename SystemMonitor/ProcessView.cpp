@@ -68,28 +68,50 @@ public:
     ProcessListItem(const ProcessInfo& info, const char* stateStr, const BFont* font)
         : BListItem()
     {
-        Update(info, stateStr, font);
+        Update(info, stateStr, font, true);
     }
 
-    void Update(const ProcessInfo& info, const char* stateStr, const BFont* font) {
+    void Update(const ProcessInfo& info, const char* stateStr, const BFont* font, bool force = false) {
+        bool nameChanged = force || strcmp(fInfo.name, info.name) != 0;
+        bool userChanged = force || strcmp(fInfo.userName, info.userName) != 0;
+        bool stateChanged = force || fCachedState != stateStr;
+        bool cpuChanged = force || fInfo.cpuUsage != info.cpuUsage;
+        bool memChanged = force || fInfo.memoryUsageBytes != info.memoryUsageBytes;
+        bool threadsChanged = force || fInfo.threadCount != info.threadCount;
+        bool pidChanged = force || fInfo.id != info.id;
+
         fInfo = info;
 
         // Cache display strings
-        fCachedPID.SetToFormat("%" B_PRId32, fInfo.id);
-        fCachedName = fInfo.name;
-        fCachedState = stateStr;
-        fCachedCPU.SetToFormat("%.1f", fInfo.cpuUsage);
-        fCachedMem = FormatBytes(fInfo.memoryUsageBytes);
-        fCachedThreads.SetToFormat("%" B_PRIu32, fInfo.threadCount);
-        fCachedUser = fInfo.userName;
+        if (pidChanged)
+            fCachedPID.SetToFormat("%" B_PRId32, fInfo.id);
 
-        // Truncate strings if font is provided
-        if (font) {
-            font->TruncateString(&fCachedName, B_TRUNCATE_END, kNameWidth - 10, &fTruncatedName);
-            font->TruncateString(&fCachedUser, B_TRUNCATE_END, kUserWidth - 10, &fTruncatedUser);
-        } else {
-            fTruncatedName = fCachedName;
-            fTruncatedUser = fCachedUser;
+        if (nameChanged) {
+            fCachedName = fInfo.name;
+            if (font)
+                font->TruncateString(&fCachedName, B_TRUNCATE_END, kNameWidth - 10, &fTruncatedName);
+            else
+                fTruncatedName = fCachedName;
+        }
+
+        if (stateChanged)
+            fCachedState = stateStr;
+
+        if (cpuChanged)
+            fCachedCPU.SetToFormat("%.1f", fInfo.cpuUsage);
+
+        if (memChanged)
+            fCachedMem = FormatBytes(fInfo.memoryUsageBytes);
+
+        if (threadsChanged)
+            fCachedThreads.SetToFormat("%" B_PRIu32, fInfo.threadCount);
+
+        if (userChanged) {
+            fCachedUser = fInfo.userName;
+            if (font)
+                font->TruncateString(&fCachedUser, B_TRUNCATE_END, kUserWidth - 10, &fTruncatedUser);
+            else
+                fTruncatedUser = fCachedUser;
         }
     }
 
@@ -611,6 +633,10 @@ void ProcessView::Update(BMessage* message)
     BFont font;
     fProcessListView->GetFont(&font);
 
+    bool fontChanged = (font != fCachedFont);
+    if (fontChanged)
+        fCachedFont = font;
+
     // First pass: Update existing items or create new ones
     for (size_t i = 0; i < count; i++) {
         const ProcessInfo& info = infos[i];
@@ -644,7 +670,7 @@ void ProcessView::Update(BMessage* message)
             }
         } else {
             item = fTeamItemMap[info.id];
-            item->Update(info, stateStr, &font);
+            item->Update(info, stateStr, &font, fontChanged);
         }
     }
 

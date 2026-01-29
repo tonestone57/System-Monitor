@@ -13,6 +13,7 @@
 #include <unordered_set>
 #include <atomic>
 #include <kernel/OS.h>
+#include <Font.h>
 
 class BListView;
 class BMenuItem;
@@ -105,6 +106,7 @@ private:
     std::atomic<bool> fIsHidden;
 
     ProcessSortMode fSortMode;
+    BFont fCachedFont;
 };
 
 #endif // PROCESSVIEW_H
