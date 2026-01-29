@@ -762,15 +762,18 @@ int32 ProcessView::UpdateThread(void* data)
                 if (tInfo.state == B_THREAD_RUNNING) isRunning = true;
                 if (tInfo.state == B_THREAD_READY) isReady = true;
 
-                if (view->fThreadTimeMap.count(tInfo.thread)) {
-                    bigtime_t threadTimeDelta = threadTime - view->fThreadTimeMap[tInfo.thread];
+                auto it = view->fThreadTimeMap.find(tInfo.thread);
+                if (it != view->fThreadTimeMap.end()) {
+                    bigtime_t threadTimeDelta = threadTime - it->second;
                     if (threadTimeDelta < 0) threadTimeDelta = 0;
 
                     if (strstr(tInfo.name, "idle thread") == NULL) {
                         teamActiveTimeDelta += threadTimeDelta;
                     }
+                    it->second = threadTime;
+                } else {
+                    view->fThreadTimeMap.emplace(tInfo.thread, threadTime);
                 }
-                view->fThreadTimeMap[tInfo.thread] = threadTime;
             }
 
             if (isRunning) strlcpy(currentProc.state, "Running", sizeof(currentProc.state));
