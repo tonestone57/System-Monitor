@@ -13,7 +13,9 @@
 #define B_TRANSLATION_CONTEXT "GPUView"
 
 GPUView::GPUView()
-    : BView("GPUView", B_WILL_DRAW | B_PULSE_NEEDED)
+    : BView("GPUView", B_WILL_DRAW | B_PULSE_NEEDED),
+      fCachedWidth(-1),
+      fCachedHeight(-1)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     CreateLayout();
@@ -103,6 +105,7 @@ GPUView::~GPUView()
 void GPUView::AttachedToWindow()
 {
     BView::AttachedToWindow();
+    _UpdateStaticInfo();
     UpdateData();
 }
 
@@ -114,7 +117,7 @@ void GPUView::SetRefreshInterval(bigtime_t interval)
     }
 }
 
-void GPUView::UpdateData()
+void GPUView::_UpdateStaticInfo()
 {
     BScreen screen(B_MAIN_SCREEN_ID);
     if (!screen.IsValid()) {
@@ -137,12 +140,22 @@ void GPUView::UpdateData()
         fMemorySizeValue->SetText("-");
         fDriverVersionValue->SetText("-");
     }
+}
+
+void GPUView::UpdateData()
+{
+    BScreen screen(B_MAIN_SCREEN_ID);
+    if (!screen.IsValid())
+        return;
 
     display_mode mode;
     if (screen.GetMode(&mode) == B_OK) {
-        BString resStr;
-        resStr.SetToFormat("%dx%d", mode.virtual_width, mode.virtual_height);
-        fResolutionValue->SetText(resStr);
+        if (fCachedWidth != mode.virtual_width || fCachedHeight != mode.virtual_height) {
+            fCachedWidth = mode.virtual_width;
+            fCachedHeight = mode.virtual_height;
+            fCachedResolution.SetToFormat("%" B_PRId32 "x%" B_PRId32, fCachedWidth, fCachedHeight);
+            fResolutionValue->SetText(fCachedResolution.String());
+        }
     } else {
         fResolutionValue->SetText("N/A");
     }

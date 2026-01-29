@@ -20,13 +20,18 @@ public:
 private:
     void CreateLayout();
     void UpdateData();
-    
+    void _UpdateStaticInfo();
+
     BStringView* fCardNameValue;
     BStringView* fDriverVersionValue;
     BStringView* fMemorySizeValue;
     BStringView* fResolutionValue;
 
     std::vector<ActivityGraphView*> fGpuGraphs;
+
+    int32 fCachedWidth;
+    int32 fCachedHeight;
+    BString fCachedResolution;
 };
 
 #endif // GPUVIEW_H
