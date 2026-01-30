@@ -67,7 +67,7 @@ MemView::MemView()
     fCacheGraphView = new ActivityGraphView("cacheGraph", {0, 0, 0, 0}, B_MENU_SELECTION_BACKGROUND_COLOR);
     fCacheGraphView->SetExplicitMinSize(BSize(0, 60));
     fCacheGraphView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 100));
-    fCacheGraphView->SetManualScale(0, 100);
+    fCacheGraphView->SetManualScale(0, 1000);
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
         .SetInsets(B_USE_DEFAULT_SPACING)
@@ -143,7 +143,7 @@ void MemView::UpdateData()
             float cachePercent = (float)cachedBytes / totalBytes * 100.0f;
             if (cachePercent < 0.0f) cachePercent = 0.0f;
             if (cachePercent > 100.0f) cachePercent = 100.0f;
-            fCacheGraphView->AddValue(system_time(), cachePercent);
+            fCacheGraphView->AddValue(system_time(), cachePercent * 10);
         }
 
     } else {

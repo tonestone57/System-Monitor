@@ -69,7 +69,7 @@ void CPUView::CreateLayout()
         for (uint32 i = 0; i < fCpuCount; ++i) {
             ActivityGraphView* graph = new ActivityGraphView("core_graph", {80, 133, 229, 255}, B_NAVIGATION_BASE_COLOR);
             graph->SetExplicitMinSize(BSize(50, 40));
-            graph->SetManualScale(0, 100);
+            graph->SetManualScale(0, 1000);
             fCoreGraphs.push_back(graph);
 
             graphGrid->AddView(graph, i % cols, i / cols);
@@ -240,7 +240,7 @@ void CPUView::UpdateData()
     bigtime_t now = system_time();
     for (size_t i = 0; i < fCoreGraphs.size(); ++i) {
         if (i < fPerCoreUsage.size()) {
-            fCoreGraphs[i]->AddValue(now, fPerCoreUsage[i]);
+            fCoreGraphs[i]->AddValue(now, fPerCoreUsage[i] * 10);
         }
     }
 
