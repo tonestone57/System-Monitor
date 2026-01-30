@@ -66,10 +66,13 @@ private:
 class ProcessListItem : public BListItem {
 public:
     ProcessListItem(const ProcessInfo& info, const char* stateStr, const BFont* font)
-        : BListItem()
+        : BListItem(), fGeneration(0)
     {
         Update(info, stateStr, font, true);
     }
+
+    void SetGeneration(int32 generation) { fGeneration = generation; }
+    int32 Generation() const { return fGeneration; }
 
     void Update(const ProcessInfo& info, const char* stateStr, const BFont* font, bool force = false) {
         bool nameChanged = force || strcmp(fInfo.name, info.name) != 0;
@@ -219,6 +222,7 @@ private:
 
     BString fTruncatedName;
     BString fTruncatedUser;
+    int32 fGeneration;
 };
 
 class ProcessListView : public BListView {
@@ -281,7 +285,8 @@ ProcessView::ProcessView()
       fTerminated(false),
       fIsHidden(false),
       fSortMode(SORT_BY_CPU),
-      fCurrentGeneration(0)
+      fCurrentGeneration(0),
+      fListGeneration(0)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -369,6 +374,7 @@ void ProcessView::AttachedToWindow()
         fQuitSem = create_sem(0, "ProcessView Quit");
 
     fThreadTimeMap.clear();
+    fCachedTeamInfo.clear();
 
     fUpdateThread = spawn_thread(UpdateThread, "Process Update", B_NORMAL_PRIORITY, this);
     if (fUpdateThread >= 0)
@@ -475,14 +481,11 @@ void ProcessView::Show()
 }
 
 BString ProcessView::GetUserName(uid_t uid, std::vector<char>& buffer) {
-    fCacheLock.Lock();
     auto it = fUserNameCache.find(uid);
     if (it != fUserNameCache.end()) {
-        BString name = it->second;
-        fCacheLock.Unlock();
-        return name;
+        it->second.generation = fCurrentGeneration;
+        return it->second.name;
     }
-    fCacheLock.Unlock();
 
     struct passwd pwd;
     struct passwd* result = NULL;
@@ -494,14 +497,7 @@ BString ProcessView::GetUserName(uid_t uid, std::vector<char>& buffer) {
         name << uid;
     }
 
-    fCacheLock.Lock();
-    it = fUserNameCache.find(uid);
-    if (it != fUserNameCache.end()) {
-        name = it->second;
-    } else {
-        fUserNameCache.emplace(uid, name);
-    }
-    fCacheLock.Unlock();
+    fUserNameCache[uid] = CachedUser{name, fCurrentGeneration};
     return name;
 }
 
@@ -625,8 +621,7 @@ void ProcessView::Update(BMessage* message)
     const char* searchText = fSearchControl->Text();
     bool filtering = (searchText != NULL && strlen(searchText) > 0);
 
-    fActiveUIDs.clear();
-    fActivePIDs.clear();
+    fListGeneration++;
 
     bool listChanged = false;
 
@@ -641,8 +636,6 @@ void ProcessView::Update(BMessage* message)
     // First pass: Update existing items or create new ones
     for (size_t i = 0; i < count; i++) {
         const ProcessInfo& info = infos[i];
-        fActiveUIDs.insert(info.userID);
-        fActivePIDs.insert(info.id);
         
         const char* stateStr = info.state;
         if (strcmp(info.state, "Running") == 0) stateStr = fStrRunning.String();
@@ -673,11 +666,12 @@ void ProcessView::Update(BMessage* message)
             item = fTeamItemMap[info.id];
             item->Update(info, stateStr, &font, fontChanged);
         }
+        item->SetGeneration(fListGeneration);
     }
 
     // Second pass: Remove dead processes
 	for (auto it = fTeamItemMap.begin(); it != fTeamItemMap.end();) {
-        if (fActivePIDs.find(it->first) == fActivePIDs.end()) {
+        if (it->second->Generation() != fListGeneration) {
 			ProcessListItem* item = it->second;
             if (fVisibleItems.find(item) != fVisibleItems.end()) {
                 fProcessListView->RemoveItem(item);
@@ -690,16 +684,6 @@ void ProcessView::Update(BMessage* message)
 			++it;
 		}
 	}
-
-    // Prune user name cache
-    BAutolock locker(fCacheLock);
-    for (auto it = fUserNameCache.begin(); it != fUserNameCache.end();) {
-        if (fActiveUIDs.find(it->first) == fActiveUIDs.end()) {
-            it = fUserNameCache.erase(it);
-        } else {
-            ++it;
-        }
-    }
 
     switch (fSortMode) {
         case SORT_BY_PID: fProcessListView->SortItems(ProcessListItem::ComparePID); break;
@@ -749,30 +733,58 @@ int32 ProcessView::UpdateThread(void* data)
         while (get_next_team_info(&cookie, &teamInfo) == B_OK) {
             ProcessInfo currentProc;
             currentProc.id = teamInfo.team;
+            currentProc.userID = teamInfo.uid;
 
-            image_info imgInfo;
-            int32 imgCookie = 0;
-            if (get_next_image_info(teamInfo.team, &imgCookie, &imgInfo) == B_OK) {
-                BPath path(imgInfo.name);
-                const char* leafName = NULL;
-                if (path.InitCheck() == B_OK)
-                    leafName = path.Leaf();
+            bool cached = false;
+            auto it = view->fCachedTeamInfo.find(teamInfo.team);
+            if (it != view->fCachedTeamInfo.end()) {
+                if (teamInfo.uid == it->second.uid
+                    && strncmp(teamInfo.args, it->second.args, 64) == 0) {
+                    cached = true;
+                    strlcpy(currentProc.name, it->second.name, B_OS_NAME_LENGTH);
+                    strlcpy(currentProc.userName, it->second.userName, B_OS_NAME_LENGTH);
+                    it->second.generation = view->fCurrentGeneration;
 
-                if (leafName != NULL)
-                    strlcpy(currentProc.name, leafName, B_OS_NAME_LENGTH);
-                else
-                    strlcpy(currentProc.name, imgInfo.name, B_OS_NAME_LENGTH);
-            } else {
-				strlcpy(currentProc.name, teamInfo.args, B_OS_NAME_LENGTH);
-                if (strlen(currentProc.name) == 0)
-                    strlcpy(currentProc.name, "system_daemon", B_OS_NAME_LENGTH);
+                    // Update user generation even if process is cached
+                    auto userIt = view->fUserNameCache.find(teamInfo.uid);
+                    if (userIt != view->fUserNameCache.end())
+                        userIt->second.generation = view->fCurrentGeneration;
+                }
+            }
+
+            if (!cached) {
+                image_info imgInfo;
+                int32 imgCookie = 0;
+                if (get_next_image_info(teamInfo.team, &imgCookie, &imgInfo) == B_OK) {
+                    BPath path(imgInfo.name);
+                    const char* leafName = NULL;
+                    if (path.InitCheck() == B_OK)
+                        leafName = path.Leaf();
+
+                    if (leafName != NULL)
+                        strlcpy(currentProc.name, leafName, B_OS_NAME_LENGTH);
+                    else
+                        strlcpy(currentProc.name, imgInfo.name, B_OS_NAME_LENGTH);
+                } else {
+                    strlcpy(currentProc.name, teamInfo.args, B_OS_NAME_LENGTH);
+                    if (strlen(currentProc.name) == 0)
+                        strlcpy(currentProc.name, "system_daemon", B_OS_NAME_LENGTH);
+                }
+
+                BString userName = view->GetUserName(currentProc.userID, pwdBuffer);
+                strlcpy(currentProc.userName, userName.String(), B_OS_NAME_LENGTH);
+
+                CachedTeamInfo info;
+                strlcpy(info.name, currentProc.name, B_OS_NAME_LENGTH);
+                strlcpy(info.userName, currentProc.userName, B_OS_NAME_LENGTH);
+                strlcpy(info.args, teamInfo.args, 64);
+                info.uid = teamInfo.uid;
+                info.generation = view->fCurrentGeneration;
+                view->fCachedTeamInfo[teamInfo.team] = info;
             }
 
             currentProc.threadCount = teamInfo.thread_count;
             currentProc.areaCount = teamInfo.area_count;
-            currentProc.userID = teamInfo.uid;
-			BString userName = view->GetUserName(currentProc.userID, pwdBuffer);
-			strlcpy(currentProc.userName, userName.String(), B_OS_NAME_LENGTH);
 
             int32 threadCookie = 0;
             thread_info tInfo;
@@ -827,6 +839,20 @@ int32 ProcessView::UpdateThread(void* data)
 			else
 				++it;
 		}
+
+		for (auto it = view->fCachedTeamInfo.begin(); it != view->fCachedTeamInfo.end();) {
+			if (it->second.generation != view->fCurrentGeneration)
+				it = view->fCachedTeamInfo.erase(it);
+			else
+				++it;
+		}
+
+        for (auto it = view->fUserNameCache.begin(); it != view->fUserNameCache.end();) {
+            if (it->second.generation != view->fCurrentGeneration)
+                it = view->fUserNameCache.erase(it);
+            else
+                ++it;
+        }
 
         if (!procList.empty()) {
             BMessage msg(MSG_PROCESS_DATA_UPDATE);

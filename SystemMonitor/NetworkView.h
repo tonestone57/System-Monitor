@@ -20,6 +20,7 @@ struct InterfaceStatsRecord {
     uint64 bytesSent = 0;
     uint64 bytesReceived = 0;
     bigtime_t lastUpdateTime = 0;
+    int32 generation = 0;
 };
 
 struct NetworkInfo {
@@ -75,6 +76,7 @@ private:
     thread_id fUpdateThread;
     sem_id fScanSem;
     std::atomic<bool> fTerminated;
+    int32 fListGeneration;
 };
 
 #endif // NETWORKVIEW_H

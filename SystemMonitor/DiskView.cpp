@@ -33,10 +33,13 @@ class DiskListItem : public BListItem {
 public:
     DiskListItem(const BString& device, const BString& mount, const BString& fs,
                  uint64 total, uint64 used, uint64 free, double percent, const BFont* font)
-        : BListItem()
+        : BListItem(), fGeneration(0)
     {
         Update(device, mount, fs, total, used, free, percent, font, true);
     }
+
+    void SetGeneration(int32 generation) { fGeneration = generation; }
+    int32 Generation() const { return fGeneration; }
 
     void Update(const BString& device, const BString& mount, const BString& fs,
                  uint64 total, uint64 used, uint64 free, double percent, const BFont* font, bool force = false) {
@@ -152,6 +155,7 @@ private:
     BString fTruncatedDevice;
     BString fTruncatedMount;
     BString fTruncatedFS;
+    int32 fGeneration;
 };
 
 
@@ -159,7 +163,8 @@ DiskView::DiskView()
     : BView("DiskView", B_WILL_DRAW | B_PULSE_NEEDED),
       fUpdateThread(-1),
       fScanSem(-1),
-      fTerminated(false)
+      fTerminated(false),
+      fListGeneration(0)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     fScanSem = create_sem(0, "disk scan sem");
@@ -373,7 +378,7 @@ void DiskView::UpdateData(BMessage* message)
         return;
     }
 
-    std::set<dev_t> activeDevices;
+    fListGeneration++;
     int32 count = 0;
     type_code type;
     message->GetInfo("volume", &type, &count);
@@ -394,8 +399,6 @@ void DiskView::UpdateData(BMessage* message)
 
         dev_t deviceID;
         if (volMsg.FindInt32("device_id", (int32*)&deviceID) != B_OK) continue;
-
-        activeDevices.insert(deviceID);
 
         BString deviceName = volMsg.FindString("device_name");
         BString mountPoint = volMsg.FindString("mount_point");
@@ -422,10 +425,11 @@ void DiskView::UpdateData(BMessage* message)
             // Ideally check for changes before calling Invalidate
             item->Update(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font, fontChanged);
 		}
+        item->SetGeneration(fListGeneration);
     }
 
 	for (auto it = fDeviceItemMap.begin(); it != fDeviceItemMap.end();) {
-		if (activeDevices.find(it->first) == activeDevices.end()) {
+		if (it->second->Generation() != fListGeneration) {
 			DiskListItem* item = it->second;
             if (fVisibleItems.find(item) != fVisibleItems.end()) {
 			    fDiskListView->RemoveItem(item);
