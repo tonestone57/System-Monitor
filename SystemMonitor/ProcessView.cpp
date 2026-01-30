@@ -481,14 +481,11 @@ void ProcessView::Show()
 }
 
 BString ProcessView::GetUserName(uid_t uid, std::vector<char>& buffer) {
-    fCacheLock.Lock();
     auto it = fUserNameCache.find(uid);
     if (it != fUserNameCache.end()) {
-        BString name = it->second;
-        fCacheLock.Unlock();
-        return name;
+        it->second.generation = fCurrentGeneration;
+        return it->second.name;
     }
-    fCacheLock.Unlock();
 
     struct passwd pwd;
     struct passwd* result = NULL;
@@ -500,14 +497,7 @@ BString ProcessView::GetUserName(uid_t uid, std::vector<char>& buffer) {
         name << uid;
     }
 
-    fCacheLock.Lock();
-    it = fUserNameCache.find(uid);
-    if (it != fUserNameCache.end()) {
-        name = it->second;
-    } else {
-        fUserNameCache.emplace(uid, name);
-    }
-    fCacheLock.Unlock();
+    fUserNameCache[uid] = CachedUser{name, fCurrentGeneration};
     return name;
 }
 
@@ -727,7 +717,6 @@ int32 ProcessView::UpdateThread(void* data)
 
         view->fCurrentGeneration++;
         procList.clear();
-        std::unordered_set<uid_t> activeUIDs;
 
         bigtime_t currentSystemTime = system_time();
         bigtime_t systemTimeDelta = currentSystemTime - view->fLastSystemTime;
@@ -745,7 +734,6 @@ int32 ProcessView::UpdateThread(void* data)
             ProcessInfo currentProc;
             currentProc.id = teamInfo.team;
             currentProc.userID = teamInfo.uid;
-            activeUIDs.insert(currentProc.userID);
 
             bool cached = false;
             auto it = view->fCachedTeamInfo.find(teamInfo.team);
@@ -756,6 +744,11 @@ int32 ProcessView::UpdateThread(void* data)
                     strlcpy(currentProc.name, it->second.name, B_OS_NAME_LENGTH);
                     strlcpy(currentProc.userName, it->second.userName, B_OS_NAME_LENGTH);
                     it->second.generation = view->fCurrentGeneration;
+
+                    // Update user generation even if process is cached
+                    auto userIt = view->fUserNameCache.find(teamInfo.uid);
+                    if (userIt != view->fUserNameCache.end())
+                        userIt->second.generation = view->fCurrentGeneration;
                 }
             }
 
@@ -854,14 +847,11 @@ int32 ProcessView::UpdateThread(void* data)
 				++it;
 		}
 
-        {
-            BAutolock locker(view->fCacheLock);
-            for (auto it = view->fUserNameCache.begin(); it != view->fUserNameCache.end();) {
-                if (activeUIDs.find(it->first) == activeUIDs.end())
-                    it = view->fUserNameCache.erase(it);
-                else
-                    ++it;
-            }
+        for (auto it = view->fUserNameCache.begin(); it != view->fUserNameCache.end();) {
+            if (it->second.generation != view->fCurrentGeneration)
+                it = view->fUserNameCache.erase(it);
+            else
+                ++it;
         }
 
         if (!procList.empty()) {

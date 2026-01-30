@@ -92,6 +92,11 @@ private:
         uid_t uid;
         int32 generation;
     };
+
+    struct CachedUser {
+        BString name;
+        int32 generation;
+    };
     
     std::unordered_map<thread_id, ThreadState> fThreadTimeMap;
     std::unordered_map<team_id, CachedTeamInfo> fCachedTeamInfo;
@@ -107,8 +112,7 @@ private:
     BString fFilterName; // Buffer for name filtering
     BString fFilterID;   // Buffer for ID filtering
 
-    BLocker fCacheLock;
-    std::unordered_map<uid_t, BString> fUserNameCache;
+    std::unordered_map<uid_t, CachedUser> fUserNameCache;
     bigtime_t fLastSystemTime;
     std::atomic<bigtime_t> fRefreshInterval;
     
