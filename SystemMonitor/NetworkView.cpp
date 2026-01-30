@@ -317,7 +317,25 @@ void NetworkView::UpdateData(BMessage* message)
 
             BString name(info->name);
 
-            if (!info->hasStats) continue;
+            // if (!info->hasStats) continue; // Original behavior logic analysis needed.
+            // Previous code:
+            // BString name(info->name);
+            // activeInterfaces.insert(name);
+            // if (!info->hasStats) continue;
+            //
+            // The previous code inserted the name into activeInterfaces BEFORE checking hasStats.
+            // This means interfaces with !hasStats were PRESERVED (not removed) but not UPDATED with new stats.
+
+            if (!info->hasStats) {
+                // Preserve existing items by updating their generation
+                if (fPreviousStatsMap.count(name)) {
+                     fPreviousStatsMap[name].generation = fListGeneration;
+                }
+                if (fInterfaceItemMap.count(name)) {
+                     fInterfaceItemMap[name]->SetGeneration(fListGeneration);
+                }
+                continue;
+            }
 
             BString typeStr(info->typeStr);
             BString addressStr(info->addressStr);
