@@ -13,6 +13,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <cstring>
 #include <net/if.h>
 #include "ActivityGraphView.h"
 #include <Messenger.h>
