@@ -727,6 +727,7 @@ int32 ProcessView::UpdateThread(void* data)
 
         view->fCurrentGeneration++;
         procList.clear();
+        std::unordered_set<uid_t> activeUIDs;
 
         bigtime_t currentSystemTime = system_time();
         bigtime_t systemTimeDelta = currentSystemTime - view->fLastSystemTime;
@@ -744,6 +745,7 @@ int32 ProcessView::UpdateThread(void* data)
             ProcessInfo currentProc;
             currentProc.id = teamInfo.team;
             currentProc.userID = teamInfo.uid;
+            activeUIDs.insert(currentProc.userID);
 
             bool cached = false;
             auto it = view->fCachedTeamInfo.find(teamInfo.team);
@@ -851,6 +853,16 @@ int32 ProcessView::UpdateThread(void* data)
 			else
 				++it;
 		}
+
+        {
+            BAutolock locker(view->fCacheLock);
+            for (auto it = view->fUserNameCache.begin(); it != view->fUserNameCache.end();) {
+                if (activeUIDs.find(it->first) == activeUIDs.end())
+                    it = view->fUserNameCache.erase(it);
+                else
+                    ++it;
+            }
+        }
 
         if (!procList.empty()) {
             BMessage msg(MSG_PROCESS_DATA_UPDATE);
