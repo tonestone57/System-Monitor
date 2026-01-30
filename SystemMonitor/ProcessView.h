@@ -84,14 +84,21 @@ private:
         bigtime_t time;
         int32 generation;
     };
+
+    struct CachedTeamInfo {
+        char name[B_OS_NAME_LENGTH];
+        char userName[B_OS_NAME_LENGTH];
+        char args[64];
+        uid_t uid;
+        int32 generation;
+    };
     
     std::unordered_map<thread_id, ThreadState> fThreadTimeMap;
+    std::unordered_map<team_id, CachedTeamInfo> fCachedTeamInfo;
     std::unordered_map<team_id, ProcessListItem*> fTeamItemMap;
     std::unordered_set<ProcessListItem*> fVisibleItems;
 
     // Optimization members
-    std::unordered_set<uid_t> fActiveUIDs;
-    std::unordered_set<team_id> fActivePIDs;
     BString fStrRunning;
     BString fStrReady;
     BString fStrSleeping;
@@ -113,6 +120,7 @@ private:
     ProcessSortMode fSortMode;
     BFont fCachedFont;
     int32 fCurrentGeneration;
+    int32 fListGeneration;
 };
 
 #endif // PROCESSVIEW_H
