@@ -34,10 +34,13 @@ class InterfaceListItem : public BListItem {
 public:
     InterfaceListItem(const BString& name, const BString& type, const BString& addr,
                       uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed, const BFont* font)
-        : BListItem()
+        : BListItem(), fGeneration(0)
     {
         Update(name, type, addr, sent, recv, txSpeed, rxSpeed, font, true);
     }
+
+    void SetGeneration(int32 generation) { fGeneration = generation; }
+    int32 Generation() const { return fGeneration; }
 
     void Update(const BString& name, const BString& type, const BString& addr,
                       uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed, const BFont* font, bool force = false)
@@ -150,6 +153,7 @@ private:
     BString fTruncatedName;
     BString fTruncatedType;
     BString fTruncatedAddr;
+    int32 fGeneration;
 
     static int CompareSpeed(const void* first, const void* second) {
         const InterfaceListItem* item1 = *(const InterfaceListItem**)first;
@@ -171,7 +175,8 @@ NetworkView::NetworkView()
     fDownloadSpeed(0.0f),
     fUpdateThread(-1),
     fScanSem(-1),
-    fTerminated(false)
+    fTerminated(false),
+    fListGeneration(0)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
     fScanSem = create_sem(0, "network scan sem");
@@ -286,7 +291,7 @@ void NetworkView::UpdateData(BMessage* message)
 {
     fLocker.Lock();
     
-	std::set<BString, BStringLess> activeInterfaces;
+    fListGeneration++;
     bigtime_t currentTime = system_time();
     uint64 totalSentDelta = 0;
     uint64 totalReceivedDelta = 0;
@@ -311,7 +316,6 @@ void NetworkView::UpdateData(BMessage* message)
         if (message->FindData("net_info", B_RAW_TYPE, i, (const void**)&info, &size) == B_OK) {
 
             BString name(info->name);
-            activeInterfaces.insert(name);
 
             if (!info->hasStats) continue;
 
@@ -344,6 +348,7 @@ void NetworkView::UpdateData(BMessage* message)
             rec.bytesSent = currentSent;
             rec.bytesReceived = currentReceived;
             rec.lastUpdateTime = currentTime;
+            rec.generation = fListGeneration;
 
             InterfaceListItem* item;
             auto rowIt = fInterfaceItemMap.find(name);
@@ -357,18 +362,19 @@ void NetworkView::UpdateData(BMessage* message)
                 item = rowIt->second;
                 item->Update(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes, &font, fontChanged);
             }
+            item->SetGeneration(fListGeneration);
         }
     }
 
 	// Prune dead interfaces from the map
 	for (auto it = fPreviousStatsMap.begin(); it != fPreviousStatsMap.end();) {
-		if (it->first != "__total__" && activeInterfaces.find(it->first) == activeInterfaces.end())
+		if (it->first != "__total__" && it->second.generation != fListGeneration)
 			it = fPreviousStatsMap.erase(it);
 		else
 			++it;
 	}
 	for (auto it = fInterfaceItemMap.begin(); it != fInterfaceItemMap.end();) {
-		if (activeInterfaces.find(it->first) == activeInterfaces.end()) {
+		if (it->second->Generation() != fListGeneration) {
 			InterfaceListItem* item = it->second;
             if (fVisibleItems.find(item) != fVisibleItems.end()) {
 			    fInterfaceListView->RemoveItem(item);
