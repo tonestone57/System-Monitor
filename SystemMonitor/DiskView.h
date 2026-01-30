@@ -54,6 +54,7 @@ private:
     thread_id fUpdateThread;
     sem_id fScanSem;
     std::atomic<bool> fTerminated;
+    int32 fListGeneration;
 };
 
 #endif // DISKVIEW_H
