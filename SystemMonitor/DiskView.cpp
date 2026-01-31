@@ -22,13 +22,14 @@
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "DiskView"
 
-const float kDiskDeviceWidth = 120;
-const float kDiskMountWidth = 120;
-const float kDiskFSWidth = 80;
-const float kDiskTotalWidth = 100;
-const float kDiskUsedWidth = 100;
-const float kDiskFreeWidth = 100;
-const float kDiskPercentWidth = 80;
+static float kDiskDeviceWidth = 120;
+static float kDiskMountWidth = 120;
+static float kDiskFSWidth = 80;
+static float kDiskTotalWidth = 100;
+static float kDiskUsedWidth = 100;
+static float kDiskFreeWidth = 100;
+static float kDiskPercentWidth = 80;
+static bool sDiskColumnsScaled = false;
 
 class DiskListItem : public BListItem {
 public:
@@ -173,6 +174,23 @@ DiskView::DiskView()
     fDiskInfoBox = new BBox("DiskInfoBox");
     fDiskInfoBox->SetLabel(B_TRANSLATE("Disk Volumes"));
 
+    // Calculate scaling
+    BFont font;
+    GetFont(&font);
+    float scale = font.Size() / 12.0f;
+    if (scale < 1.0f) scale = 1.0f;
+
+    if (!sDiskColumnsScaled) {
+        kDiskDeviceWidth *= scale;
+        kDiskMountWidth *= scale;
+        kDiskFSWidth *= scale;
+        kDiskTotalWidth *= scale;
+        kDiskUsedWidth *= scale;
+        kDiskFreeWidth *= scale;
+        kDiskPercentWidth *= scale;
+        sDiskColumnsScaled = true;
+    }
+
     // Header view
     BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);
     headerView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
@@ -194,7 +212,7 @@ DiskView::DiskView()
     addHeader(B_TRANSLATE("Free"), kDiskFreeWidth, B_ALIGN_RIGHT);
     addHeader(B_TRANSLATE("Usage"), kDiskPercentWidth, B_ALIGN_RIGHT);
 
-    headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20));
+    headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
     fDiskListView = new BListView("disk_list", B_SINGLE_SELECTION_LIST, B_WILL_DRAW | B_NAVIGABLE);
     BScrollView* diskScrollView = new BScrollView("disk_scroll", fDiskListView, 0, false, true, true);

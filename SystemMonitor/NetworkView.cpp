@@ -23,13 +23,14 @@
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "NetworkView"
 
-const float kNetNameWidth = 100;
-const float kNetTypeWidth = 80;
-const float kNetAddrWidth = 120;
-const float kNetSentWidth = 90;
-const float kNetRecvWidth = 90;
-const float kNetTxSpeedWidth = 90;
-const float kNetRxSpeedWidth = 90;
+static float kNetNameWidth = 100;
+static float kNetTypeWidth = 80;
+static float kNetAddrWidth = 120;
+static float kNetSentWidth = 90;
+static float kNetRecvWidth = 90;
+static float kNetTxSpeedWidth = 90;
+static float kNetRxSpeedWidth = 90;
+static bool sNetColumnsScaled = false;
 
 class InterfaceListItem : public BListItem {
 public:
@@ -185,6 +186,23 @@ NetworkView::NetworkView()
     auto* netBox = new BBox("NetworkInterfacesBox");
     netBox->SetLabel(B_TRANSLATE("Network Interfaces"));
 
+    // Calculate scaling
+    BFont font;
+    GetFont(&font);
+    float scale = font.Size() / 12.0f;
+    if (scale < 1.0f) scale = 1.0f;
+
+    if (!sNetColumnsScaled) {
+        kNetNameWidth *= scale;
+        kNetTypeWidth *= scale;
+        kNetAddrWidth *= scale;
+        kNetSentWidth *= scale;
+        kNetRecvWidth *= scale;
+        kNetTxSpeedWidth *= scale;
+        kNetRxSpeedWidth *= scale;
+        sNetColumnsScaled = true;
+    }
+
     // Header View
     BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);
     headerView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
@@ -206,7 +224,7 @@ NetworkView::NetworkView()
     addHeader(B_TRANSLATE("TX Speed"), kNetTxSpeedWidth, B_ALIGN_RIGHT);
     addHeader(B_TRANSLATE("RX Speed"), kNetRxSpeedWidth, B_ALIGN_RIGHT);
 
-    headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20));
+    headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
     fInterfaceListView = new BListView("interface_list", B_SINGLE_SELECTION_LIST, B_WILL_DRAW | B_NAVIGABLE);
     BScrollView* netScrollView = new BScrollView("net_scroll", fInterfaceListView, 0, false, true, true);

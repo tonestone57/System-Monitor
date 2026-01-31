@@ -29,13 +29,14 @@
 #define B_TRANSLATION_CONTEXT "ProcessView"
 
 // Define constants for columns (used for drawing)
-const float kPIDWidth = 60;
-const float kNameWidth = 180;
-const float kStateWidth = 80;
-const float kCPUWidth = 60;
-const float kMemWidth = 90;
-const float kThreadsWidth = 60;
-const float kUserWidth = 80;
+static float kPIDWidth = 60;
+static float kNameWidth = 180;
+static float kStateWidth = 80;
+static float kCPUWidth = 60;
+static float kMemWidth = 90;
+static float kThreadsWidth = 60;
+static float kUserWidth = 80;
+static bool sColumnsScaled = false;
 
 const uint32 MSG_KILL_PROCESS = 'kill';
 const uint32 MSG_SUSPEND_PROCESS = 'susp';
@@ -317,6 +318,23 @@ ProcessView::ProcessView()
     priorityMenu->AddItem(new BMenuItem(B_TRANSLATE("High"), new BMessage(MSG_PRIORITY_HIGH)));
     fContextMenu->AddItem(priorityMenu);
 
+    // Calculate scaling
+    BFont font;
+    GetFont(&font);
+    float scale = font.Size() / 12.0f; // Baseline 12pt
+    if (scale < 1.0f) scale = 1.0f;
+
+    if (!sColumnsScaled) {
+        kPIDWidth *= scale;
+        kNameWidth *= scale;
+        kStateWidth *= scale;
+        kCPUWidth *= scale;
+        kMemWidth *= scale;
+        kThreadsWidth *= scale;
+        kUserWidth *= scale;
+        sColumnsScaled = true;
+    }
+
     // Header View construction
     BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);
     headerView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
@@ -335,7 +353,7 @@ ProcessView::ProcessView()
     addHeader(B_TRANSLATE("Thds"), kThreadsWidth, SORT_BY_THREADS);
     addHeader(B_TRANSLATE("User"), kUserWidth, SORT_BY_PID); // No sort by user for now
 
-    headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20));
+    headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
         .SetInsets(0)
