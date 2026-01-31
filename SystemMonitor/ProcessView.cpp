@@ -37,6 +37,15 @@ const float kMemWidth = 90;
 const float kThreadsWidth = 60;
 const float kUserWidth = 80;
 
+const uint32 MSG_KILL_PROCESS = 'kill';
+const uint32 MSG_SUSPEND_PROCESS = 'susp';
+const uint32 MSG_RESUME_PROCESS = 'resm';
+const uint32 MSG_PRIORITY_LOW = 'pril';
+const uint32 MSG_PRIORITY_NORMAL = 'prin';
+const uint32 MSG_PRIORITY_HIGH = 'prih';
+const uint32 MSG_SHOW_CONTEXT_MENU = 'cntx';
+const uint32 MSG_CONFIRM_KILL = 'conf';
+
 namespace {
 
 class ClickableHeaderView : public BStringView {
@@ -266,15 +275,6 @@ public:
 
 } // namespace
 
-
-const uint32 MSG_KILL_PROCESS = 'kill';
-const uint32 MSG_SUSPEND_PROCESS = 'susp';
-const uint32 MSG_RESUME_PROCESS = 'resm';
-const uint32 MSG_PRIORITY_LOW = 'pril';
-const uint32 MSG_PRIORITY_NORMAL = 'prin';
-const uint32 MSG_PRIORITY_HIGH = 'prih';
-const uint32 MSG_SHOW_CONTEXT_MENU = 'cntx';
-const uint32 MSG_CONFIRM_KILL = 'conf';
 
 ProcessView::ProcessView()
     : BView("ProcessView", B_WILL_DRAW),
