@@ -606,7 +606,15 @@ void ProcessView::FilterRows()
             fFilterName.SetTo(item->Info().name);
             fFilterID.SetToFormat("%" B_PRId32, id);
 
-            if (fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
+            bool argsMatch = false;
+            auto cacheIt = fCachedTeamInfo.find(id);
+            if (cacheIt != fCachedTeamInfo.end()) {
+                 BString args(cacheIt->second.args);
+                 if (args.IFindFirst(searchText) != B_ERROR)
+                     argsMatch = true;
+            }
+
+            if (!argsMatch && fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
                 match = false;
             }
         }
@@ -673,7 +681,16 @@ void ProcessView::Update(BMessage* message)
             if (filtering) {
                  fFilterName.SetTo(info.name);
                  fFilterID.SetToFormat("%" B_PRId32, info.id);
-                 if (fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
+
+                 bool argsMatch = false;
+                 auto cacheIt = fCachedTeamInfo.find(info.id);
+                 if (cacheIt != fCachedTeamInfo.end()) {
+                      BString args(cacheIt->second.args);
+                      if (args.IFindFirst(searchText) != B_ERROR)
+                          argsMatch = true;
+                 }
+
+                 if (!argsMatch && fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
                      match = false;
                  }
             }
