@@ -90,8 +90,10 @@ public:
 
         fCpuGraph = new ActivityGraphView("cpu_summary_graph", {0, 0, 0, 0}, B_SUCCESS_COLOR);
         fCpuGraph->SetExplicitMinSize(BSize(B_SIZE_UNSET, 60));
+        fCpuGraph->SetManualScale(0, 1000);
         fMemGraph = new ActivityGraphView("mem_summary_graph", {0, 0, 0, 0}, B_MENU_SELECTION_BACKGROUND_COLOR);
         fMemGraph->SetExplicitMinSize(BSize(B_SIZE_UNSET, 60));
+        fMemGraph->SetManualScale(0, 1000);
         fNetGraph = new ActivityGraphView("net_summary_graph", {0, 0, 0, 0}, B_FAILURE_COLOR);
         fNetGraph->SetExplicitMinSize(BSize(B_SIZE_UNSET, 60));
 
@@ -126,8 +128,8 @@ private:
 
     virtual void Pulse() {
         if (fStats) {
-            fCpuGraph->AddValue(system_time(), fStats->cpuUsage);
-            fMemGraph->AddValue(system_time(), fStats->memoryUsage);
+            fCpuGraph->AddValue(system_time(), fStats->cpuUsage * 10);
+            fMemGraph->AddValue(system_time(), fStats->memoryUsage * 10);
             fNetGraph->AddValue(system_time(), fStats->uploadSpeed + fStats->downloadSpeed);
         }
     }

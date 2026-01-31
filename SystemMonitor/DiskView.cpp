@@ -4,6 +4,7 @@
 #include <StringView.h>
 #include <OS.h>
 #include <cstdio>
+#include <cstring>
 #include <Directory.h>
 #include <Entry.h>
 #include <Path.h>

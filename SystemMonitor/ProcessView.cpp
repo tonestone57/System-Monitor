@@ -13,6 +13,7 @@
 #include <Path.h>
 #include <Box.h>
 #include <cstdio>
+#include <cstring>
 #include <MenuItem.h>
 #include <Font.h>
 #include <vector>
@@ -277,11 +278,12 @@ const uint32 MSG_CONFIRM_KILL = 'conf';
 
 ProcessView::ProcessView()
     : BView("ProcessView", B_WILL_DRAW),
-      fLastSystemTime(0),
-      fRefreshInterval(1000000),
       fFilterName(""),
       fFilterID(""),
+      fLastSystemTime(0),
+      fRefreshInterval(1000000),
       fUpdateThread(B_ERROR),
+      fQuitSem(-1),
       fTerminated(false),
       fIsHidden(false),
       fSortMode(SORT_BY_CPU),

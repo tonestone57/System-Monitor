@@ -409,7 +409,7 @@ int32 SysInfoView::_LoadDataThread(void* data) {
     struct passwd* pw = getpwuid(getuid());
     char hostname[256];
     if (gethostname(hostname, sizeof(hostname)) != 0)
-        strcpy(hostname, "unknown");
+        strcpy(hostname, B_TRANSLATE("unknown"));
 
     BString userHost;
     userHost << (pw && pw->pw_name ? pw->pw_name : "user") << "@" << hostname;
@@ -482,8 +482,8 @@ int32 SysInfoView::_LoadDataThread(void* data) {
     }
 
     // 8. DE / WM
-    reply.AddString("de", "Application Kit");
-    reply.AddString("wm", "Application Server");
+    reply.AddString("de", B_TRANSLATE("Application Kit"));
+    reply.AddString("wm", B_TRANSLATE("Application Server"));
 
     // 9. Font
     font_family family;
@@ -502,10 +502,10 @@ int32 SysInfoView::_LoadDataThread(void* data) {
         if (screen.GetDeviceInfo(&info) == B_OK) {
             reply.AddString("gpu", info.name);
         } else {
-             reply.AddString("gpu", "Unknown");
+             reply.AddString("gpu", B_TRANSLATE("Unknown"));
         }
     } else {
-         reply.AddString("gpu", "Unknown");
+         reply.AddString("gpu", B_TRANSLATE("Unknown"));
     }
 
     // 12. Memory
@@ -592,13 +592,13 @@ ip_found:
                     capacityStr << "%";
                     reply.AddString("battery", capacityStr);
                 } else {
-                    reply.AddString("battery", "Unknown");
+                    reply.AddString("battery", B_TRANSLATE("Unknown"));
                 }
             } else {
-                reply.AddString("battery", "Unknown");
+                reply.AddString("battery", B_TRANSLATE("Unknown"));
             }
         } else {
-            reply.AddString("battery", "Unknown");
+            reply.AddString("battery", B_TRANSLATE("Unknown"));
         }
     }
 
