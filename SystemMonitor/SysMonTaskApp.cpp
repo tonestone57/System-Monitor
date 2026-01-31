@@ -346,7 +346,7 @@ MainWindow::MainWindow(BRect frame)
     .End();
     
     // Configure window
-    SetSizeLimits(800, 2000, 600, 1500);
+    SetSizeLimits(800, B_SIZE_UNLIMITED, 600, B_SIZE_UNLIMITED);
     
     // Set pulse rate for real-time updates
     SetPulseRate(1000000); // 1 second pulse
