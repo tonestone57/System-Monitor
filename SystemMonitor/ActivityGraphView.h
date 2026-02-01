@@ -37,6 +37,9 @@ private:
 	bool				fManualScale;
 	int64				fManualMin;
 	int64				fManualMax;
+
+	bigtime_t			fLastRefresh;
+	int64				fScrollOffset;
 };
 
 #endif // ACTIVITYGRAPHVIEW_H
