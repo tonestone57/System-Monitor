@@ -23,19 +23,19 @@
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "NetworkView"
 
-const float kNetNameWidth = 100;
-const float kNetTypeWidth = 80;
-const float kNetAddrWidth = 120;
-const float kNetSentWidth = 90;
-const float kNetRecvWidth = 90;
-const float kNetTxSpeedWidth = 90;
-const float kNetRxSpeedWidth = 90;
+const float kBaseNetNameWidth = 100;
+const float kBaseNetTypeWidth = 80;
+const float kBaseNetAddrWidth = 120;
+const float kBaseNetSentWidth = 90;
+const float kBaseNetRecvWidth = 90;
+const float kBaseNetTxSpeedWidth = 90;
+const float kBaseNetRxSpeedWidth = 90;
 
 class InterfaceListItem : public BListItem {
 public:
     InterfaceListItem(const BString& name, const BString& type, const BString& addr,
-                      uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed, const BFont* font)
-        : BListItem(), fGeneration(0)
+                      uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed, const BFont* font, NetworkView* view)
+        : BListItem(), fGeneration(0), fView(view)
     {
         Update(name, type, addr, sent, recv, txSpeed, rxSpeed, font, true);
     }
@@ -72,28 +72,29 @@ public:
             fCachedRxSpeed = FormatSpeed(fRxSpeed, 1000000);
 
         if (nameChanged) {
-            if (font)
-                font->TruncateString(&fName, B_TRUNCATE_END, kNetNameWidth - 10, &fTruncatedName);
+            if (font && fView)
+                font->TruncateString(&fName, B_TRUNCATE_END, fView->NameWidth() - 10, &fTruncatedName);
             else
                 fTruncatedName = fName;
         }
 
         if (typeChanged) {
-            if (font)
-                font->TruncateString(&fType, B_TRUNCATE_END, kNetTypeWidth - 10, &fTruncatedType);
+            if (font && fView)
+                font->TruncateString(&fType, B_TRUNCATE_END, fView->TypeWidth() - 10, &fTruncatedType);
             else
                 fTruncatedType = fType;
         }
 
         if (addrChanged) {
-            if (font)
-                font->TruncateString(&fAddr, B_TRUNCATE_END, kNetAddrWidth - 10, &fTruncatedAddr);
+            if (font && fView)
+                font->TruncateString(&fAddr, B_TRUNCATE_END, fView->AddrWidth() - 10, &fTruncatedAddr);
             else
                 fTruncatedAddr = fAddr;
         }
     }
 
     virtual void DrawItem(BView* owner, BRect itemRect, bool complete = false) {
+        if (!fView) return;
         if (IsSelected() || complete) {
             rgb_color color;
             if (IsSelected()) color = ui_color(B_LIST_SELECTED_BACKGROUND_COLOR);
@@ -122,19 +123,19 @@ public:
         };
 
         owner->DrawString(fTruncatedName.String(), BPoint(x, y));
-        x += kNetNameWidth;
+        x += fView->NameWidth();
 
         owner->DrawString(fTruncatedType.String(), BPoint(x, y));
-        x += kNetTypeWidth;
+        x += fView->TypeWidth();
 
         owner->DrawString(fTruncatedAddr.String(), BPoint(x, y));
-        x += kNetAddrWidth;
+        x += fView->AddrWidth();
 
-        drawRight(fCachedSent, kNetSentWidth);
-        drawRight(fCachedRecv, kNetRecvWidth);
+        drawRight(fCachedSent, fView->SentWidth());
+        drawRight(fCachedRecv, fView->RecvWidth());
 
-        drawRight(fCachedTxSpeed, kNetTxSpeedWidth);
-        drawRight(fCachedRxSpeed, kNetRxSpeedWidth);
+        drawRight(fCachedTxSpeed, fView->TxSpeedWidth());
+        drawRight(fCachedRxSpeed, fView->RxSpeedWidth());
     }
 
 private:
@@ -155,6 +156,7 @@ private:
     BString fTruncatedType;
     BString fTruncatedAddr;
     int32 fGeneration;
+    NetworkView* fView;
 
     static int CompareSpeed(const void* first, const void* second) {
         const InterfaceListItem* item1 = *(const InterfaceListItem**)first;
@@ -185,6 +187,19 @@ NetworkView::NetworkView()
     auto* netBox = new BBox("NetworkInterfacesBox");
     netBox->SetLabel(B_TRANSLATE("Network Interfaces"));
 
+    // Calculate scaling
+    BFont font;
+    GetFont(&font);
+    float scale = GetScaleFactor(&font);
+
+    fNameWidth = kBaseNetNameWidth * scale;
+    fTypeWidth = kBaseNetTypeWidth * scale;
+    fAddrWidth = kBaseNetAddrWidth * scale;
+    fSentWidth = kBaseNetSentWidth * scale;
+    fRecvWidth = kBaseNetRecvWidth * scale;
+    fTxSpeedWidth = kBaseNetTxSpeedWidth * scale;
+    fRxSpeedWidth = kBaseNetRxSpeedWidth * scale;
+
     // Header View
     BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);
     headerView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
@@ -198,15 +213,15 @@ NetworkView::NetworkView()
         headerView->AddChild(sv);
     };
 
-    addHeader(B_TRANSLATE("Name"), kNetNameWidth);
-    addHeader(B_TRANSLATE("Type"), kNetTypeWidth);
-    addHeader(B_TRANSLATE("Address"), kNetAddrWidth);
-    addHeader(B_TRANSLATE("Sent"), kNetSentWidth, B_ALIGN_RIGHT);
-    addHeader(B_TRANSLATE("Recv"), kNetRecvWidth, B_ALIGN_RIGHT);
-    addHeader(B_TRANSLATE("TX Speed"), kNetTxSpeedWidth, B_ALIGN_RIGHT);
-    addHeader(B_TRANSLATE("RX Speed"), kNetRxSpeedWidth, B_ALIGN_RIGHT);
+    addHeader(B_TRANSLATE("Name"), fNameWidth);
+    addHeader(B_TRANSLATE("Type"), fTypeWidth);
+    addHeader(B_TRANSLATE("Address"), fAddrWidth);
+    addHeader(B_TRANSLATE("Sent"), fSentWidth, B_ALIGN_RIGHT);
+    addHeader(B_TRANSLATE("Recv"), fRecvWidth, B_ALIGN_RIGHT);
+    addHeader(B_TRANSLATE("TX Speed"), fTxSpeedWidth, B_ALIGN_RIGHT);
+    addHeader(B_TRANSLATE("RX Speed"), fRxSpeedWidth, B_ALIGN_RIGHT);
 
-    headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20));
+    headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
     fInterfaceListView = new BListView("interface_list", B_SINGLE_SELECTION_LIST, B_WILL_DRAW | B_NAVIGABLE);
     BScrollView* netScrollView = new BScrollView("net_scroll", fInterfaceListView, 0, false, true, true);
@@ -363,7 +378,7 @@ void NetworkView::UpdateData(BMessage* message)
             InterfaceListItem* item;
             auto rowIt = fInterfaceItemMap.find(name);
             if (rowIt == fInterfaceItemMap.end()) {
-                item = new InterfaceListItem(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes, &font);
+                item = new InterfaceListItem(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes, &font, this);
                 fInterfaceListView->AddItem(item);
                 fInterfaceItemMap[name] = item;
                 fVisibleItems.insert(item);

@@ -79,6 +79,12 @@ int main() {
     assert(*buffer.ItemAt(0) == 8);
     assert(*buffer.ItemAt(2) == 10);
 
+    // Test SetSize (Zero)
+    buffer.SetSize(0);
+    assert(buffer.Size() == 0);
+    assert(buffer.CountItems() == 0);
+    assert(buffer.ItemAt(0) == NULL);
+
     // Test MakeEmpty
     buffer.MakeEmpty();
     assert(buffer.IsEmpty());

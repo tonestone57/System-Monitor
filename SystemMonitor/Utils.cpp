@@ -1,4 +1,5 @@
 #include "Utils.h"
+#include <Font.h>
 
 BString FormatBytes(uint64 bytes, int precision) {
     BString str;
@@ -65,4 +66,11 @@ BString FormatSpeed(uint64 bytesDelta, bigtime_t microSecondsDelta)
     else if (kbs >= 1.0) str.SetToFormat("%.2f KiB/s", kbs);
     else str.SetToFormat("%.0f B/s", speed);
     return str;
+}
+
+float GetScaleFactor(const BFont* font) {
+    if (!font) return 1.0f;
+    float scale = font->Size() / 12.0f;
+    if (scale < 1.0f) scale = 1.0f;
+    return scale;
 }

@@ -29,13 +29,22 @@
 #define B_TRANSLATION_CONTEXT "ProcessView"
 
 // Define constants for columns (used for drawing)
-const float kPIDWidth = 60;
-const float kNameWidth = 180;
-const float kStateWidth = 80;
-const float kCPUWidth = 60;
-const float kMemWidth = 90;
-const float kThreadsWidth = 60;
-const float kUserWidth = 80;
+const float kBasePIDWidth = 60;
+const float kBaseNameWidth = 180;
+const float kBaseStateWidth = 80;
+const float kBaseCPUWidth = 60;
+const float kBaseMemWidth = 90;
+const float kBaseThreadsWidth = 60;
+const float kBaseUserWidth = 80;
+
+const uint32 MSG_KILL_PROCESS = 'kill';
+const uint32 MSG_SUSPEND_PROCESS = 'susp';
+const uint32 MSG_RESUME_PROCESS = 'resm';
+const uint32 MSG_PRIORITY_LOW = 'pril';
+const uint32 MSG_PRIORITY_NORMAL = 'prin';
+const uint32 MSG_PRIORITY_HIGH = 'prih';
+const uint32 MSG_SHOW_CONTEXT_MENU = 'cntx';
+const uint32 MSG_CONFIRM_KILL = 'conf';
 
 namespace {
 
@@ -66,8 +75,8 @@ private:
 
 class ProcessListItem : public BListItem {
 public:
-    ProcessListItem(const ProcessInfo& info, const char* stateStr, const BFont* font)
-        : BListItem(), fGeneration(0)
+    ProcessListItem(const ProcessInfo& info, const char* stateStr, const BFont* font, ProcessView* view)
+        : BListItem(), fGeneration(0), fView(view)
     {
         Update(info, stateStr, font, true);
     }
@@ -92,8 +101,8 @@ public:
 
         if (nameChanged) {
             fCachedName = fInfo.name;
-            if (font)
-                font->TruncateString(&fCachedName, B_TRUNCATE_END, kNameWidth - 10, &fTruncatedName);
+            if (font && fView)
+                font->TruncateString(&fCachedName, B_TRUNCATE_END, fView->NameWidth() - 10, &fTruncatedName);
             else
                 fTruncatedName = fCachedName;
         }
@@ -112,14 +121,15 @@ public:
 
         if (userChanged) {
             fCachedUser = fInfo.userName;
-            if (font)
-                font->TruncateString(&fCachedUser, B_TRUNCATE_END, kUserWidth - 10, &fTruncatedUser);
+            if (font && fView)
+                font->TruncateString(&fCachedUser, B_TRUNCATE_END, fView->UserWidth() - 10, &fTruncatedUser);
             else
                 fTruncatedUser = fCachedUser;
         }
     }
 
     virtual void DrawItem(BView* owner, BRect itemRect, bool complete = false) {
+        if (!fView) return;
         if (IsSelected() || complete) {
             rgb_color color;
             if (IsSelected()) color = ui_color(B_LIST_SELECTED_BACKGROUND_COLOR);
@@ -141,27 +151,27 @@ public:
 
         // PID
         owner->DrawString(fCachedPID.String(), BPoint(x, y));
-        x += kPIDWidth;
+        x += fView->PIDWidth();
 
         // Name
         owner->DrawString(fTruncatedName.String(), BPoint(x, y));
-        x += kNameWidth;
+        x += fView->NameWidth();
 
         // State
         owner->DrawString(fCachedState.String(), BPoint(x, y));
-        x += kStateWidth;
+        x += fView->StateWidth();
 
         // CPU
         owner->DrawString(fCachedCPU.String(), BPoint(x, y));
-        x += kCPUWidth;
+        x += fView->CPUWidth();
 
         // Mem
         owner->DrawString(fCachedMem.String(), BPoint(x, y));
-        x += kMemWidth;
+        x += fView->MemWidth();
 
         // Threads
         owner->DrawString(fCachedThreads.String(), BPoint(x, y));
-        x += kThreadsWidth;
+        x += fView->ThreadsWidth();
 
         // User
         owner->DrawString(fTruncatedUser.String(), BPoint(x, y));
@@ -224,6 +234,7 @@ private:
     BString fTruncatedName;
     BString fTruncatedUser;
     int32 fGeneration;
+    ProcessView* fView;
 };
 
 class ProcessListView : public BListView {
@@ -267,15 +278,6 @@ public:
 } // namespace
 
 
-const uint32 MSG_KILL_PROCESS = 'kill';
-const uint32 MSG_SUSPEND_PROCESS = 'susp';
-const uint32 MSG_RESUME_PROCESS = 'resm';
-const uint32 MSG_PRIORITY_LOW = 'pril';
-const uint32 MSG_PRIORITY_NORMAL = 'prin';
-const uint32 MSG_PRIORITY_HIGH = 'prih';
-const uint32 MSG_SHOW_CONTEXT_MENU = 'cntx';
-const uint32 MSG_CONFIRM_KILL = 'conf';
-
 ProcessView::ProcessView()
     : BView("ProcessView", B_WILL_DRAW),
       fFilterName(""),
@@ -317,6 +319,19 @@ ProcessView::ProcessView()
     priorityMenu->AddItem(new BMenuItem(B_TRANSLATE("High"), new BMessage(MSG_PRIORITY_HIGH)));
     fContextMenu->AddItem(priorityMenu);
 
+    // Calculate scaling
+    BFont font;
+    GetFont(&font);
+    float scale = GetScaleFactor(&font);
+
+    fPIDWidth = kBasePIDWidth * scale;
+    fNameWidth = kBaseNameWidth * scale;
+    fStateWidth = kBaseStateWidth * scale;
+    fCPUWidth = kBaseCPUWidth * scale;
+    fMemWidth = kBaseMemWidth * scale;
+    fThreadsWidth = kBaseThreadsWidth * scale;
+    fUserWidth = kBaseUserWidth * scale;
+
     // Header View construction
     BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);
     headerView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
@@ -327,15 +342,15 @@ ProcessView::ProcessView()
         headerView->AddChild(sv);
     };
 
-    addHeader(B_TRANSLATE("PID"), kPIDWidth, SORT_BY_PID);
-    addHeader(B_TRANSLATE("Name"), kNameWidth, SORT_BY_NAME);
-    addHeader(B_TRANSLATE("State"), kStateWidth, SORT_BY_PID); // No sort by state for now
-    addHeader(B_TRANSLATE("CPU%"), kCPUWidth, SORT_BY_CPU);
-    addHeader(B_TRANSLATE("Mem"), kMemWidth, SORT_BY_MEM);
-    addHeader(B_TRANSLATE("Thds"), kThreadsWidth, SORT_BY_THREADS);
-    addHeader(B_TRANSLATE("User"), kUserWidth, SORT_BY_PID); // No sort by user for now
+    addHeader(B_TRANSLATE("PID"), fPIDWidth, SORT_BY_PID);
+    addHeader(B_TRANSLATE("Name"), fNameWidth, SORT_BY_NAME);
+    addHeader(B_TRANSLATE("State"), fStateWidth, SORT_BY_PID); // No sort by state for now
+    addHeader(B_TRANSLATE("CPU%"), fCPUWidth, SORT_BY_CPU);
+    addHeader(B_TRANSLATE("Mem"), fMemWidth, SORT_BY_MEM);
+    addHeader(B_TRANSLATE("Thds"), fThreadsWidth, SORT_BY_THREADS);
+    addHeader(B_TRANSLATE("User"), fUserWidth, SORT_BY_PID); // No sort by user for now
 
-    headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20));
+    headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
         .SetInsets(0)
@@ -588,7 +603,12 @@ void ProcessView::FilterRows()
             fFilterName.SetTo(item->Info().name);
             fFilterID.SetToFormat("%" B_PRId32, id);
 
-            if (fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
+            bool argsMatch = false;
+            BString args(item->Info().args);
+            if (args.IFindFirst(searchText) != B_ERROR)
+                 argsMatch = true;
+
+            if (!argsMatch && fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
                 match = false;
             }
         }
@@ -647,7 +667,7 @@ void ProcessView::Update(BMessage* message)
 
         ProcessListItem* item;
         if (fTeamItemMap.find(info.id) == fTeamItemMap.end()) {
-            item = new ProcessListItem(info, stateStr, &font);
+            item = new ProcessListItem(info, stateStr, &font, this);
             fTeamItemMap[info.id] = item;
 
             // Check filter before adding
@@ -655,7 +675,13 @@ void ProcessView::Update(BMessage* message)
             if (filtering) {
                  fFilterName.SetTo(info.name);
                  fFilterID.SetToFormat("%" B_PRId32, info.id);
-                 if (fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
+
+                 bool argsMatch = false;
+                 BString args(info.args);
+                 if (args.IFindFirst(searchText) != B_ERROR)
+                      argsMatch = true;
+
+                 if (!argsMatch && fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
                      match = false;
                  }
             }
@@ -745,6 +771,7 @@ int32 ProcessView::UpdateThread(void* data)
                     cached = true;
                     strlcpy(currentProc.name, it->second.name, B_OS_NAME_LENGTH);
                     strlcpy(currentProc.userName, it->second.userName, B_OS_NAME_LENGTH);
+                    strlcpy(currentProc.args, it->second.args, sizeof(currentProc.args));
                     it->second.generation = view->fCurrentGeneration;
 
                     // Update user generation even if process is cached
@@ -775,6 +802,8 @@ int32 ProcessView::UpdateThread(void* data)
 
                 BString userName = view->GetUserName(currentProc.userID, pwdBuffer);
                 strlcpy(currentProc.userName, userName.String(), B_OS_NAME_LENGTH);
+
+                strlcpy(currentProc.args, teamInfo.args, sizeof(currentProc.args));
 
                 CachedTeamInfo info;
                 strlcpy(info.name, currentProc.name, B_OS_NAME_LENGTH);

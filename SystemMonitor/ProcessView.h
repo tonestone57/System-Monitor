@@ -25,6 +25,7 @@ struct ProcessInfo {
     team_id id;
     char name[B_OS_NAME_LENGTH];
     char userName[B_OS_NAME_LENGTH];
+    char args[64];
     char state[32];
     uint32 threadCount;
     uint32 areaCount;
@@ -63,6 +64,14 @@ public:
     void SaveState(BMessage& state);
     void LoadState(const BMessage& state);
     void SetRefreshInterval(bigtime_t interval);
+
+    float PIDWidth() const { return fPIDWidth; }
+    float NameWidth() const { return fNameWidth; }
+    float StateWidth() const { return fStateWidth; }
+    float CPUWidth() const { return fCPUWidth; }
+    float MemWidth() const { return fMemWidth; }
+    float ThreadsWidth() const { return fThreadsWidth; }
+    float UserWidth() const { return fUserWidth; }
 
 private:
     static int32 UpdateThread(void* data);
@@ -125,6 +134,14 @@ private:
     BFont fCachedFont;
     int32 fCurrentGeneration;
     int32 fListGeneration;
+
+    float fPIDWidth;
+    float fNameWidth;
+    float fStateWidth;
+    float fCPUWidth;
+    float fMemWidth;
+    float fThreadsWidth;
+    float fUserWidth;
 };
 
 #endif // PROCESSVIEW_H

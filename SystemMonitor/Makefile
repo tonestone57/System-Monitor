@@ -24,7 +24,7 @@ SRCS = \
 	Utils.cpp
 
 # Resource definition files
-# RDEFS = SysMonTask.rdef
+RDEFS = SysMonTask.rdef
 
 # Resource files
 # RSRCS =
