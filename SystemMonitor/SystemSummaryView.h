@@ -1,5 +1,5 @@
-#ifndef SYSINFOVIEW_H
-#define SYSINFOVIEW_H
+#ifndef SYSTEM_SUMMARY_VIEW_H
+#define SYSTEM_SUMMARY_VIEW_H
 
 #include <View.h>
 #include <StringView.h>
@@ -11,10 +11,10 @@ class BBox;
 class BTextView;
 class BScrollView;
 
-class SysInfoView : public BView {
+class SystemSummaryView : public BView {
 public:
-    SysInfoView();
-    virtual ~SysInfoView();
+    SystemSummaryView();
+    virtual ~SystemSummaryView();
     
     virtual void AttachedToWindow();
     virtual void MessageReceived(BMessage* message);
@@ -38,4 +38,4 @@ private:
     thread_id fLoadThread;
 };
 
-#endif // SYSINFOVIEW_H
+#endif // SYSTEM_SUMMARY_VIEW_H

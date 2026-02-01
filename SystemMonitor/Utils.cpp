@@ -1,5 +1,11 @@
 #include "Utils.h"
 #include <Font.h>
+#include <OS.h>
+#include <Catalog.h>
+#include <cstring>
+
+#undef B_TRANSLATION_CONTEXT
+#define B_TRANSLATION_CONTEXT "Utils"
 
 BString FormatBytes(uint64 bytes, int precision) {
     BString str;
@@ -73,4 +79,31 @@ float GetScaleFactor(const BFont* font) {
     float scale = font->Size() / 12.0f;
     if (scale < 1.0f) scale = 1.0f;
     return scale;
+}
+
+uint64 GetRoundedCpuSpeed()
+{
+    system_info info;
+    if (get_system_info(&info) == B_OK)
+        return info.cpu_clock_speed / 1000000;
+    return 0;
+}
+
+BString GetCPUBrandString()
+{
+#if defined(__x86_64__) || defined(__i386__)
+    char brand[49] = {};
+    uint32 regs[4] = {};
+    for (int i = 0; i < 3; ++i) {
+        __asm__ volatile("cpuid"
+                         : "=a"(regs[0]), "=b"(regs[1]), "=c"(regs[2]), "=d"(regs[3])
+                         : "a"(0x80000002 + i));
+        memcpy(brand + i * 16, regs, sizeof(regs));
+    }
+    BString brandStr(brand);
+    brandStr.Trim();
+    if (brandStr.Length() > 0)
+        return brandStr;
+#endif
+    return B_TRANSLATE("Unknown CPU");
 }

@@ -32,7 +32,7 @@
 #include "DiskView.h"
 #include "NetworkView.h"
 #include "GPUView.h"
-#include "SysInfoView.h"
+#include "SystemTab.h"
 #include "SystemStats.h"
 
 // Forward declaration
@@ -273,7 +273,7 @@ private:
     
     ProcessView* fProcessView;
     PerformanceView* fPerformanceView;
-    SysInfoView* fSysInfoView;
+    SystemTab* fSystemTab;
     
     int32 fCurrentViewIndex;
 };
@@ -320,12 +320,12 @@ MainWindow::MainWindow(BRect frame)
     // Create the three main views
     fPerformanceView = new PerformanceView();
     fProcessView = new ProcessView();
-    fSysInfoView = new SysInfoView();
+    fSystemTab = new SystemTab();
     
     // Add views to card layout
     fCardLayout->AddView(fPerformanceView);
     fCardLayout->AddView(fProcessView);
-    fCardLayout->AddView(fSysInfoView);
+    fCardLayout->AddView(fSystemTab);
     
     // Set initial view
     fCardLayout->SetVisibleItem((int32)0);

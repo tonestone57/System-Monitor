@@ -1,4 +1,4 @@
-#include "SysInfoView.h"
+#include "SystemSummaryView.h"
 #include "Utils.h"
 #include <kernel/OS.h>
 #include <Screen.h>
@@ -33,7 +33,7 @@
 #include <Locale.h>
 
 #undef B_TRANSLATION_CONTEXT
-#define B_TRANSLATION_CONTEXT "SysInfoView"
+#define B_TRANSLATION_CONTEXT "SystemSummaryView"
 
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
@@ -83,8 +83,8 @@ static const char *kAMDExtFeatures[32] = {
 
 static const uint32 kMsgUpdateInfo = 'UPDT';
 
-SysInfoView::SysInfoView()
-    : BView("SysInfoView", B_WILL_DRAW),
+SystemSummaryView::SystemSummaryView()
+    : BView("SystemSummaryView", B_WILL_DRAW),
       fLogoTextView(NULL),
       fInfoTextView(NULL),
       fLoadThread(-1)
@@ -93,7 +93,7 @@ SysInfoView::SysInfoView()
     CreateLayout();
 }
 
-SysInfoView::~SysInfoView()
+SystemSummaryView::~SystemSummaryView()
 {
     // Child views are automatically deleted
     if (fLoadThread >= 0) {
@@ -101,7 +101,7 @@ SysInfoView::~SysInfoView()
     }
 }
 
-void SysInfoView::CreateLayout()
+void SystemSummaryView::CreateLayout()
 {
     fLogoTextView = new BTextView("logo_text_view");
     fLogoTextView->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
@@ -134,19 +134,19 @@ void SysInfoView::CreateLayout()
 }
 
 
-void SysInfoView::AttachedToWindow()
+void SystemSummaryView::AttachedToWindow()
 {
     BView::AttachedToWindow();
     _StartLoadThread();
 }
 
-void SysInfoView::Show()
+void SystemSummaryView::Show()
 {
     BView::Show();
     _StartLoadThread();
 }
 
-void SysInfoView::_StartLoadThread()
+void SystemSummaryView::_StartLoadThread()
 {
     if (fLoadThread >= 0)
         return;
@@ -161,7 +161,7 @@ void SysInfoView::_StartLoadThread()
     }
 }
 
-void SysInfoView::MessageReceived(BMessage* message)
+void SystemSummaryView::MessageReceived(BMessage* message)
 {
     switch (message->what) {
         case kMsgUpdateInfo: {
@@ -368,37 +368,25 @@ void SysInfoView::MessageReceived(BMessage* message)
     }
 }
 
-BString SysInfoView::GetCPUBrandString()
+BString SystemSummaryView::GetCPUBrandString()
 {
-#if defined(__x86_64__) || defined(__i386__)
-    char brand[49] = {};
-    uint32 regs[4] = {};
-    for (int i = 0; i < 3; ++i) {
-        __asm__ volatile("cpuid"
-                         : "=a"(regs[0]), "=b"(regs[1]), "=c"(regs[2]), "=d"(regs[3])
-                         : "a"(0x80000002 + i));
-        memcpy(brand + i * 16, regs, sizeof(regs));
-    }
-    return BString(brand).Trim();
-#else
-    return BString(B_TRANSLATE("Unknown CPU"));
-#endif
+    return ::GetCPUBrandString();
 }
 
 // Wrapper to use global functions or reimplement if needed
-BString SysInfoView::FormatBytes(uint64 bytes, int precision) {
+BString SystemSummaryView::FormatBytes(uint64 bytes, int precision) {
     return ::FormatBytes(bytes, precision);
 }
 
-BString SysInfoView::FormatHertz(uint64 hertz) {
+BString SystemSummaryView::FormatHertz(uint64 hertz) {
     return ::FormatHertz(hertz);
 }
 
-BString SysInfoView::FormatUptime(bigtime_t bootTime) {
+BString SystemSummaryView::FormatUptime(bigtime_t bootTime) {
     return ::FormatUptime(bootTime);
 }
 
-int32 SysInfoView::_LoadDataThread(void* data) {
+int32 SystemSummaryView::_LoadDataThread(void* data) {
     BMessenger* messenger = static_cast<BMessenger*>(data);
     if (!messenger) return B_BAD_VALUE;
 
@@ -614,7 +602,7 @@ ip_found:
 }
 
 BString
-SysInfoView::_GetCPUFeaturesString()
+SystemSummaryView::_GetCPUFeaturesString()
 {
 #if defined(__i386__) || defined(__x86_64__)
     BString features;
