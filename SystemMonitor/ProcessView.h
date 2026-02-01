@@ -100,6 +100,7 @@ private:
         char args[64];
         uid_t uid;
         int32 generation;
+        bigtime_t cpuTime;
     };
 
     struct CachedUser {

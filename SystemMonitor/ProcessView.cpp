@@ -763,12 +763,14 @@ int32 ProcessView::UpdateThread(void* data)
             currentProc.id = teamInfo.team;
             currentProc.userID = teamInfo.uid;
 
+            CachedTeamInfo* cachedInfo = nullptr;
             bool cached = false;
             auto it = view->fCachedTeamInfo.find(teamInfo.team);
             if (it != view->fCachedTeamInfo.end()) {
                 if (teamInfo.uid == it->second.uid
                     && strncmp(teamInfo.args, it->second.args, 64) == 0) {
                     cached = true;
+                    cachedInfo = &it->second;
                     strlcpy(currentProc.name, it->second.name, B_OS_NAME_LENGTH);
                     strlcpy(currentProc.userName, it->second.userName, B_OS_NAME_LENGTH);
                     strlcpy(currentProc.args, it->second.args, sizeof(currentProc.args));
@@ -811,7 +813,9 @@ int32 ProcessView::UpdateThread(void* data)
                 strlcpy(info.args, teamInfo.args, 64);
                 info.uid = teamInfo.uid;
                 info.generation = view->fCurrentGeneration;
+                info.cpuTime = 0; // Initialize
                 view->fCachedTeamInfo[teamInfo.team] = info;
+                cachedInfo = &view->fCachedTeamInfo[teamInfo.team];
             }
 
             currentProc.threadCount = teamInfo.thread_count;
@@ -824,24 +828,44 @@ int32 ProcessView::UpdateThread(void* data)
             bool isRunning = false;
             bool isReady = false;
 
-            while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
-                bigtime_t threadTime = tInfo.user_time + tInfo.kernel_time;
+            if (teamInfo.team == 1) { // Kernel team: use thread iteration
+                while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
+                    bigtime_t threadTime = tInfo.user_time + tInfo.kernel_time;
 
-                if (tInfo.state == B_THREAD_RUNNING) isRunning = true;
-                if (tInfo.state == B_THREAD_READY) isReady = true;
+                    if (tInfo.state == B_THREAD_RUNNING) isRunning = true;
+                    if (tInfo.state == B_THREAD_READY) isReady = true;
 
-                auto it = view->fThreadTimeMap.find(tInfo.thread);
-                if (it != view->fThreadTimeMap.end()) {
-                    bigtime_t threadTimeDelta = threadTime - it->second.time;
-                    if (threadTimeDelta < 0) threadTimeDelta = 0;
+                    auto it = view->fThreadTimeMap.find(tInfo.thread);
+                    if (it != view->fThreadTimeMap.end()) {
+                        bigtime_t threadTimeDelta = threadTime - it->second.time;
+                        if (threadTimeDelta < 0) threadTimeDelta = 0;
 
-                    if (strstr(tInfo.name, "idle thread") == NULL) {
-                        teamActiveTimeDelta += threadTimeDelta;
+                        if (strstr(tInfo.name, "idle thread") == NULL) {
+                            teamActiveTimeDelta += threadTimeDelta;
+                        }
+                        it->second.time = threadTime;
+                        it->second.generation = view->fCurrentGeneration;
+                    } else {
+                        view->fThreadTimeMap.emplace(tInfo.thread, ThreadState{threadTime, view->fCurrentGeneration});
                     }
-                    it->second.time = threadTime;
-                    it->second.generation = view->fCurrentGeneration;
-                } else {
-                    view->fThreadTimeMap.emplace(tInfo.thread, ThreadState{threadTime, view->fCurrentGeneration});
+                }
+            } else { // Regular teams: use bulk API and optimized state check
+                team_usage_info usageInfo;
+                if (get_team_usage_info(teamInfo.team, B_TEAM_USAGE_SELF, &usageInfo) == B_OK) {
+                    bigtime_t currentTeamTime = usageInfo.user_time + usageInfo.kernel_time;
+                    if (cached) {
+                        teamActiveTimeDelta = currentTeamTime - cachedInfo->cpuTime;
+                        if (teamActiveTimeDelta < 0) teamActiveTimeDelta = 0;
+                    }
+                    cachedInfo->cpuTime = currentTeamTime;
+                }
+
+                while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
+                    if (tInfo.state == B_THREAD_RUNNING) {
+                        isRunning = true;
+                        break; // Found running, can stop scanning
+                    }
+                    if (tInfo.state == B_THREAD_READY) isReady = true;
                 }
             }
 
