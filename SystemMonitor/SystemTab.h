@@ -5,8 +5,8 @@
 
 class SystemTab : public BView {
 public:
-    SystemTab();
-    virtual ~SystemTab();
+	SystemTab();
+	virtual ~SystemTab();
 };
 
 #endif // SYSTEM_TAB_H

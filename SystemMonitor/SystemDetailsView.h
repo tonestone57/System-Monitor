@@ -11,46 +11,56 @@
 
 class SystemDetailsView : public BView {
 public:
-    SystemDetailsView();
-    virtual ~SystemDetailsView();
+	SystemDetailsView();
+	virtual ~SystemDetailsView();
 
-    virtual void AttachedToWindow();
-    virtual void Pulse();
-    virtual void MessageReceived(BMessage* message);
+	virtual void AttachedToWindow();
+	virtual void Pulse();
+	virtual void MessageReceived(BMessage* message);
 
 private:
-    void _UpdateText(BTextView* textView);
+	void _UpdateText(BTextView* textView);
 
-    // Helper methods for fetching data
-    BStringView* _CreateLabel(const char* name, const char* text);
-    void _UpdateLabel(BStringView* label);
-    BStringView* _CreateSubtext(const char* name, const char* text);
-    void _UpdateSubtext(BStringView* subtext);
+	// Helper methods for fetching data
+	BStringView* _CreateLabel(const char* name, const char* text);
+	void _UpdateLabel(BStringView* label);
+	BStringView* _CreateSubtext(const char* name, const char* text);
+	void _UpdateSubtext(BStringView* subtext);
 
-    BString _GetOSVersion();
-    BString _GetABIVersion();
-    BString _GetCPUCount(system_info* sysInfo);
-    BString _GetCPUInfo();
-    BString _GetCPUFrequency();
-    BString _GetRamSize(system_info* sysInfo);
-    BString _GetRamUsage(system_info* sysInfo);
-    BString _GetKernelDateTime(system_info* sysInfo);
-    BString _GetUptime();
+	BString _GetOSVersion();
+	BString _GetABIVersion();
+	BString _GetCPUCount(system_info* sysInfo);
+	BString _GetCPUInfo();
+	BString _GetCPUFrequency();
+	BString _GetCPUFeatures();
+	BString _GetRamSize(system_info* sysInfo);
+	BString _GetRamUsage(system_info* sysInfo);
+	BString _GetSwapUsage(system_info* sysInfo);
+	BString _GetKernelDateTime(system_info* sysInfo);
+	BString _GetUptime();
+	BString _GetGPUInfo();
+	BString _GetDisplayInfo();
+	BString _GetDiskUsage();
 
-    BStringView* fVersionLabelView;
-    BStringView* fVersionInfoView;
-    BStringView* fCPULabelView;
-    BStringView* fCPUInfoView;
-    BStringView* fMemSizeView;
-    BStringView* fMemUsageView;
-    BStringView* fKernelDateTimeView;
-    BTextView* fUptimeView;
+	BStringView* fVersionLabelView;
+	BStringView* fVersionInfoView;
+	BStringView* fCPULabelView;
+	BStringView* fCPUInfoView;
+	BTextView*   fCPUFeaturesView;
+	BStringView* fMemSizeView;
+	BStringView* fMemUsageView;
+	BStringView* fSwapUsageView;
+	BStringView* fGPUInfoView;
+	BStringView* fDisplayInfoView;
+	BStringView* fDiskUsageView;
+	BStringView* fKernelDateTimeView;
+	BTextView*   fUptimeView;
 
-    BNumberFormat fNumberFormat;
-    BDurationFormat fDurationFormat;
+	BNumberFormat fNumberFormat;
+	BDurationFormat fDurationFormat;
 
-    static const uint8 kLabelCount = 5;
-    static const uint8 kSubtextCount = 5;
+	static const uint8 kLabelCount = 9;
+	static const uint8 kSubtextCount = 9;
 };
 
 #endif // SYSTEM_DETAILS_VIEW_H
