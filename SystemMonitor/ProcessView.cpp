@@ -46,6 +46,8 @@ const uint32 MSG_PRIORITY_HIGH = 'prih';
 const uint32 MSG_SHOW_CONTEXT_MENU = 'cntx';
 const uint32 MSG_CONFIRM_KILL = 'conf';
 
+const int32 kMemoryCacheGenerations = 10;
+
 namespace {
 
 class ClickableHeaderView : public BStringView {
@@ -764,6 +766,7 @@ int32 ProcessView::UpdateThread(void* data)
             currentProc.userID = teamInfo.uid;
 
             bool cached = false;
+            bool memoryNeedsUpdate = true;
             auto it = view->fCachedTeamInfo.find(teamInfo.team);
             if (it != view->fCachedTeamInfo.end()) {
                 if (teamInfo.uid == it->second.uid
@@ -778,6 +781,13 @@ int32 ProcessView::UpdateThread(void* data)
                     auto userIt = view->fUserNameCache.find(teamInfo.uid);
                     if (userIt != view->fUserNameCache.end())
                         userIt->second.generation = view->fCurrentGeneration;
+
+                    // Optimize memory calculation
+                    if (it->second.cachedAreaCount == teamInfo.area_count
+                        && (view->fCurrentGeneration - it->second.memoryGeneration < kMemoryCacheGenerations)) {
+                        memoryNeedsUpdate = false;
+                        currentProc.memoryUsageBytes = it->second.memoryUsage;
+                    }
                 }
             }
 
@@ -811,6 +821,10 @@ int32 ProcessView::UpdateThread(void* data)
                 strlcpy(info.args, teamInfo.args, 64);
                 info.uid = teamInfo.uid;
                 info.generation = view->fCurrentGeneration;
+                // Initialization for new cache entry (memory updated later)
+                info.memoryUsage = 0;
+                info.cachedAreaCount = -1;
+                info.memoryGeneration = 0;
                 view->fCachedTeamInfo[teamInfo.team] = info;
             }
 
@@ -854,11 +868,21 @@ int32 ProcessView::UpdateThread(void* data)
             if (teamCpuPercent > 100.0f) teamCpuPercent = 100.0f;
             currentProc.cpuUsage = teamCpuPercent;
 
-            currentProc.memoryUsageBytes = 0;
-            area_info areaInfo;
-            ssize_t areaCookie = 0;
-            while (get_next_area_info(teamInfo.team, &areaCookie, &areaInfo) == B_OK) {
-                currentProc.memoryUsageBytes += areaInfo.ram_size;
+            if (memoryNeedsUpdate) {
+                currentProc.memoryUsageBytes = 0;
+                area_info areaInfo;
+                ssize_t areaCookie = 0;
+                while (get_next_area_info(teamInfo.team, &areaCookie, &areaInfo) == B_OK) {
+                    currentProc.memoryUsageBytes += areaInfo.ram_size;
+                }
+
+                // Update cache
+                auto it = view->fCachedTeamInfo.find(teamInfo.team);
+                if (it != view->fCachedTeamInfo.end()) {
+                    it->second.memoryUsage = currentProc.memoryUsageBytes;
+                    it->second.cachedAreaCount = teamInfo.area_count;
+                    it->second.memoryGeneration = view->fCurrentGeneration;
+                }
             }
 
             procList.push_back(currentProc);

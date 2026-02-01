@@ -100,6 +100,10 @@ private:
         char args[64];
         uid_t uid;
         int32 generation;
+
+        uint64 memoryUsage;
+        int32 cachedAreaCount;
+        int32 memoryGeneration;
     };
 
     struct CachedUser {
