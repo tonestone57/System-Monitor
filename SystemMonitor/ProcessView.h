@@ -104,6 +104,7 @@ private:
         uint64 memoryUsage;
         int32 cachedAreaCount;
         int32 memoryGeneration;
+        bigtime_t cpuTime;
     };
 
     struct CachedUser {
