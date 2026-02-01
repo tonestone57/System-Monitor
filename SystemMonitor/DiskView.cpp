@@ -184,8 +184,7 @@ DiskView::DiskView()
     // Calculate scaling
     BFont font;
     GetFont(&font);
-    float scale = font.Size() / 12.0f;
-    if (scale < 1.0f) scale = 1.0f;
+    float scale = GetScaleFactor(&font);
 
     kDiskDeviceWidth = kBaseDiskDeviceWidth * scale;
     kDiskMountWidth = kBaseDiskMountWidth * scale;

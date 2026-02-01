@@ -328,8 +328,7 @@ ProcessView::ProcessView()
     // Calculate scaling
     BFont font;
     GetFont(&font);
-    float scale = font.Size() / 12.0f; // Baseline 12pt
-    if (scale < 1.0f) scale = 1.0f;
+    float scale = GetScaleFactor(&font);
 
     kPIDWidth = kBasePIDWidth * scale;
     kNameWidth = kBaseNameWidth * scale;
