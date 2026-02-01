@@ -611,12 +611,9 @@ void ProcessView::FilterRows()
             fFilterID.SetToFormat("%" B_PRId32, id);
 
             bool argsMatch = false;
-            auto cacheIt = fCachedTeamInfo.find(id);
-            if (cacheIt != fCachedTeamInfo.end()) {
-                 BString args(cacheIt->second.args);
-                 if (args.IFindFirst(searchText) != B_ERROR)
-                     argsMatch = true;
-            }
+            BString args(item->Info().args);
+            if (args.IFindFirst(searchText) != B_ERROR)
+                 argsMatch = true;
 
             if (!argsMatch && fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
                 match = false;
@@ -687,12 +684,9 @@ void ProcessView::Update(BMessage* message)
                  fFilterID.SetToFormat("%" B_PRId32, info.id);
 
                  bool argsMatch = false;
-                 auto cacheIt = fCachedTeamInfo.find(info.id);
-                 if (cacheIt != fCachedTeamInfo.end()) {
-                      BString args(cacheIt->second.args);
-                      if (args.IFindFirst(searchText) != B_ERROR)
-                          argsMatch = true;
-                 }
+                 BString args(info.args);
+                 if (args.IFindFirst(searchText) != B_ERROR)
+                      argsMatch = true;
 
                  if (!argsMatch && fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
                      match = false;
@@ -784,6 +778,7 @@ int32 ProcessView::UpdateThread(void* data)
                     cached = true;
                     strlcpy(currentProc.name, it->second.name, B_OS_NAME_LENGTH);
                     strlcpy(currentProc.userName, it->second.userName, B_OS_NAME_LENGTH);
+                    strlcpy(currentProc.args, it->second.args, sizeof(currentProc.args));
                     it->second.generation = view->fCurrentGeneration;
 
                     // Update user generation even if process is cached
@@ -814,6 +809,8 @@ int32 ProcessView::UpdateThread(void* data)
 
                 BString userName = view->GetUserName(currentProc.userID, pwdBuffer);
                 strlcpy(currentProc.userName, userName.String(), B_OS_NAME_LENGTH);
+
+                strlcpy(currentProc.args, teamInfo.args, sizeof(currentProc.args));
 
                 CachedTeamInfo info;
                 strlcpy(info.name, currentProc.name, B_OS_NAME_LENGTH);

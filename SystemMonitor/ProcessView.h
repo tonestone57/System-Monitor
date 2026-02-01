@@ -25,6 +25,7 @@ struct ProcessInfo {
     team_id id;
     char name[B_OS_NAME_LENGTH];
     char userName[B_OS_NAME_LENGTH];
+    char args[64];
     char state[32];
     uint32 threadCount;
     uint32 areaCount;
