@@ -37,14 +37,6 @@ const float kBaseMemWidth = 90;
 const float kBaseThreadsWidth = 60;
 const float kBaseUserWidth = 80;
 
-static float kPIDWidth = kBasePIDWidth;
-static float kNameWidth = kBaseNameWidth;
-static float kStateWidth = kBaseStateWidth;
-static float kCPUWidth = kBaseCPUWidth;
-static float kMemWidth = kBaseMemWidth;
-static float kThreadsWidth = kBaseThreadsWidth;
-static float kUserWidth = kBaseUserWidth;
-
 const uint32 MSG_KILL_PROCESS = 'kill';
 const uint32 MSG_SUSPEND_PROCESS = 'susp';
 const uint32 MSG_RESUME_PROCESS = 'resm';
@@ -83,8 +75,8 @@ private:
 
 class ProcessListItem : public BListItem {
 public:
-    ProcessListItem(const ProcessInfo& info, const char* stateStr, const BFont* font)
-        : BListItem(), fGeneration(0)
+    ProcessListItem(const ProcessInfo& info, const char* stateStr, const BFont* font, ProcessView* view)
+        : BListItem(), fGeneration(0), fView(view)
     {
         Update(info, stateStr, font, true);
     }
@@ -109,8 +101,8 @@ public:
 
         if (nameChanged) {
             fCachedName = fInfo.name;
-            if (font)
-                font->TruncateString(&fCachedName, B_TRUNCATE_END, kNameWidth - 10, &fTruncatedName);
+            if (font && fView)
+                font->TruncateString(&fCachedName, B_TRUNCATE_END, fView->NameWidth() - 10, &fTruncatedName);
             else
                 fTruncatedName = fCachedName;
         }
@@ -129,14 +121,15 @@ public:
 
         if (userChanged) {
             fCachedUser = fInfo.userName;
-            if (font)
-                font->TruncateString(&fCachedUser, B_TRUNCATE_END, kUserWidth - 10, &fTruncatedUser);
+            if (font && fView)
+                font->TruncateString(&fCachedUser, B_TRUNCATE_END, fView->UserWidth() - 10, &fTruncatedUser);
             else
                 fTruncatedUser = fCachedUser;
         }
     }
 
     virtual void DrawItem(BView* owner, BRect itemRect, bool complete = false) {
+        if (!fView) return;
         if (IsSelected() || complete) {
             rgb_color color;
             if (IsSelected()) color = ui_color(B_LIST_SELECTED_BACKGROUND_COLOR);
@@ -158,27 +151,27 @@ public:
 
         // PID
         owner->DrawString(fCachedPID.String(), BPoint(x, y));
-        x += kPIDWidth;
+        x += fView->PIDWidth();
 
         // Name
         owner->DrawString(fTruncatedName.String(), BPoint(x, y));
-        x += kNameWidth;
+        x += fView->NameWidth();
 
         // State
         owner->DrawString(fCachedState.String(), BPoint(x, y));
-        x += kStateWidth;
+        x += fView->StateWidth();
 
         // CPU
         owner->DrawString(fCachedCPU.String(), BPoint(x, y));
-        x += kCPUWidth;
+        x += fView->CPUWidth();
 
         // Mem
         owner->DrawString(fCachedMem.String(), BPoint(x, y));
-        x += kMemWidth;
+        x += fView->MemWidth();
 
         // Threads
         owner->DrawString(fCachedThreads.String(), BPoint(x, y));
-        x += kThreadsWidth;
+        x += fView->ThreadsWidth();
 
         // User
         owner->DrawString(fTruncatedUser.String(), BPoint(x, y));
@@ -241,6 +234,7 @@ private:
     BString fTruncatedName;
     BString fTruncatedUser;
     int32 fGeneration;
+    ProcessView* fView;
 };
 
 class ProcessListView : public BListView {
@@ -330,13 +324,13 @@ ProcessView::ProcessView()
     GetFont(&font);
     float scale = GetScaleFactor(&font);
 
-    kPIDWidth = kBasePIDWidth * scale;
-    kNameWidth = kBaseNameWidth * scale;
-    kStateWidth = kBaseStateWidth * scale;
-    kCPUWidth = kBaseCPUWidth * scale;
-    kMemWidth = kBaseMemWidth * scale;
-    kThreadsWidth = kBaseThreadsWidth * scale;
-    kUserWidth = kBaseUserWidth * scale;
+    fPIDWidth = kBasePIDWidth * scale;
+    fNameWidth = kBaseNameWidth * scale;
+    fStateWidth = kBaseStateWidth * scale;
+    fCPUWidth = kBaseCPUWidth * scale;
+    fMemWidth = kBaseMemWidth * scale;
+    fThreadsWidth = kBaseThreadsWidth * scale;
+    fUserWidth = kBaseUserWidth * scale;
 
     // Header View construction
     BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);
@@ -348,13 +342,13 @@ ProcessView::ProcessView()
         headerView->AddChild(sv);
     };
 
-    addHeader(B_TRANSLATE("PID"), kPIDWidth, SORT_BY_PID);
-    addHeader(B_TRANSLATE("Name"), kNameWidth, SORT_BY_NAME);
-    addHeader(B_TRANSLATE("State"), kStateWidth, SORT_BY_PID); // No sort by state for now
-    addHeader(B_TRANSLATE("CPU%"), kCPUWidth, SORT_BY_CPU);
-    addHeader(B_TRANSLATE("Mem"), kMemWidth, SORT_BY_MEM);
-    addHeader(B_TRANSLATE("Thds"), kThreadsWidth, SORT_BY_THREADS);
-    addHeader(B_TRANSLATE("User"), kUserWidth, SORT_BY_PID); // No sort by user for now
+    addHeader(B_TRANSLATE("PID"), fPIDWidth, SORT_BY_PID);
+    addHeader(B_TRANSLATE("Name"), fNameWidth, SORT_BY_NAME);
+    addHeader(B_TRANSLATE("State"), fStateWidth, SORT_BY_PID); // No sort by state for now
+    addHeader(B_TRANSLATE("CPU%"), fCPUWidth, SORT_BY_CPU);
+    addHeader(B_TRANSLATE("Mem"), fMemWidth, SORT_BY_MEM);
+    addHeader(B_TRANSLATE("Thds"), fThreadsWidth, SORT_BY_THREADS);
+    addHeader(B_TRANSLATE("User"), fUserWidth, SORT_BY_PID); // No sort by user for now
 
     headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
@@ -673,7 +667,7 @@ void ProcessView::Update(BMessage* message)
 
         ProcessListItem* item;
         if (fTeamItemMap.find(info.id) == fTeamItemMap.end()) {
-            item = new ProcessListItem(info, stateStr, &font);
+            item = new ProcessListItem(info, stateStr, &font, this);
             fTeamItemMap[info.id] = item;
 
             // Check filter before adding

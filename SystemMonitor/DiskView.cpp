@@ -30,19 +30,11 @@ const float kBaseDiskUsedWidth = 100;
 const float kBaseDiskFreeWidth = 100;
 const float kBaseDiskPercentWidth = 80;
 
-static float kDiskDeviceWidth = kBaseDiskDeviceWidth;
-static float kDiskMountWidth = kBaseDiskMountWidth;
-static float kDiskFSWidth = kBaseDiskFSWidth;
-static float kDiskTotalWidth = kBaseDiskTotalWidth;
-static float kDiskUsedWidth = kBaseDiskUsedWidth;
-static float kDiskFreeWidth = kBaseDiskFreeWidth;
-static float kDiskPercentWidth = kBaseDiskPercentWidth;
-
 class DiskListItem : public BListItem {
 public:
     DiskListItem(const BString& device, const BString& mount, const BString& fs,
-                 uint64 total, uint64 used, uint64 free, double percent, const BFont* font)
-        : BListItem(), fGeneration(0)
+                 uint64 total, uint64 used, uint64 free, double percent, const BFont* font, DiskView* view)
+        : BListItem(), fGeneration(0), fView(view)
     {
         Update(device, mount, fs, total, used, free, percent, font, true);
     }
@@ -78,28 +70,29 @@ public:
             fCachedPercent.SetToFormat("%.1f%%", fPercent);
 
         if (deviceChanged) {
-            if (font)
-                font->TruncateString(&fDevice, B_TRUNCATE_MIDDLE, kDiskDeviceWidth - 10, &fTruncatedDevice);
+            if (font && fView)
+                font->TruncateString(&fDevice, B_TRUNCATE_MIDDLE, fView->DeviceWidth() - 10, &fTruncatedDevice);
             else
                 fTruncatedDevice = fDevice;
         }
 
         if (mountChanged) {
-            if (font)
-                font->TruncateString(&fMount, B_TRUNCATE_MIDDLE, kDiskMountWidth - 10, &fTruncatedMount);
+            if (font && fView)
+                font->TruncateString(&fMount, B_TRUNCATE_MIDDLE, fView->MountWidth() - 10, &fTruncatedMount);
             else
                 fTruncatedMount = fMount;
         }
 
         if (fsChanged) {
-            if (font)
-                font->TruncateString(&fFS, B_TRUNCATE_END, kDiskFSWidth - 10, &fTruncatedFS);
+            if (font && fView)
+                font->TruncateString(&fFS, B_TRUNCATE_END, fView->FSWidth() - 10, &fTruncatedFS);
             else
                 fTruncatedFS = fFS;
         }
     }
 
     virtual void DrawItem(BView* owner, BRect itemRect, bool complete = false) {
+        if (!fView) return;
         if (IsSelected() || complete) {
             rgb_color color;
             if (IsSelected()) color = ui_color(B_LIST_SELECTED_BACKGROUND_COLOR);
@@ -125,18 +118,18 @@ public:
         };
 
         owner->DrawString(fTruncatedDevice.String(), BPoint(x, y));
-        x += kDiskDeviceWidth;
+        x += fView->DeviceWidth();
 
         owner->DrawString(fTruncatedMount.String(), BPoint(x, y));
-        x += kDiskMountWidth;
+        x += fView->MountWidth();
 
         owner->DrawString(fTruncatedFS.String(), BPoint(x, y));
-        x += kDiskFSWidth;
+        x += fView->FSWidth();
 
-        drawRight(fCachedTotal, kDiskTotalWidth);
-        drawRight(fCachedUsed, kDiskUsedWidth);
-        drawRight(fCachedFree, kDiskFreeWidth);
-        drawRight(fCachedPercent, kDiskPercentWidth);
+        drawRight(fCachedTotal, fView->TotalWidth());
+        drawRight(fCachedUsed, fView->UsedWidth());
+        drawRight(fCachedFree, fView->FreeWidth());
+        drawRight(fCachedPercent, fView->PercentWidth());
     }
 
     static int CompareUsage(const void* first, const void* second) {
@@ -165,6 +158,7 @@ private:
     BString fTruncatedMount;
     BString fTruncatedFS;
     int32 fGeneration;
+    DiskView* fView;
 };
 
 
@@ -186,13 +180,13 @@ DiskView::DiskView()
     GetFont(&font);
     float scale = GetScaleFactor(&font);
 
-    kDiskDeviceWidth = kBaseDiskDeviceWidth * scale;
-    kDiskMountWidth = kBaseDiskMountWidth * scale;
-    kDiskFSWidth = kBaseDiskFSWidth * scale;
-    kDiskTotalWidth = kBaseDiskTotalWidth * scale;
-    kDiskUsedWidth = kBaseDiskUsedWidth * scale;
-    kDiskFreeWidth = kBaseDiskFreeWidth * scale;
-    kDiskPercentWidth = kBaseDiskPercentWidth * scale;
+    fDeviceWidth = kBaseDiskDeviceWidth * scale;
+    fMountWidth = kBaseDiskMountWidth * scale;
+    fFSWidth = kBaseDiskFSWidth * scale;
+    fTotalWidth = kBaseDiskTotalWidth * scale;
+    fUsedWidth = kBaseDiskUsedWidth * scale;
+    fFreeWidth = kBaseDiskFreeWidth * scale;
+    fPercentWidth = kBaseDiskPercentWidth * scale;
 
     // Header view
     BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);
@@ -207,13 +201,13 @@ DiskView::DiskView()
         headerView->AddChild(sv);
     };
 
-    addHeader(B_TRANSLATE("Device"), kDiskDeviceWidth);
-    addHeader(B_TRANSLATE("Mount Point"), kDiskMountWidth);
-    addHeader(B_TRANSLATE("FS Type"), kDiskFSWidth);
-    addHeader(B_TRANSLATE("Total"), kDiskTotalWidth, B_ALIGN_RIGHT);
-    addHeader(B_TRANSLATE("Used"), kDiskUsedWidth, B_ALIGN_RIGHT);
-    addHeader(B_TRANSLATE("Free"), kDiskFreeWidth, B_ALIGN_RIGHT);
-    addHeader(B_TRANSLATE("Usage"), kDiskPercentWidth, B_ALIGN_RIGHT);
+    addHeader(B_TRANSLATE("Device"), fDeviceWidth);
+    addHeader(B_TRANSLATE("Mount Point"), fMountWidth);
+    addHeader(B_TRANSLATE("FS Type"), fFSWidth);
+    addHeader(B_TRANSLATE("Total"), fTotalWidth, B_ALIGN_RIGHT);
+    addHeader(B_TRANSLATE("Used"), fUsedWidth, B_ALIGN_RIGHT);
+    addHeader(B_TRANSLATE("Free"), fFreeWidth, B_ALIGN_RIGHT);
+    addHeader(B_TRANSLATE("Usage"), fPercentWidth, B_ALIGN_RIGHT);
 
     headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
@@ -437,7 +431,7 @@ void DiskView::UpdateData(BMessage* message)
 
 		DiskListItem* item;
 		if (fDeviceItemMap.find(deviceID) == fDeviceItemMap.end()) {
-			item = new DiskListItem(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font);
+			item = new DiskListItem(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font, this);
 			fDiskListView->AddItem(item);
 			fDeviceItemMap[deviceID] = item;
             fVisibleItems.insert(item);

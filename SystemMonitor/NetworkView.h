@@ -48,6 +48,14 @@ public:
     float GetDownloadSpeed();
     void SetRefreshInterval(bigtime_t interval);
 
+    float NameWidth() const { return fNameWidth; }
+    float TypeWidth() const { return fTypeWidth; }
+    float AddrWidth() const { return fAddrWidth; }
+    float SentWidth() const { return fSentWidth; }
+    float RecvWidth() const { return fRecvWidth; }
+    float TxSpeedWidth() const { return fTxSpeedWidth; }
+    float RxSpeedWidth() const { return fRxSpeedWidth; }
+
 private:
     static int32 UpdateThread(void* data);
     void UpdateData(BMessage* message);
@@ -77,6 +85,14 @@ private:
     sem_id fScanSem;
     std::atomic<bool> fTerminated;
     int32 fListGeneration;
+
+    float fNameWidth;
+    float fTypeWidth;
+    float fAddrWidth;
+    float fSentWidth;
+    float fRecvWidth;
+    float fTxSpeedWidth;
+    float fRxSpeedWidth;
 };
 
 #endif // NETWORKVIEW_H

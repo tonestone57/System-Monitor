@@ -37,6 +37,14 @@ public:
     virtual void MessageReceived(BMessage* message);
     virtual void Draw(BRect updateRect);
 
+    float DeviceWidth() const { return fDeviceWidth; }
+    float MountWidth() const { return fMountWidth; }
+    float FSWidth() const { return fFSWidth; }
+    float TotalWidth() const { return fTotalWidth; }
+    float UsedWidth() const { return fUsedWidth; }
+    float FreeWidth() const { return fFreeWidth; }
+    float PercentWidth() const { return fPercentWidth; }
+
 private:
     static int32 UpdateThread(void* data);
     void UpdateData(BMessage* message);
@@ -55,6 +63,14 @@ private:
     sem_id fScanSem;
     std::atomic<bool> fTerminated;
     int32 fListGeneration;
+
+    float fDeviceWidth;
+    float fMountWidth;
+    float fFSWidth;
+    float fTotalWidth;
+    float fUsedWidth;
+    float fFreeWidth;
+    float fPercentWidth;
 };
 
 #endif // DISKVIEW_H
