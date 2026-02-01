@@ -22,14 +22,21 @@
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "DiskView"
 
-static float kDiskDeviceWidth = 120;
-static float kDiskMountWidth = 120;
-static float kDiskFSWidth = 80;
-static float kDiskTotalWidth = 100;
-static float kDiskUsedWidth = 100;
-static float kDiskFreeWidth = 100;
-static float kDiskPercentWidth = 80;
-static bool sDiskColumnsScaled = false;
+const float kBaseDiskDeviceWidth = 120;
+const float kBaseDiskMountWidth = 120;
+const float kBaseDiskFSWidth = 80;
+const float kBaseDiskTotalWidth = 100;
+const float kBaseDiskUsedWidth = 100;
+const float kBaseDiskFreeWidth = 100;
+const float kBaseDiskPercentWidth = 80;
+
+static float kDiskDeviceWidth = kBaseDiskDeviceWidth;
+static float kDiskMountWidth = kBaseDiskMountWidth;
+static float kDiskFSWidth = kBaseDiskFSWidth;
+static float kDiskTotalWidth = kBaseDiskTotalWidth;
+static float kDiskUsedWidth = kBaseDiskUsedWidth;
+static float kDiskFreeWidth = kBaseDiskFreeWidth;
+static float kDiskPercentWidth = kBaseDiskPercentWidth;
 
 class DiskListItem : public BListItem {
 public:
@@ -180,16 +187,13 @@ DiskView::DiskView()
     float scale = font.Size() / 12.0f;
     if (scale < 1.0f) scale = 1.0f;
 
-    if (!sDiskColumnsScaled) {
-        kDiskDeviceWidth *= scale;
-        kDiskMountWidth *= scale;
-        kDiskFSWidth *= scale;
-        kDiskTotalWidth *= scale;
-        kDiskUsedWidth *= scale;
-        kDiskFreeWidth *= scale;
-        kDiskPercentWidth *= scale;
-        sDiskColumnsScaled = true;
-    }
+    kDiskDeviceWidth = kBaseDiskDeviceWidth * scale;
+    kDiskMountWidth = kBaseDiskMountWidth * scale;
+    kDiskFSWidth = kBaseDiskFSWidth * scale;
+    kDiskTotalWidth = kBaseDiskTotalWidth * scale;
+    kDiskUsedWidth = kBaseDiskUsedWidth * scale;
+    kDiskFreeWidth = kBaseDiskFreeWidth * scale;
+    kDiskPercentWidth = kBaseDiskPercentWidth * scale;
 
     // Header view
     BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);

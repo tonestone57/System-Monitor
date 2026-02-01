@@ -29,14 +29,21 @@
 #define B_TRANSLATION_CONTEXT "ProcessView"
 
 // Define constants for columns (used for drawing)
-static float kPIDWidth = 60;
-static float kNameWidth = 180;
-static float kStateWidth = 80;
-static float kCPUWidth = 60;
-static float kMemWidth = 90;
-static float kThreadsWidth = 60;
-static float kUserWidth = 80;
-static bool sColumnsScaled = false;
+const float kBasePIDWidth = 60;
+const float kBaseNameWidth = 180;
+const float kBaseStateWidth = 80;
+const float kBaseCPUWidth = 60;
+const float kBaseMemWidth = 90;
+const float kBaseThreadsWidth = 60;
+const float kBaseUserWidth = 80;
+
+static float kPIDWidth = kBasePIDWidth;
+static float kNameWidth = kBaseNameWidth;
+static float kStateWidth = kBaseStateWidth;
+static float kCPUWidth = kBaseCPUWidth;
+static float kMemWidth = kBaseMemWidth;
+static float kThreadsWidth = kBaseThreadsWidth;
+static float kUserWidth = kBaseUserWidth;
 
 const uint32 MSG_KILL_PROCESS = 'kill';
 const uint32 MSG_SUSPEND_PROCESS = 'susp';
@@ -324,16 +331,13 @@ ProcessView::ProcessView()
     float scale = font.Size() / 12.0f; // Baseline 12pt
     if (scale < 1.0f) scale = 1.0f;
 
-    if (!sColumnsScaled) {
-        kPIDWidth *= scale;
-        kNameWidth *= scale;
-        kStateWidth *= scale;
-        kCPUWidth *= scale;
-        kMemWidth *= scale;
-        kThreadsWidth *= scale;
-        kUserWidth *= scale;
-        sColumnsScaled = true;
-    }
+    kPIDWidth = kBasePIDWidth * scale;
+    kNameWidth = kBaseNameWidth * scale;
+    kStateWidth = kBaseStateWidth * scale;
+    kCPUWidth = kBaseCPUWidth * scale;
+    kMemWidth = kBaseMemWidth * scale;
+    kThreadsWidth = kBaseThreadsWidth * scale;
+    kUserWidth = kBaseUserWidth * scale;
 
     // Header View construction
     BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);

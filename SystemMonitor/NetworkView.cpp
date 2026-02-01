@@ -23,14 +23,21 @@
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "NetworkView"
 
-static float kNetNameWidth = 100;
-static float kNetTypeWidth = 80;
-static float kNetAddrWidth = 120;
-static float kNetSentWidth = 90;
-static float kNetRecvWidth = 90;
-static float kNetTxSpeedWidth = 90;
-static float kNetRxSpeedWidth = 90;
-static bool sNetColumnsScaled = false;
+const float kBaseNetNameWidth = 100;
+const float kBaseNetTypeWidth = 80;
+const float kBaseNetAddrWidth = 120;
+const float kBaseNetSentWidth = 90;
+const float kBaseNetRecvWidth = 90;
+const float kBaseNetTxSpeedWidth = 90;
+const float kBaseNetRxSpeedWidth = 90;
+
+static float kNetNameWidth = kBaseNetNameWidth;
+static float kNetTypeWidth = kBaseNetTypeWidth;
+static float kNetAddrWidth = kBaseNetAddrWidth;
+static float kNetSentWidth = kBaseNetSentWidth;
+static float kNetRecvWidth = kBaseNetRecvWidth;
+static float kNetTxSpeedWidth = kBaseNetTxSpeedWidth;
+static float kNetRxSpeedWidth = kBaseNetRxSpeedWidth;
 
 class InterfaceListItem : public BListItem {
 public:
@@ -192,16 +199,13 @@ NetworkView::NetworkView()
     float scale = font.Size() / 12.0f;
     if (scale < 1.0f) scale = 1.0f;
 
-    if (!sNetColumnsScaled) {
-        kNetNameWidth *= scale;
-        kNetTypeWidth *= scale;
-        kNetAddrWidth *= scale;
-        kNetSentWidth *= scale;
-        kNetRecvWidth *= scale;
-        kNetTxSpeedWidth *= scale;
-        kNetRxSpeedWidth *= scale;
-        sNetColumnsScaled = true;
-    }
+    kNetNameWidth = kBaseNetNameWidth * scale;
+    kNetTypeWidth = kBaseNetTypeWidth * scale;
+    kNetAddrWidth = kBaseNetAddrWidth * scale;
+    kNetSentWidth = kBaseNetSentWidth * scale;
+    kNetRecvWidth = kBaseNetRecvWidth * scale;
+    kNetTxSpeedWidth = kBaseNetTxSpeedWidth * scale;
+    kNetRxSpeedWidth = kBaseNetRxSpeedWidth * scale;
 
     // Header View
     BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);
