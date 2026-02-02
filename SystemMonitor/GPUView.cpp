@@ -128,7 +128,9 @@ void GPUView::_UpdateStaticInfo()
     accelerant_device_info deviceInfo;
     if (screen.GetDeviceInfo(&deviceInfo) == B_OK) {
         fCardNameValue->SetText(deviceInfo.name);
-        fMemorySizeValue->SetText(::FormatBytes(deviceInfo.memory));
+        BString memStr;
+        ::FormatBytes(memStr, deviceInfo.memory);
+        fMemorySizeValue->SetText(memStr.String());
 
         char versionStr[32];
         snprintf(versionStr, sizeof(versionStr), "%u", 

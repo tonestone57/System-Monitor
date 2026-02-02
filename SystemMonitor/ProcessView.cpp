@@ -116,7 +116,7 @@ public:
             fCachedCPU.SetToFormat("%.1f", fInfo.cpuUsage);
 
         if (memChanged)
-            fCachedMem = FormatBytes(fInfo.memoryUsageBytes);
+            FormatBytes(fCachedMem, fInfo.memoryUsageBytes);
 
         if (threadsChanged)
             fCachedThreads.SetToFormat("%" B_PRIu32, fInfo.threadCount);

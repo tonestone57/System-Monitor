@@ -61,11 +61,11 @@ public:
         fPercent = percent;
 
         if (totalChanged)
-            fCachedTotal = FormatBytes(fTotal);
+            FormatBytes(fCachedTotal, fTotal);
         if (usedChanged)
-            fCachedUsed = FormatBytes(fUsed);
+            FormatBytes(fCachedUsed, fUsed);
         if (freeChanged)
-            fCachedFree = FormatBytes(fFree);
+            FormatBytes(fCachedFree, fFree);
         if (percentChanged)
             fCachedPercent.SetToFormat("%.1f%%", fPercent);
 

@@ -59,7 +59,7 @@ public:
 private:
     static int32 UpdateThread(void* data);
     void UpdateData(BMessage* message);
-    BString FormatBytes(uint64 bytes);
+    void FormatBytes(BString& out, uint64 bytes);
     
     BListView* fInterfaceListView;
     ActivityGraphView* fDownloadGraph;

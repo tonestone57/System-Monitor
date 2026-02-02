@@ -330,8 +330,8 @@ BString SystemSummaryView::GetCPUBrandString()
 }
 
 // Wrapper to use global functions or reimplement if needed
-BString SystemSummaryView::FormatBytes(uint64 bytes, int precision) {
-	return ::FormatBytes(bytes, precision);
+void SystemSummaryView::FormatBytes(BString& out, uint64 bytes, int precision) {
+	::FormatBytes(out, bytes, precision);
 }
 
 BString SystemSummaryView::FormatHertz(uint64 hertz) {
@@ -458,7 +458,10 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 		uint64 used = (uint64)sysInfo.used_pages * B_PAGE_SIZE;
 		BString memStr;
 		int percent = (int)(100.0 * used / total);
-		memStr << FormatBytes(used) << " / " << FormatBytes(total) << " (" << percent << "%)";
+		BString usedStr, totalStr;
+		FormatBytes(usedStr, used);
+		FormatBytes(totalStr, total);
+		memStr << usedStr << " / " << totalStr << " (" << percent << "%)";
 		reply.AddString("memory", memStr);
 
 		// Swap (This logic matches original SysInfoView logic roughly)
@@ -473,7 +476,9 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 		// The screenshot shows "0 B / 15.35 GiB".
 		// Let's just report total.
 		BString swapStr;
-		swapStr << "0 B / " << FormatBytes(swapTotal);
+		BString swapTotalStr;
+		FormatBytes(swapTotalStr, swapTotal);
+		swapStr << "0 B / " << swapTotalStr;
 		reply.AddString("swap", swapStr);
 	}
 
@@ -485,7 +490,10 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 		uint64 used = total - free;
 		int percent = (int)(100.0 * used / total);
 		BString diskStr;
-		diskStr << FormatBytes(used) << " / " << FormatBytes(total) << " (" << percent << "%) - " << fs.fsh_name;
+		BString usedStr, totalStr;
+		FormatBytes(usedStr, used);
+		FormatBytes(totalStr, total);
+		diskStr << usedStr << " / " << totalStr << " (" << percent << "%) - " << fs.fsh_name;
 		reply.AddString("disk", diskStr);
 	}
 
