@@ -89,7 +89,9 @@ void MemView::AttachedToWindow()
     system_info sysInfo;
     if (get_system_info(&sysInfo) == B_OK) {
         uint64 totalBytes = (uint64)sysInfo.max_pages * B_PAGE_SIZE;
-        fTotalMemValue->SetText(::FormatBytes(totalBytes));
+        BString memStr;
+        ::FormatBytes(memStr, totalBytes);
+        fTotalMemValue->SetText(memStr.String());
     } else {
         fTotalMemValue->SetText(B_TRANSLATE("Error"));
     }
@@ -118,19 +120,19 @@ void MemView::UpdateData()
         // Total memory is set in AttachedToWindow
         if (usedBytes != fLastUsedBytes) {
             fLastUsedBytes = usedBytes;
-            fCachedUsedStr = ::FormatBytes(usedBytes);
+            ::FormatBytes(fCachedUsedStr, usedBytes);
             fUsedMemValue->SetText(fCachedUsedStr.String());
         }
 
         if (freeBytes != fLastFreeBytes) {
             fLastFreeBytes = freeBytes;
-            fCachedFreeStr = ::FormatBytes(freeBytes);
+            ::FormatBytes(fCachedFreeStr, freeBytes);
             fFreeMemValue->SetText(fCachedFreeStr.String());
         }
 
         if (cachedBytes != fLastCachedBytes) {
             fLastCachedBytes = cachedBytes;
-            fCachedCachedStr = ::FormatBytes(cachedBytes);
+            ::FormatBytes(fCachedCachedStr, cachedBytes);
             fCachedMemValue->SetText(fCachedCachedStr.String());
         }
 

@@ -519,7 +519,10 @@ BString SystemDetailsView::_GetDiskUsage()
 		uint64 used = total - free;
 		int percent = (int)(100.0 * used / total);
 		BString diskStr;
-		diskStr << FormatBytes(used) << " / " << FormatBytes(total) << " (" << percent << "%) - " << fs.fsh_name;
+		BString usedStr, totalStr;
+		FormatBytes(usedStr, used);
+		FormatBytes(totalStr, total);
+		diskStr << usedStr << " / " << totalStr << " (" << percent << "%) - " << fs.fsh_name;
 		return diskStr;
 	}
 	return BString(B_TRANSLATE("Unknown"));

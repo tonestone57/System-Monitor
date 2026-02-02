@@ -7,22 +7,26 @@
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Utils"
 
-BString FormatBytes(uint64 bytes, int precision) {
-	BString str;
-	double kb = bytes / 1024.0;
-	double mb = kb / 1024.0;
-	double gb = mb / 1024.0;
-
-	if (gb >= 1.0) {
-		str.SetToFormat("%.*f GiB", precision, gb);
-	} else if (mb >= 1.0) {
-		str.SetToFormat("%.*f MiB", precision, mb);
-	} else if (kb >= 1.0) {
-		str.SetToFormat("%.*f KiB", precision, kb);
-	} else {
+void FormatBytes(BString& str, uint64 bytes, int precision) {
+	if (bytes < 1024) {
 		str.SetToFormat("%" B_PRIu64 " Bytes", bytes);
+		return;
 	}
-	return str;
+
+	double kb = bytes / 1024.0;
+	if (kb < 1024.0) {
+		str.SetToFormat("%.*f KiB", precision, kb);
+		return;
+	}
+
+	double mb = kb / 1024.0;
+	if (mb < 1024.0) {
+		str.SetToFormat("%.*f MiB", precision, mb);
+		return;
+	}
+
+	double gb = mb / 1024.0;
+	str.SetToFormat("%.*f GiB", precision, gb);
 }
 
 BString FormatHertz(uint64 hertz) {

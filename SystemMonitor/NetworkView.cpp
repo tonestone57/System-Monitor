@@ -63,9 +63,9 @@ public:
         fRxSpeed = rxSpeed;
 
         if (sentChanged)
-            fCachedSent = ::FormatBytes(fSent);
+            ::FormatBytes(fCachedSent, fSent);
         if (recvChanged)
-            fCachedRecv = ::FormatBytes(fRecv);
+            ::FormatBytes(fCachedRecv, fRecv);
         if (txSpeedChanged)
             fCachedTxSpeed = FormatSpeed(fTxSpeed, 1000000);
         if (rxSpeedChanged)
@@ -525,11 +525,11 @@ void NetworkView::SetRefreshInterval(bigtime_t interval)
         fDownloadGraph->SetRefreshInterval(interval);
 }
 
-BString NetworkView::FormatBytes(uint64 bytes)
+void NetworkView::FormatBytes(BString& out, uint64 bytes)
 {
     // Duplicate of Utils::FormatBytes?
     // Let's just use Utils::FormatBytes if available.
     // The previous code called FormatBytes(fValue) inside SizeField.
     // Utils.h has FormatBytes.
-    return ::FormatBytes(bytes);
+    ::FormatBytes(out, bytes);
 }

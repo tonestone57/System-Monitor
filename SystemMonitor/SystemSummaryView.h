@@ -26,7 +26,7 @@ private:
 	static int32 _LoadDataThread(void* data);
 
 	// Static helpers to be used by the thread
-	static BString FormatBytes(uint64 bytes, int precision = 2);
+	static void FormatBytes(BString& out, uint64 bytes, int precision = 2);
 	static BString FormatHertz(uint64 hertz);
 	static BString FormatUptime(bigtime_t bootTime);
 	static BString GetCPUBrandString();
