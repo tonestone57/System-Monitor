@@ -173,7 +173,7 @@ ActivityGraphView::_DrawHistory()
                 bigtime_t delta = now - fLastRefresh;
                 pixelsToScroll = delta / timeStep;
 
-                if (pixelsToScroll < steps && pixelsToScroll >= 0) {
+                if (pixelsToScroll < (int32)steps && pixelsToScroll >= 0) {
                      if (pixelsToScroll == 0) {
                          // Optimization: Do nothing if sub-pixel change
                          fullRedraw = false;

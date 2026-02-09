@@ -6,7 +6,7 @@ resource(1) version_info {
 	major  = 1,
 	middle = 0,
 	minor  = 0,
-	variety = B_APPV_FINAL,
+	variety = 0, /* B_APPV_FINAL */
 	internal = 0,
 	short_info = "1.0.0",
 	long_info = "SysMonTask - Haiku System Monitor v1.0.0"
