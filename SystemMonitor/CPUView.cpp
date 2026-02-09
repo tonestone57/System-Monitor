@@ -174,14 +174,14 @@ void CPUView::Pulse() {
     UpdateData();
 }
 
-void CPUView::GetCPUUsage(float& overallUsage)
+void CPUView::GetCPUUsage(bigtime_t now, float& overallUsage)
 {
     if (fCpuCount == 0 || fPreviousActiveTime.empty() || fCpuInfos.empty()) {
         overallUsage = -1.0f;
         return;
     }
 
-    bigtime_t currentTimeSnapshot = system_time();
+    bigtime_t currentTimeSnapshot = now;
     if (fPreviousTimeSnapshot == 0) {
         fPreviousTimeSnapshot = currentTimeSnapshot;
         // Also update previous active time to avoid spikes on first update
@@ -224,9 +224,10 @@ void CPUView::GetCPUUsage(float& overallUsage)
 void CPUView::UpdateData()
 {
     fLocker.Lock();
+    bigtime_t now = system_time();
 
     float overallUsage;
-    GetCPUUsage(overallUsage);
+    GetCPUUsage(now, overallUsage);
 
     if (overallUsage >= 0) {
         char buffer[32];
@@ -237,7 +238,6 @@ void CPUView::UpdateData()
     }
 
     // Update core graphs
-    bigtime_t now = system_time();
     for (size_t i = 0; i < fCoreGraphs.size(); ++i) {
         if (i < fPerCoreUsage.size()) {
             fCoreGraphs[i]->AddValue(now, fPerCoreUsage[i] * 10);
@@ -259,7 +259,7 @@ void CPUView::UpdateData()
             fThreadsValue->SetText(fCachedThreads.String());
         }
 
-        fUptimeValue->SetText(::FormatUptime(system_time()).String());
+        fUptimeValue->SetText(::FormatUptime(now).String());
     }
 
     fCurrentUsage = overallUsage;

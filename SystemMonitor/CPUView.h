@@ -24,7 +24,7 @@ public:
 private:
     void CreateLayout();
     void UpdateData();
-    void GetCPUUsage(float& overallUsage);
+    void GetCPUUsage(bigtime_t now, float& overallUsage);
     
     BStringView* fOverallUsageValue;
     BStringView* fModelName;
