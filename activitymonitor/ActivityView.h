@@ -64,6 +64,8 @@ public:
 
 			status_t	SaveState(BMessage& state) const;
 
+			virtual void SetFont(const BFont* font, uint32 mask = B_FONT_ALL);
+
 #ifdef __HAIKU__
 			BLayoutItem* CreateHistoryLayoutItem();
 			BLayoutItem* CreateLegendLayoutItem();
@@ -131,6 +133,7 @@ private:
 	BLayoutItem*		fLegendLayoutItem;
 #endif
 
+	mutable float		fCachedLegendHeight;
 	mutable BLocker		fSourcesLock;
 	BObjectList<DataSource> fSources;
 	BObjectList<DataHistory> fValues;
