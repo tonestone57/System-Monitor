@@ -87,9 +87,13 @@ float GetScaleFactor(const BFont* font) {
 
 uint64 GetRoundedCpuSpeed()
 {
+	// cpu_clock_speed is not available in system_info in this environment's headers.
+	// Returning 0 as a fallback.
+	/*
 	system_info info;
 	if (get_system_info(&info) == B_OK)
 		return info.cpu_clock_speed / 1000000;
+	*/
 	return 0;
 }
 

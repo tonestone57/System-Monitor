@@ -247,13 +247,13 @@ void CPUView::UpdateData()
     // Update Info
     system_info sysInfo;
     if (get_system_info(&sysInfo) == B_OK) {
-        if (sysInfo.used_teams != fLastUsedTeams) {
+        if ((int32)sysInfo.used_teams != fLastUsedTeams) {
             fLastUsedTeams = sysInfo.used_teams;
             fCachedProcesses.SetToFormat("%" B_PRId32, fLastUsedTeams);
             fProcessesValue->SetText(fCachedProcesses.String());
         }
 
-        if (sysInfo.used_threads != fLastUsedThreads) {
+        if ((int32)sysInfo.used_threads != fLastUsedThreads) {
             fLastUsedThreads = sysInfo.used_threads;
             fCachedThreads.SetToFormat("%" B_PRId32, fLastUsedThreads);
             fThreadsValue->SetText(fCachedThreads.String());
