@@ -508,7 +508,6 @@ ActivityView::LegendLayoutItem::View()
 BSize
 ActivityView::LegendLayoutItem::BaseMinSize()
 {
-	// TODO: Cache the info. Might be too expensive for this call.
 	BSize size;
 	size.width = 80;
 	size.height = fParent->_LegendHeight();
@@ -621,6 +620,7 @@ ActivityView::_Init(const BMessage* settings)
 	fLastRefresh = 0;
 	fDrawResolution = 1;
 	fZooming = false;
+	fCachedLegendHeight = -1.0f;
 
 	fSystemInfoHandler = new SystemInfoHandler;
 
@@ -838,6 +838,7 @@ ActivityView::AddDataSource(const DataSource* source, const BMessage* state)
 		insert++;
 	}
 
+	fCachedLegendHeight = -1.0f;
 #ifdef __HAIKU__
 	InvalidateLayout();
 #endif
@@ -873,6 +874,7 @@ ActivityView::RemoveDataSource(const DataSource* remove)
 		removed = true;
 	}
 
+	fCachedLegendHeight = -1.0f;
 #ifdef __HAIKU__
 	InvalidateLayout();
 #endif
@@ -883,6 +885,8 @@ ActivityView::RemoveDataSource(const DataSource* remove)
 void
 ActivityView::RemoveAllDataSources()
 {
+	fCachedLegendHeight = -1.0f;
+
 	BAutolock _(fSourcesLock);
 
 	for (int32 i = 0; i < fSources.CountItems(); i++)
@@ -896,12 +900,18 @@ ActivityView::RemoveAllDataSources()
 	for (int32 i = 0; i < fViewValues.CountItems(); i++)
 		delete static_cast<ViewHistory*>(fViewValues.ItemAt(i));
 	fViewValues.MakeEmpty();
+
+#ifdef __HAIKU__
+	InvalidateLayout();
+#endif
 }
 
 
 void
 ActivityView::AttachedToWindow()
 {
+	fCachedLegendHeight = -1.0f;
+
 	Looper()->AddHandler(fSystemInfoHandler);
 	fSystemInfoHandler->StartWatching();
 
@@ -911,6 +921,19 @@ ActivityView::AttachedToWindow()
 	resume_thread(fRefreshThread);
 
 	FrameResized(Bounds().Width(), Bounds().Height());
+}
+
+
+void
+ActivityView::SetFont(const BFont* font, uint32 mask)
+{
+	BView::SetFont(font, mask);
+
+	fCachedLegendHeight = -1.0f;
+
+#ifdef __HAIKU__
+	InvalidateLayout();
+#endif
 }
 
 
@@ -1244,6 +1267,9 @@ ActivityView::_HistoryFrame() const
 float
 ActivityView::_LegendHeight() const
 {
+	if (fCachedLegendHeight >= 0.0f)
+		return fCachedLegendHeight;
+
 	font_height fontHeight;
 	GetFontHeight(&fontHeight);
 
@@ -1254,8 +1280,10 @@ ActivityView::_LegendHeight() const
 	int32 boldMargin = Parent()
 		&& (Parent()->Flags() & B_DRAW_ON_CHILDREN) != 0 ? 2 : 0;
 
-	return rows * (4 + ceilf(fontHeight.ascent)
+	fCachedLegendHeight = rows * (4 + ceilf(fontHeight.ascent)
 		+ ceilf(fontHeight.descent) + ceilf(fontHeight.leading)) + boldMargin;
+
+	return fCachedLegendHeight;
 }
 
 
