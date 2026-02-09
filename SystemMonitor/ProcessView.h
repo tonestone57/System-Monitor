@@ -21,12 +21,19 @@ class BListItem;
 
 #include <kernel/OS.h>
 
+enum ProcessState {
+    PROCESS_STATE_RUNNING,
+    PROCESS_STATE_READY,
+    PROCESS_STATE_SLEEPING,
+    PROCESS_STATE_UNKNOWN
+};
+
 struct ProcessInfo {
     team_id id;
     char name[B_OS_NAME_LENGTH];
     char userName[B_OS_NAME_LENGTH];
     char args[64];
-    char state[32];
+    ProcessState state;
     uint32 threadCount;
     uint32 areaCount;
     uid_t userID;
