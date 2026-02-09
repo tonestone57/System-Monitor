@@ -865,21 +865,28 @@ int32 ProcessView::UpdateThread(void* data)
                 }
             } else { // Regular teams: use bulk API and optimized state check
                 team_usage_info usageInfo;
+                bool skipThreadScan = false;
                 if (get_team_usage_info(teamInfo.team, B_TEAM_USAGE_SELF, &usageInfo) == B_OK) {
                     bigtime_t currentTeamTime = usageInfo.user_time + usageInfo.kernel_time;
                     if (cached) {
                         teamActiveTimeDelta = currentTeamTime - cachedInfo->cpuTime;
                         if (teamActiveTimeDelta < 0) teamActiveTimeDelta = 0;
+
+                        // Optimization: If process consumed no CPU time, assume threads are sleeping
+                        if (teamActiveTimeDelta == 0)
+                            skipThreadScan = true;
                     }
                     cachedInfo->cpuTime = currentTeamTime;
                 }
 
-                while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
-                    if (tInfo.state == B_THREAD_RUNNING) {
-                        isRunning = true;
-                        break; // Found running, can stop scanning
+                if (!skipThreadScan) {
+                    while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
+                        if (tInfo.state == B_THREAD_RUNNING) {
+                            isRunning = true;
+                            break; // Found running, can stop scanning
+                        }
+                        if (tInfo.state == B_THREAD_READY) isReady = true;
                     }
-                    if (tInfo.state == B_THREAD_READY) isReady = true;
                 }
             }
 
