@@ -72,23 +72,26 @@ public:
             fCachedRxSpeed = FormatSpeed(fRxSpeed, 1000000);
 
         if (nameChanged) {
-            if (font && fView)
-                font->TruncateString(&fName, B_TRUNCATE_END, fView->NameWidth() - 10, &fTruncatedName);
-            else
+            if (font && fView) {
+                fTruncatedName = fName;
+                font->TruncateString(&fTruncatedName, B_TRUNCATE_END, fView->NameWidth() - 10);
+            } else
                 fTruncatedName = fName;
         }
 
         if (typeChanged) {
-            if (font && fView)
-                font->TruncateString(&fType, B_TRUNCATE_END, fView->TypeWidth() - 10, &fTruncatedType);
-            else
+            if (font && fView) {
+                fTruncatedType = fType;
+                font->TruncateString(&fTruncatedType, B_TRUNCATE_END, fView->TypeWidth() - 10);
+            } else
                 fTruncatedType = fType;
         }
 
         if (addrChanged) {
-            if (font && fView)
-                font->TruncateString(&fAddr, B_TRUNCATE_END, fView->AddrWidth() - 10, &fTruncatedAddr);
-            else
+            if (font && fView) {
+                fTruncatedAddr = fAddr;
+                font->TruncateString(&fTruncatedAddr, B_TRUNCATE_END, fView->AddrWidth() - 10);
+            } else
                 fTruncatedAddr = fAddr;
         }
     }
@@ -158,6 +161,7 @@ private:
     int32 fGeneration;
     NetworkView* fView;
 
+public:
     static int CompareSpeed(const void* first, const void* second) {
         const InterfaceListItem* item1 = *(const InterfaceListItem**)first;
         const InterfaceListItem* item2 = *(const InterfaceListItem**)second;
