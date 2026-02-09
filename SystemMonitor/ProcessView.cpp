@@ -102,11 +102,12 @@ public:
             fCachedPID.SetToFormat("%" B_PRId32, fInfo.id);
 
         if (nameChanged) {
-            fCachedName = fInfo.name;
-            if (font && fView)
-                font->TruncateString(&fCachedName, B_TRUNCATE_END, fView->NameWidth() - 10, &fTruncatedName);
-            else
-                fTruncatedName = fCachedName;
+            if (font && fView) {
+                BString name(fInfo.name);
+                font->TruncateString(&name, B_TRUNCATE_END, fView->NameWidth() - 10, &fTruncatedName);
+            } else {
+                fTruncatedName = fInfo.name;
+            }
         }
 
         if (stateChanged)
@@ -122,11 +123,12 @@ public:
             fCachedThreads.SetToFormat("%" B_PRIu32, fInfo.threadCount);
 
         if (userChanged) {
-            fCachedUser = fInfo.userName;
-            if (font && fView)
-                font->TruncateString(&fCachedUser, B_TRUNCATE_END, fView->UserWidth() - 10, &fTruncatedUser);
-            else
-                fTruncatedUser = fCachedUser;
+            if (font && fView) {
+                BString user(fInfo.userName);
+                font->TruncateString(&user, B_TRUNCATE_END, fView->UserWidth() - 10, &fTruncatedUser);
+            } else {
+                fTruncatedUser = fInfo.userName;
+            }
         }
     }
 
@@ -226,12 +228,10 @@ public:
 private:
     ProcessInfo fInfo;
     BString fCachedPID;
-    BString fCachedName;
     BString fCachedState;
     BString fCachedCPU;
     BString fCachedMem;
     BString fCachedThreads;
-    BString fCachedUser;
 
     BString fTruncatedName;
     BString fTruncatedUser;
