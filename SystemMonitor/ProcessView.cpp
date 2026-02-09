@@ -668,9 +668,10 @@ void ProcessView::Update(BMessage* message)
         else stateStr = info.state;
 
         ProcessListItem* item;
-        if (fTeamItemMap.find(info.id) == fTeamItemMap.end()) {
+        auto it = fTeamItemMap.find(info.id);
+        if (it == fTeamItemMap.end()) {
             item = new ProcessListItem(info, stateStr, &font, this);
-            fTeamItemMap[info.id] = item;
+            fTeamItemMap.emplace(info.id, item);
 
             // Check filter before adding
             bool match = true;
@@ -693,7 +694,7 @@ void ProcessView::Update(BMessage* message)
                 listChanged = true;
             }
         } else {
-            item = fTeamItemMap[info.id];
+            item = it->second;
             item->Update(info, stateStr, &font, fontChanged);
         }
         item->SetGeneration(fListGeneration);
