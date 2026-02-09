@@ -48,7 +48,6 @@ const uint32 MSG_CONFIRM_KILL = 'conf';
 
 const int32 kMemoryCacheGenerations = 10;
 
-namespace {
 
 class ClickableHeaderView : public BStringView {
 public:
@@ -103,8 +102,8 @@ public:
 
         if (nameChanged) {
             if (font && fView) {
-                BString name(fInfo.name);
-                font->TruncateString(&name, B_TRUNCATE_END, fView->NameWidth() - 10, &fTruncatedName);
+                fTruncatedName = fInfo.name;
+                font->TruncateString(&fTruncatedName, B_TRUNCATE_END, fView->NameWidth() - 10);
             } else {
                 fTruncatedName = fInfo.name;
             }
@@ -124,8 +123,8 @@ public:
 
         if (userChanged) {
             if (font && fView) {
-                BString user(fInfo.userName);
-                font->TruncateString(&user, B_TRUNCATE_END, fView->UserWidth() - 10, &fTruncatedUser);
+                fTruncatedUser = fInfo.userName;
+                font->TruncateString(&fTruncatedUser, B_TRUNCATE_END, fView->UserWidth() - 10);
             } else {
                 fTruncatedUser = fInfo.userName;
             }
@@ -149,7 +148,7 @@ public:
         owner->SetHighColor(textColor);
 
         font_height fh;
-        owner->GetFont(&fh);
+        owner->GetFontHeight(&fh);
         float x = itemRect.left + 5;
         float y = itemRect.bottom - fh.descent;
 
@@ -277,7 +276,6 @@ public:
     }
 };
 
-} // namespace
 
 
 ProcessView::ProcessView()

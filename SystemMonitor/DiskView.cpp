@@ -70,23 +70,26 @@ public:
             fCachedPercent.SetToFormat("%.1f%%", fPercent);
 
         if (deviceChanged) {
-            if (font && fView)
-                font->TruncateString(&fDevice, B_TRUNCATE_MIDDLE, fView->DeviceWidth() - 10, &fTruncatedDevice);
-            else
+            if (font && fView) {
+                fTruncatedDevice = fDevice;
+                font->TruncateString(&fTruncatedDevice, B_TRUNCATE_MIDDLE, fView->DeviceWidth() - 10);
+            } else
                 fTruncatedDevice = fDevice;
         }
 
         if (mountChanged) {
-            if (font && fView)
-                font->TruncateString(&fMount, B_TRUNCATE_MIDDLE, fView->MountWidth() - 10, &fTruncatedMount);
-            else
+            if (font && fView) {
+                fTruncatedMount = fMount;
+                font->TruncateString(&fTruncatedMount, B_TRUNCATE_MIDDLE, fView->MountWidth() - 10);
+            } else
                 fTruncatedMount = fMount;
         }
 
         if (fsChanged) {
-            if (font && fView)
-                font->TruncateString(&fFS, B_TRUNCATE_END, fView->FSWidth() - 10, &fTruncatedFS);
-            else
+            if (font && fView) {
+                fTruncatedFS = fFS;
+                font->TruncateString(&fTruncatedFS, B_TRUNCATE_END, fView->FSWidth() - 10);
+            } else
                 fTruncatedFS = fFS;
         }
     }
@@ -107,7 +110,7 @@ public:
         owner->SetHighColor(textColor);
 
         font_height fh;
-        owner->GetFont(&fh);
+        owner->GetFontHeight(&fh);
         float x = itemRect.left + 5;
         float y = itemRect.bottom - fh.descent;
 
@@ -216,9 +219,9 @@ DiskView::DiskView()
 
     BStringView* noteView = new BStringView("io_note", B_TRANSLATE("Real-time Disk I/O monitoring is not supported on this system."));
     noteView->SetAlignment(B_ALIGN_CENTER);
-    BFont font(be_plain_font);
-    font.SetSize(font.Size() * 0.9f);
-    noteView->SetFont(&font);
+    BFont noteFont(be_plain_font);
+    noteFont.SetSize(noteFont.Size() * 0.9f);
+    noteView->SetFont(&noteFont);
     noteView->SetHighColor(ui_color(B_CONTROL_TEXT_COLOR));
 
     BLayoutBuilder::Group<>(fDiskInfoBox, B_VERTICAL, 0)
