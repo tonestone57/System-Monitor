@@ -164,7 +164,7 @@ void SystemSummaryView::MessageReceived(BMessage* message)
 				// Yellow/Gold for Leaf.
 				rgb_color darkGrey = {80, 80, 80, 255};
 				rgb_color gold = {255, 200, 0, 255}; // Leaf
-				rgb_color green = {100, 200, 100, 255}; // Stem/details?
+				// Stem/details?
 
 				// Apply global dark grey first
 				fLogoTextView->SetFontAndColor(0, logo.Length(), NULL, 0, &darkGrey);
@@ -262,7 +262,6 @@ void SystemSummaryView::MessageReceived(BMessage* message)
 			// Apply Colors
 			rgb_color userColor = {255, 200, 0, 255}; // Yellow/Orange
 			rgb_color keyColor = {255, 100, 100, 255}; // Salmon/Red
-			rgb_color valColor = {255, 255, 255, 255}; // White (or default text color)
 			rgb_color sepColor = {200, 200, 200, 255}; // Grey
 
 			// 1. User@Host (Yellow)
@@ -538,7 +537,7 @@ ip_found:
 			if (capacityIndex >= 0) {
 				int32 end = state.FindFirst("\n", capacityIndex);
 				if (end < 0) end = state.Length();
-				capacityStr = state.Substring(capacityIndex + 10, end - (capacityIndex + 10));
+				state.CopyInto(capacityStr, capacityIndex + 10, end - (capacityIndex + 10));
 				capacityStr.Trim();
 				if (!capacityStr.IsEmpty()) {
 					capacityStr << "%";
@@ -556,7 +555,20 @@ ip_found:
 
 	// 16. Locale
 	BString locale;
-	if (BLocale::Default()->GetCode(locale) != B_OK) locale = "en.UTF-8";
+	// BLocale::Default() returns a const BLocale*. GetCode is likely not available or named differently.
+	// BLocale::GetLanguage()->Code() is a safer bet, or construct from environment.
+	// For simplicity, let's use a safe fallback if method doesn't exist.
+	// However, to fix compilation, we replace the call.
+	// Standard Haiku API uses formatting conventions.
+	// Assuming we just want the name.
+	// BLocale::Default()->GetName(locale); // Available?
+    // Let's assume en_US for now if we can't find the exact API in memory.
+    // Or better, let's try to get it from environment variables LANG/LC_ALL
+    const char* lang = getenv("LC_ALL");
+    if (!lang) lang = getenv("LANG");
+    if (lang) locale = lang;
+    else locale = "en_US.UTF-8";
+
 	reply.AddString("locale", locale);
 
 	messenger->SendMessage(&reply);

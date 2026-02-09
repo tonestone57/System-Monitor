@@ -33,6 +33,7 @@
 #include <Catalog.h>
 #include <Locale.h>
 #include <LocaleRoster.h>
+#include <ScrollView.h>
 
 #include <parsedate.h>
 
@@ -441,7 +442,6 @@ BString SystemDetailsView::_GetSwapUsage(system_info* sysInfo)
 	// without traversing VM pages, but sysInfo->page_faults is there.
 	// For basic swap size:
 	uint64 swapPages = sysInfo->max_swap_pages;
-	uint64 swapUsed = 0; // Not trivially available in system_info
 
 	// Just showing total swap for now
 	swapUsage.SetToFormat(B_TRANSLATE("Swap: %" B_PRIu64 " MiB total"),
