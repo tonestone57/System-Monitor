@@ -661,11 +661,21 @@ void ProcessView::Update(BMessage* message)
     for (size_t i = 0; i < count; i++) {
         const ProcessInfo& info = infos[i];
         
-        const char* stateStr = info.state;
-        if (strcmp(info.state, "Running") == 0) stateStr = fStrRunning.String();
-        else if (strcmp(info.state, "Ready") == 0) stateStr = fStrReady.String();
-        else if (strcmp(info.state, "Sleeping") == 0) stateStr = fStrSleeping.String();
-        else stateStr = info.state;
+        const char* stateStr;
+        switch (info.state) {
+            case PROCESS_STATE_RUNNING:
+                stateStr = fStrRunning.String();
+                break;
+            case PROCESS_STATE_READY:
+                stateStr = fStrReady.String();
+                break;
+            case PROCESS_STATE_SLEEPING:
+                stateStr = fStrSleeping.String();
+                break;
+            default:
+                stateStr = "Unknown";
+                break;
+        }
 
         ProcessListItem* item;
         if (fTeamItemMap.find(info.id) == fTeamItemMap.end()) {
@@ -883,9 +893,9 @@ int32 ProcessView::UpdateThread(void* data)
                 }
             }
 
-            if (isRunning) strlcpy(currentProc.state, "Running", sizeof(currentProc.state));
-            else if (isReady) strlcpy(currentProc.state, "Ready", sizeof(currentProc.state));
-            else strlcpy(currentProc.state, "Sleeping", sizeof(currentProc.state));
+            if (isRunning) currentProc.state = PROCESS_STATE_RUNNING;
+            else if (isReady) currentProc.state = PROCESS_STATE_READY;
+            else currentProc.state = PROCESS_STATE_SLEEPING;
 
             float teamCpuPercent = (float)teamActiveTimeDelta / totalPossibleCoreTime * 100.0f;
             if (teamCpuPercent < 0.0f) teamCpuPercent = 0.0f;
