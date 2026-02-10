@@ -27,19 +27,20 @@ int main() {
     long long current_duration = 0;
     long long single_lookup_duration = 0;
 
-    // Current (Baseline): find + emplace (2 lookups for insertion)
+    // Current Code: find + emplace (2 lookups for insertion, 1 for update)
     {
         auto start = chrono::high_resolution_clock::now();
         for (int k = 0; k < iterations; ++k) {
             unordered_map<team_id, ProcessListItem*> map;
 
             for (int id : team_ids) {
+                // This mimics the original code in ProcessView.cpp
                 auto it = map.find(id);
                 if (it == map.end()) {
                     ProcessListItem* item = new ProcessListItem(id);
-                    map.emplace(id, item);
+                    map.emplace(id, item); // 2nd lookup
                 } else {
-                    it->second->Update(k);
+                    it->second->Update(k); // 1 lookup (reusing iterator)
                 }
             }
 
@@ -49,13 +50,14 @@ int main() {
         current_duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
     }
 
-    // Proposed: emplace + check (1 lookup always)
+    // Proposed Optimization: emplace(nullptr) + check (1 lookup always)
     {
         auto start = chrono::high_resolution_clock::now();
         for (int k = 0; k < iterations; ++k) {
             unordered_map<team_id, ProcessListItem*> map;
 
             for (int id : team_ids) {
+                // Single lookup
                 auto result = map.emplace(id, nullptr);
                 if (result.second) {
                     result.first->second = new ProcessListItem(id);
