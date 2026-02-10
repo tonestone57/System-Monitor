@@ -224,7 +224,7 @@ void CPUView::GetCPUUsage(bigtime_t now, float& overallUsage)
 void CPUView::UpdateData()
 {
     fLocker.Lock();
-    bigtime_t now = system_time();
+    const bigtime_t now = system_time();
 
     float overallUsage;
     GetCPUUsage(now, overallUsage);
