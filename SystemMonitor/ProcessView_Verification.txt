@@ -1,0 +1,21 @@
+VERIFICATION OF PROCESS_INFO STRUCT
+
+1. SystemMonitor/ProcessView.h (Definition):
+struct ProcessInfo {
+    team_id id;
+    char name[B_OS_NAME_LENGTH];
+    char userName[B_OS_NAME_LENGTH];
+    char args[64];
+    ProcessState state;  // <--- ALREADY AN ENUM
+    uint32 threadCount;
+    // ...
+};
+
+2. SystemMonitor/ProcessView.cpp (Assignment in UpdateThread):
+   if (isRunning) currentProc.state = PROCESS_STATE_RUNNING;
+   else if (isReady) currentProc.state = PROCESS_STATE_READY;
+   else currentProc.state = PROCESS_STATE_SLEEPING;
+
+The review claiming "state is char*" is incorrect. The struct was already updated in a previous commit or the original issue description was outdated regarding the struct's content.
+
+This patch optimizes ProcessListItem::Update to USE this existing enum for comparison instead of the redundant string comparison.
