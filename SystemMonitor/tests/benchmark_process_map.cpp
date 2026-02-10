@@ -2,7 +2,7 @@
 #include <unordered_map>
 #include <vector>
 #include <chrono>
-#include <random>
+#include <utility>
 
 // Mock ProcessListItem
 struct ProcessListItem {
@@ -16,81 +16,64 @@ using team_id = int;
 using namespace std;
 
 int main() {
-    const int num_procs = 2000;
-    const int iterations = 100000;
+    const int num_procs = 10000;
+    const int iterations = 1000;
 
     vector<int> team_ids;
     for (int i = 0; i < num_procs; ++i) {
         team_ids.push_back(i);
     }
 
-    long long baseline_duration = 0;
-    long long optimized_duration = 0;
+    long long current_duration = 0;
+    long long single_lookup_duration = 0;
 
-    // Baseline: current code logic
+    // Current (Baseline): find + emplace (2 lookups for insertion)
     {
-        unordered_map<team_id, ProcessListItem*> fTeamItemMap;
-        // Pre-fill
-        for (int id : team_ids) {
-            fTeamItemMap[id] = new ProcessListItem(id);
-        }
-
         auto start = chrono::high_resolution_clock::now();
-
         for (int k = 0; k < iterations; ++k) {
+            unordered_map<team_id, ProcessListItem*> map;
+
             for (int id : team_ids) {
-                ProcessListItem* item;
-                // The logic from ProcessView.cpp:
-                if (fTeamItemMap.find(id) == fTeamItemMap.end()) {
-                    item = new ProcessListItem(id);
-                    fTeamItemMap[id] = item;
+                auto it = map.find(id);
+                if (it == map.end()) {
+                    ProcessListItem* item = new ProcessListItem(id);
+                    map.emplace(id, item);
                 } else {
-                    item = fTeamItemMap[id]; // Second lookup
-                    item->Update(k);
+                    it->second->Update(k);
                 }
             }
+
+            for (auto& p : map) delete p.second;
         }
-
         auto end = chrono::high_resolution_clock::now();
-        baseline_duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
-
-        for (auto& pair : fTeamItemMap) delete pair.second;
+        current_duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
     }
 
-    // Optimized
+    // Proposed: emplace + check (1 lookup always)
     {
-        unordered_map<team_id, ProcessListItem*> fTeamItemMap;
-        // Pre-fill
-        for (int id : team_ids) {
-            fTeamItemMap[id] = new ProcessListItem(id);
-        }
-
         auto start = chrono::high_resolution_clock::now();
-
         for (int k = 0; k < iterations; ++k) {
+            unordered_map<team_id, ProcessListItem*> map;
+
             for (int id : team_ids) {
-                ProcessListItem* item;
-                // Optimized logic
-                auto it = fTeamItemMap.find(id);
-                if (it == fTeamItemMap.end()) {
-                    item = new ProcessListItem(id);
-                    fTeamItemMap.emplace(id, item);
+                auto result = map.emplace(id, nullptr);
+                if (result.second) {
+                    result.first->second = new ProcessListItem(id);
                 } else {
-                    item = it->second; // No lookup
-                    item->Update(k);
+                    result.first->second->Update(k);
                 }
             }
+
+            for (auto& p : map) delete p.second;
         }
-
         auto end = chrono::high_resolution_clock::now();
-        optimized_duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
-
-        for (auto& pair : fTeamItemMap) delete pair.second;
+        single_lookup_duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
     }
 
-    cout << "Baseline: " << baseline_duration << " us" << endl;
-    cout << "Optimized: " << optimized_duration << " us" << endl;
-    double improvement = 100.0 * (double)(baseline_duration - optimized_duration) / baseline_duration;
+    cout << "Current (find+emplace): " << current_duration << " us" << endl;
+    cout << "Proposed (emplace check): " << single_lookup_duration << " us" << endl;
+
+    double improvement = 100.0 * (double)(current_duration - single_lookup_duration) / current_duration;
     cout << "Improvement: " << improvement << "%" << endl;
 
     return 0;
