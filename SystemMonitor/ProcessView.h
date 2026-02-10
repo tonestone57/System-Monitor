@@ -33,7 +33,7 @@ struct ProcessInfo {
     char name[B_OS_NAME_LENGTH];
     char userName[B_OS_NAME_LENGTH];
     char args[64];
-    ProcessState state;
+    ProcessState state; // Stores process state as enum
     uint32 threadCount;
     uint32 areaCount;
     uid_t userID;

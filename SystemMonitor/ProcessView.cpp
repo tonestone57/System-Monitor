@@ -88,7 +88,8 @@ public:
     void Update(const ProcessInfo& info, const char* stateStr, const BFont* font, bool force = false) {
         bool nameChanged = force || strcmp(fInfo.name, info.name) != 0;
         bool userChanged = force || strcmp(fInfo.userName, info.userName) != 0;
-        bool stateChanged = force || fCachedState != stateStr;
+        // Optimization: Compare enum values instead of localized strings
+        bool stateChanged = force || fInfo.state != info.state;
         bool cpuChanged = force || fInfo.cpuUsage != info.cpuUsage;
         bool memChanged = force || fInfo.memoryUsageBytes != info.memoryUsageBytes;
         bool threadsChanged = force || fInfo.threadCount != info.threadCount;
