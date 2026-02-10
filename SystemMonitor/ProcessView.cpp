@@ -679,7 +679,7 @@ void ProcessView::Update(BMessage* message)
         auto it = fTeamItemMap.find(info.id);
         if (it == fTeamItemMap.end()) {
             item = new ProcessListItem(info, stateStr, &font, this);
-            fTeamItemMap.emplace(info.id, item);
+            fTeamItemMap.emplace_hint(it, info.id, item);
 
             // Check filter before adding
             bool match = true;
