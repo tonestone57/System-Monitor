@@ -128,9 +128,10 @@ private:
 
 	virtual void Pulse() {
 		if (fStats) {
-			fCpuGraph->AddValue(system_time(), fStats->cpuUsage * 10);
-			fMemGraph->AddValue(system_time(), fStats->memoryUsage * 10);
-			fNetGraph->AddValue(system_time(), fStats->uploadSpeed + fStats->downloadSpeed);
+			const bigtime_t now = system_time();
+			fCpuGraph->AddValue(now, fStats->cpuUsage * 10);
+			fMemGraph->AddValue(now, fStats->memoryUsage * 10);
+			fNetGraph->AddValue(now, fStats->uploadSpeed + fStats->downloadSpeed);
 		}
 	}
 
