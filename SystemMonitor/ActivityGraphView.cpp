@@ -73,12 +73,21 @@ ActivityGraphView::_UpdateOffscreenBitmap()
 	BRect bounds = Bounds();
 	bounds.OffsetTo(B_ORIGIN);
 
-	if (fOffscreen != NULL && bounds == fOffscreen->Bounds())
+	if (fOffscreen != NULL && fOffscreen->Bounds().Contains(bounds)) {
+		BView* view = _OffscreenView();
+		if (view != NULL && view->Bounds() != bounds) {
+			if (fOffscreen->Lock()) {
+				view->ResizeTo(bounds.Width(), bounds.Height());
+				fOffscreen->Unlock();
+			}
+			fLastRefresh = 0;
+		}
 		return;
+	}
 
 	delete fOffscreen;
 	fOffscreen = NULL;
-    fLastRefresh = 0;
+	fLastRefresh = 0;
 
 	if (Window() == NULL)
 		return;
@@ -87,7 +96,12 @@ ActivityGraphView::_UpdateOffscreenBitmap()
 	if (!locker.IsLocked())
 		return;
 
-	fOffscreen = new(std::nothrow) BBitmap(bounds, B_BITMAP_ACCEPTS_VIEWS,
+	// Over-allocate to avoid frequent recreations during resize
+	BRect bitmapBounds = bounds;
+	bitmapBounds.right += 64;
+	bitmapBounds.bottom += 64;
+
+	fOffscreen = new(std::nothrow) BBitmap(bitmapBounds, B_BITMAP_ACCEPTS_VIEWS,
 		B_RGB32);
 	if (fOffscreen == NULL || fOffscreen->InitCheck() != B_OK) {
 		delete fOffscreen;
@@ -157,11 +171,14 @@ ActivityGraphView::_DrawHistory()
 	if (fOffscreen == NULL)
 		return;
 
-	if (fOffscreen->Lock()) {
-		BView* view = _OffscreenView();
-		BRect frame = view->Bounds();
+	BView* view = _OffscreenView();
+	if (view == NULL)
+		return;
 
-        uint32 steps = frame.IntegerWidth();
+	BRect frame = view->Bounds();
+
+	if (fOffscreen->Lock()) {
+		uint32 steps = frame.IntegerWidth();
 		if (steps > 0) {
 			bigtime_t now = system_time();
 			bigtime_t timeStep = fResolution;
@@ -353,5 +370,5 @@ ActivityGraphView::_DrawHistory()
 		view->Sync();
 		fOffscreen->Unlock();
 	}
-	DrawBitmap(fOffscreen, Bounds());
+	DrawBitmap(fOffscreen, frame, Bounds());
 }
