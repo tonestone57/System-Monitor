@@ -93,10 +93,10 @@ float GetScaleFactor(const BFont* font) {
 uint64 GetCpuFrequency()
 {
 	// Try to get frequency from topology info
-	uint32_t topologyNodeCount = 0;
+	uint32 topologyNodeCount = 0;
 	if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
 		std::vector<cpu_topology_node_info> topology(topologyNodeCount);
-		uint32_t actualCount = topologyNodeCount;
+		uint32 actualCount = topologyNodeCount;
 		if (get_cpu_topology_info(topology.data(), &actualCount) == B_OK) {
 			uint64 maxFreq = 0;
 			for (uint32 i = 0; i < actualCount; i++) {
