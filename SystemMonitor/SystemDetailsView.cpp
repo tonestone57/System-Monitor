@@ -32,24 +32,9 @@
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "SystemDetailsView"
 
-static int ignored_pages(system_info* sysInfo)
+static int pages_to_mib(uint64 pages)
 {
-	return (int)round((double)sysInfo->ignored_pages * B_PAGE_SIZE / 1048576.0);
-}
-
-static int max_pages(system_info* sysInfo)
-{
-	return (int)round((double)sysInfo->max_pages * B_PAGE_SIZE / 1048576.0);
-}
-
-static int max_and_ignored_pages(system_info* sysInfo)
-{
-	return max_pages(sysInfo) + ignored_pages(sysInfo);
-}
-
-static int used_pages(system_info* sysInfo)
-{
-	return (int)round((double)sysInfo->used_pages * B_PAGE_SIZE / 1048576.0);
+	return (int)((pages * B_PAGE_SIZE + 1048575) / 1048576);
 }
 
 SystemDetailsView::SystemDetailsView()
@@ -268,7 +253,7 @@ BString SystemDetailsView::_GetRamSize(system_info* sysInfo)
 {
 	BString ramSize;
 	ramSize.SetToFormat(B_TRANSLATE_COMMENT("%d MiB Memory:",
-		"2048 MiB Memory:"), max_and_ignored_pages(sysInfo));
+		"2048 MiB Memory:"), pages_to_mib(sysInfo->max_pages + sysInfo->ignored_pages));
 
 	return ramSize;
 }
@@ -282,10 +267,10 @@ BString SystemDetailsView::_GetRamUsage(system_info* sysInfo)
 
 	if (status == B_OK) {
 		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %d MiB used (%s)",
-			"RAM: 326 MiB used (16%)"), used_pages(sysInfo), data.String());
+			"RAM: 326 MiB used (16%)"), pages_to_mib(sysInfo->used_pages), data.String());
 	} else {
 		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %d MiB used (%d%%)",
-			"RAM: 326 MiB used (16%)"), used_pages(sysInfo), (int)(100 * usedMemoryPercent));
+			"RAM: 326 MiB used (16%)"), pages_to_mib(sysInfo->used_pages), (int)(100 * usedMemoryPercent));
 	}
 
 	return ramUsage;

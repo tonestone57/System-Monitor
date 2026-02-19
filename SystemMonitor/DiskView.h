@@ -27,6 +27,16 @@ struct DiskInfo {
 
 const uint32 kMsgDiskDataUpdate = 'dskd';
 
+enum DiskSortMode {
+    SORT_DISK_BY_DEVICE,
+    SORT_DISK_BY_MOUNT,
+    SORT_DISK_BY_FS,
+    SORT_DISK_BY_TOTAL,
+    SORT_DISK_BY_USED,
+    SORT_DISK_BY_FREE,
+    SORT_DISK_BY_PERCENT
+};
+
 class DiskView : public BView {
 public:
     DiskView();
@@ -77,6 +87,9 @@ private:
     float fFreeWidth;
     float fPercentWidth;
 
+    DiskSortMode fSortMode;
+
+    void _SortItems();
     void _RestoreSelection(dev_t selectedID);
     void _ScanVolumes();
     std::unordered_map<dev_t, DiskInfo> fVolumeCache;

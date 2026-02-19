@@ -20,6 +20,8 @@
 #include <NetworkAddress.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <Messenger.h>
+#include <Window.h>
 
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
@@ -27,6 +29,25 @@
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Utils"
+
+ClickableHeaderView::ClickableHeaderView(const char* label, float width, int32 mode, BHandler* target)
+    : BStringView(NULL, label), fMode(mode), fTarget(target)
+{
+    SetExplicitMinSize(BSize(width, B_SIZE_UNSET));
+    SetExplicitMaxSize(BSize(width, B_SIZE_UNSET));
+    SetAlignment(B_ALIGN_LEFT);
+    SetFont(be_bold_font);
+    SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+}
+
+void ClickableHeaderView::MouseDown(BPoint where) {
+    if (Window()) {
+        BMessenger target(fTarget);
+        BMessage msg(MSG_HEADER_CLICKED);
+        msg.AddInt32("mode", fMode);
+        target.SendMessage(&msg);
+    }
+}
 
 void FormatBytes(BString& str, uint64 bytes, int precision) {
 	FormatBytes(str, (double)bytes, precision);

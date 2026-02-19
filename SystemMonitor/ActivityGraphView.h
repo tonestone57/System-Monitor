@@ -39,6 +39,10 @@ private:
 	int64				fManualMin;
 	int64				fManualMax;
 
+	int64				fLastMin;
+	int64				fLastRange;
+	bool				fLastRangeValid;
+
 	bigtime_t			fLastRefresh;
 	float				fScrollOffset;
 };

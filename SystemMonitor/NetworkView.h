@@ -35,6 +35,16 @@ struct NetworkInfo {
 
 const uint32 kMsgNetworkDataUpdate = 'netd';
 
+enum NetworkSortMode {
+    SORT_NET_BY_NAME,
+    SORT_NET_BY_TYPE,
+    SORT_NET_BY_ADDR,
+    SORT_NET_BY_SENT,
+    SORT_NET_BY_RECV,
+    SORT_NET_BY_TX_SPEED,
+    SORT_NET_BY_RX_SPEED
+};
+
 class NetworkView : public BView {
 public:
     NetworkView();
@@ -101,6 +111,9 @@ private:
     float fTxSpeedWidth;
     float fRxSpeedWidth;
 
+    NetworkSortMode fSortMode;
+
+    void _SortItems();
     void _RestoreSelection(const BString& selectedName);
 };
 
