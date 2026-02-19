@@ -13,6 +13,13 @@
 #include <AppFileInfo.h>
 #include <File.h>
 #include <Path.h>
+#include <Directory.h>
+#include <Entry.h>
+#include <NetworkRoster.h>
+#include <NetworkInterface.h>
+#include <NetworkAddress.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
@@ -133,6 +140,9 @@ uint64 GetCpuFrequency()
 
 BString GetCPUBrandString()
 {
+	static BString sCachedBrand;
+	if (sCachedBrand.Length() > 0) return sCachedBrand;
+
 #if defined(__x86_64__) || defined(__i386__)
 	char brand[49] = {};
 	unsigned int regs[4];
@@ -146,16 +156,22 @@ BString GetCPUBrandString()
 			}
 			BString brandStr(brand);
 			brandStr.Trim();
-			if (brandStr.Length() > 0)
-				return brandStr;
+			if (brandStr.Length() > 0) {
+				sCachedBrand = brandStr;
+				return sCachedBrand;
+			}
 		}
 	}
 #endif
-	return B_TRANSLATE("Unknown CPU");
+	sCachedBrand = B_TRANSLATE("Unknown CPU");
+	return sCachedBrand;
 }
 
 BString GetOSVersion()
 {
+	static BString sCachedVersion;
+	if (sCachedVersion.Length() > 0) return sCachedVersion;
+
 	BString revision;
 	struct utsname u;
 	uname(&u);
@@ -167,11 +183,15 @@ BString GetOSVersion()
 	} else {
 		revision << u.sysname << " " << u.machine << " " << u.release;
 	}
-	return revision;
+	sCachedVersion = revision;
+	return sCachedVersion;
 }
 
 BString GetABIVersion()
 {
+	static BString sCachedABI;
+	if (sCachedABI.Length() > 0) return sCachedABI;
+
 	BString abiVersion;
 	BPath path;
 	if (find_directory(B_BEOS_LIB_DIRECTORY, &path) == B_OK) {
@@ -192,7 +212,8 @@ BString GetABIVersion()
 		abiVersion = B_TRANSLATE("Unknown");
 
 	abiVersion << " (" << B_HAIKU_ABI_NAME << ")";
-	return abiVersion;
+	sCachedABI = abiVersion;
+	return sCachedABI;
 }
 
 BString GetGPUInfo()
@@ -205,6 +226,193 @@ BString GetGPUInfo()
 		}
 	}
 	return BString(B_TRANSLATE("Unknown"));
+}
+
+void GetPackageCount(BString& out)
+{
+	auto countPackages = [](const char* path) -> int {
+		BDirectory dir(path);
+		if (dir.InitCheck() != B_OK) return 0;
+		int count = 0;
+		BEntry entry;
+		while (dir.GetNextEntry(&entry) == B_OK) {
+			BPath p;
+			entry.GetPath(&p);
+			if (p.InitCheck() == B_OK) {
+				BString name(p.Leaf());
+				if (name.EndsWith(".hpkg")) count++;
+			}
+		}
+		return count;
+	};
+	int sysPkgs = countPackages("/boot/system/packages");
+	int userPkgs = countPackages("/boot/home/config/packages");
+	out.SetToFormat("%d (hpkg-system), %d (hpkg-user)", sysPkgs, userPkgs);
+}
+
+BString GetLocalIPAddress()
+{
+	BNetworkRoster& roster = BNetworkRoster::Default();
+	BNetworkInterface interface;
+	uint32 cookie = 0;
+	BString ip = "127.0.0.1";
+	while (roster.GetNextInterface(&cookie, interface) == B_OK) {
+		if (interface.Flags() & IFF_LOOPBACK) continue;
+		if (!(interface.Flags() & IFF_UP)) continue;
+
+		BNetworkInterfaceAddress addr;
+		for (int32 i = 0; i < interface.CountAddresses(); i++) {
+			if (interface.GetAddressAt(i, addr) == B_OK) {
+				if (addr.Address().Family() == AF_INET) {
+					ip = addr.Address().ToString();
+					goto ip_found;
+				}
+			}
+		}
+	}
+ip_found:
+	return ip;
+}
+
+BString GetBatteryCapacity()
+{
+	int batFd = open("/dev/power/acpi_battery/0/state", O_RDONLY);
+	if (batFd >= 0) {
+		char buffer[1024];
+		ssize_t bytesRead = read(batFd, buffer, sizeof(buffer) - 1);
+		close(batFd);
+
+		if (bytesRead > 0) {
+			buffer[bytesRead] = '\0';
+			BString state(buffer);
+			BString capacityStr;
+			int32 capacityIndex = state.FindFirst("capacity: ");
+			if (capacityIndex >= 0) {
+				int32 end = state.FindFirst("\n", capacityIndex);
+				if (end < 0) end = state.Length();
+
+				if (end >= capacityIndex + 10) {
+					state.CopyInto(capacityStr, capacityIndex + 10, end - (capacityIndex + 10));
+					capacityStr.Trim();
+				}
+
+				if (!capacityStr.IsEmpty()) {
+					capacityStr << "%";
+					return capacityStr;
+				}
+			}
+		}
+	}
+	return BString(B_TRANSLATE("Unknown"));
+}
+
+BString GetLocale()
+{
+	BString locale;
+	const char* lang = getenv("LC_ALL");
+	if (!lang) lang = getenv("LANG");
+	if (lang) locale = lang;
+	else locale = "en_US.UTF-8";
+	return locale;
+}
+
+#if defined(__x86_64__) || defined(__i386__)
+/* CPU Features */
+static const char *kFeatures[32] = {
+	"FPU", "VME", "DE", "PSE",
+	"TSC", "MSR", "PAE", "MCE",
+	"CX8", "APIC", NULL, "SEP",
+	"MTRR", "PGE", "MCA", "CMOV",
+	"PAT", "PSE36", "PSN", "CFLUSH",
+	NULL, "DS", "ACPI", "MMX",
+	"FXSTR", "SSE", "SSE2", "SS",
+	"HTT", "TM", "IA64", "PBE",
+};
+
+/* CPU Extended features */
+static const char *kExtendedFeatures[32] = {
+	"SSE3", "PCLMULDQ", "DTES64", "MONITOR", "DS-CPL", "VMX", "SMX", "EST",
+	"TM2", "SSSE3", "CNTXT-ID", "SDBG", "FMA", "CX16", "xTPR", "PDCM",
+	NULL, "PCID", "DCA", "SSE4.1", "SSE4.2", "x2APIC", "MOVEB", "POPCNT",
+	"TSC-DEADLINE", "AES", "XSAVE", "OSXSAVE", "AVX", "F16C", "RDRND",
+	"HYPERVISOR"
+};
+
+/* Leaf 7, subleaf 0, EBX */
+static const char *kLeaf7Features[32] = {
+	"FSGSBASE", NULL, NULL, "BMI1", NULL, "AVX2", NULL, "SMEP",
+	"BMI2", "ERMS", "INVPCID", NULL, NULL, NULL, NULL, NULL,
+	"AVX512F", "AVX512DQ", "RDSEED", "ADX", "SMAP", NULL, NULL, "CLFLUSHOPT",
+	NULL, NULL, NULL, NULL, "AVX512CD", "SHA", "AVX512BW", "AVX512VL"
+};
+
+/* AMD Extended features leaf 0x80000001 */
+static const char *kAMDExtFeatures[32] = {
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, "SCE", NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, "MP", "NX", NULL, "AMD-MMX", NULL,
+	"FXSR", "FFXSR", "GBPAGES", "RDTSCP", NULL, "64", "3DNow+", "3DNow!"
+};
+#endif
+
+BString GetCPUFeatures()
+{
+	static BString sCachedFeatures;
+	static bool sFeaturesCached = false;
+	if (sFeaturesCached) return sCachedFeatures;
+
+#if defined(__i386__) || defined(__x86_64__)
+	BString features;
+	unsigned int eax, ebx, ecx, edx;
+
+	if (__get_cpuid(1, &eax, &ebx, &ecx, &edx) == 1) {
+		for (int i = 0; i < 32; i++) {
+			if ((edx & (1 << i)) && kFeatures[i]) {
+				if (features.Length() > 0)
+					features << " ";
+				features << kFeatures[i];
+			}
+		}
+		for (int i = 0; i < 32; i++) {
+			if ((ecx & (1 << i)) && kExtendedFeatures[i]) {
+				if (features.Length() > 0)
+					features << " ";
+				features << kExtendedFeatures[i];
+			}
+		}
+	}
+
+	if (__get_cpuid(0x80000001, &eax, &ebx, &ecx, &edx) == 1) {
+		for (int i = 0; i < 32; i++) {
+			if ((edx & (1 << i)) && kAMDExtFeatures[i]) {
+				if (features.Length() > 0)
+					features << " ";
+				features << kAMDExtFeatures[i];
+			}
+		}
+	}
+
+	// Leaf 7 features
+	if (__get_cpuid_max(0, NULL) >= 7) {
+		if (__get_cpuid_count(7, 0, &eax, &ebx, &ecx, &edx) == 1) {
+			for (int i = 0; i < 32; i++) {
+				if ((ebx & (1 << i)) && kLeaf7Features[i]) {
+					if (features.Length() > 0)
+						features << " ";
+					features << kLeaf7Features[i];
+				}
+			}
+		}
+	}
+
+	sCachedFeatures = features;
+	sFeaturesCached = true;
+	return sCachedFeatures;
+#else
+	sCachedFeatures = B_TRANSLATE("Not available on this architecture");
+	sFeaturesCached = true;
+	return sCachedFeatures;
+#endif
 }
 
 BString GetDisplayInfo()

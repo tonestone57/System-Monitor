@@ -24,4 +24,10 @@ BString GetGPUInfo();
 BString GetDisplayInfo();
 BString GetRootDiskUsage();
 
+void GetPackageCount(BString& out);
+BString GetLocalIPAddress();
+BString GetBatteryCapacity();
+BString GetLocale();
+BString GetCPUFeatures();
+
 #endif // UTILS_H

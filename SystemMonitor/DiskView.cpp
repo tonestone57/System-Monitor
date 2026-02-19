@@ -416,12 +416,13 @@ int32 DiskView::UpdateThread(void* data)
         for (auto& info : volumesToPoll) {
              fs_info fsInfo;
              if (fs_stat_dev(info.deviceID, &fsInfo) != B_OK) {
+                 info.totalSize = 0; // Mark as invalid
                  continue;
              }
 
              // Update dynamic info
-             info.totalSize = fsInfo.total_blocks * fsInfo.block_size;
-             info.freeSize = fsInfo.free_blocks * fsInfo.block_size;
+             info.totalSize = (uint64)fsInfo.total_blocks * fsInfo.block_size;
+             info.freeSize = (uint64)fsInfo.free_blocks * fsInfo.block_size;
 
              // Update name dynamically
              if (strlen(fsInfo.volume_name) > 0) {
@@ -429,18 +430,28 @@ int32 DiskView::UpdateThread(void* data)
              } else {
                  info.deviceName = fsInfo.device_name;
              }
+        }
 
-             if (info.totalSize == 0) continue;
+        if (view->fLocker.Lock()) {
+            for (const auto& info : volumesToPoll) {
+                 if (info.totalSize == 0) continue;
 
-             BMessage volMsg;
-             volMsg.AddInt32("device_id", info.deviceID);
-             volMsg.AddString("device_name", info.deviceName);
-             volMsg.AddString("mount_point", info.mountPoint);
-             volMsg.AddString("fs_type", info.fileSystemType);
-             volMsg.AddUInt64("total_size", info.totalSize);
-             volMsg.AddUInt64("free_size", info.freeSize);
+                 // Update cache
+                 if (view->fVolumeCache.count(info.deviceID)) {
+                     view->fVolumeCache[info.deviceID] = info;
+                 }
 
-             updateMsg.AddMessage("volume", &volMsg);
+                 BMessage volMsg;
+                 volMsg.AddInt32("device_id", info.deviceID);
+                 volMsg.AddString("device_name", info.deviceName);
+                 volMsg.AddString("mount_point", info.mountPoint);
+                 volMsg.AddString("fs_type", info.fileSystemType);
+                 volMsg.AddUInt64("total_size", info.totalSize);
+                 volMsg.AddUInt64("free_size", info.freeSize);
+
+                 updateMsg.AddMessage("volume", &volMsg);
+            }
+            view->fLocker.Unlock();
         }
 
         target.SendMessage(&updateMsg);

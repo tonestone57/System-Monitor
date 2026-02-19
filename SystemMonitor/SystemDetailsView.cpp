@@ -29,48 +29,6 @@
 
 #include <parsedate.h>
 
-#if defined(__x86_64__) || defined(__i386__)
-#include <cpuid.h>
-#include <cstring>
-
-/* CPU Features */
-static const char *kFeatures[32] = {
-	"FPU", "VME", "DE", "PSE",
-	"TSC", "MSR", "PAE", "MCE",
-	"CX8", "APIC", NULL, "SEP",
-	"MTRR", "PGE", "MCA", "CMOV",
-	"PAT", "PSE36", "PSN", "CFLUSH",
-	NULL, "DS", "ACPI", "MMX",
-	"FXSTR", "SSE", "SSE2", "SS",
-	"HTT", "TM", "IA64", "PBE",
-};
-
-/* CPU Extended features */
-static const char *kExtendedFeatures[32] = {
-	"SSE3", "PCLMULDQ", "DTES64", "MONITOR", "DS-CPL", "VMX", "SMX", "EST",
-	"TM2", "SSSE3", "CNTXT-ID", "SDBG", "FMA", "CX16", "xTPR", "PDCM",
-	NULL, "PCID", "DCA", "SSE4.1", "SSE4.2", "x2APIC", "MOVEB", "POPCNT",
-	"TSC-DEADLINE", "AES", "XSAVE", "OSXSAVE", "AVX", "F16C", "RDRND",
-	"HYPERVISOR"
-};
-
-/* Leaf 7, subleaf 0, EBX */
-static const char *kLeaf7Features[32] = {
-	"FSGSBASE", NULL, NULL, "BMI1", NULL, "AVX2", NULL, "SMEP",
-	"BMI2", "ERMS", "INVPCID", NULL, NULL, NULL, NULL, NULL,
-	"AVX512F", "AVX512DQ", "RDSEED", "ADX", "SMAP", NULL, NULL, "CLFLUSHOPT",
-	NULL, NULL, NULL, NULL, "AVX512CD", "SHA", "AVX512BW", "AVX512VL"
-};
-
-/* AMD Extended features leaf 0x80000001 */
-static const char *kAMDExtFeatures[32] = {
-	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-	NULL, NULL, NULL, "SCE", NULL, NULL, NULL, NULL,
-	NULL, NULL, NULL, "MP", "NX", NULL, "AMD-MMX", NULL,
-	"FXSR", "FFXSR", "GBPAGES", "RDTSCP", NULL, "64", "3DNow+", "3DNow!"
-};
-#endif
-
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "SystemDetailsView"
 
@@ -303,54 +261,7 @@ BString SystemDetailsView::_GetCPUFrequency()
 
 BString SystemDetailsView::_GetCPUFeatures()
 {
-#if defined(__i386__) || defined(__x86_64__)
-	BString features;
-	unsigned int eax, ebx, ecx, edx;
-
-	if (__get_cpuid(1, &eax, &ebx, &ecx, &edx) == 1) {
-		for (int i = 0; i < 32; i++) {
-			if ((edx & (1 << i)) && kFeatures[i]) {
-				if (features.Length() > 0)
-					features << " ";
-				features << kFeatures[i];
-			}
-		}
-		for (int i = 0; i < 32; i++) {
-			if ((ecx & (1 << i)) && kExtendedFeatures[i]) {
-				if (features.Length() > 0)
-					features << " ";
-				features << kExtendedFeatures[i];
-			}
-		}
-	}
-
-	if (__get_cpuid(0x80000001, &eax, &ebx, &ecx, &edx) == 1) {
-		for (int i = 0; i < 32; i++) {
-			if ((edx & (1 << i)) && kAMDExtFeatures[i]) {
-				if (features.Length() > 0)
-					features << " ";
-				features << kAMDExtFeatures[i];
-			}
-		}
-	}
-
-	// Leaf 7 features
-	if (__get_cpuid_max(0, NULL) >= 7) {
-		if (__get_cpuid_count(7, 0, &eax, &ebx, &ecx, &edx) == 1) {
-			for (int i = 0; i < 32; i++) {
-				if ((ebx & (1 << i)) && kLeaf7Features[i]) {
-					if (features.Length() > 0)
-						features << " ";
-					features << kLeaf7Features[i];
-				}
-			}
-		}
-	}
-
-	return features;
-#else
-	return B_TRANSLATE("Not available on this architecture");
-#endif
+	return GetCPUFeatures();
 }
 
 BString SystemDetailsView::_GetRamSize(system_info* sysInfo)
