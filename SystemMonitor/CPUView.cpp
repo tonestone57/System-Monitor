@@ -229,12 +229,14 @@ void CPUView::UpdateData()
     float overallUsage;
     GetCPUUsage(now, overallUsage);
 
-    if (overallUsage >= 0) {
-        char buffer[32];
-        snprintf(buffer, sizeof(buffer), "%.1f%%", overallUsage);
-        fOverallUsageValue->SetText(buffer);
-    } else {
-        fOverallUsageValue->SetText("N/A");
+    if (fOverallUsageValue) {
+        if (overallUsage >= 0) {
+            char buffer[32];
+            snprintf(buffer, sizeof(buffer), "%.1f%%", overallUsage);
+            fOverallUsageValue->SetText(buffer);
+        } else {
+            fOverallUsageValue->SetText("N/A");
+        }
     }
 
     // Update core graphs
@@ -247,19 +249,20 @@ void CPUView::UpdateData()
     // Update Info
     system_info sysInfo;
     if (get_system_info(&sysInfo) == B_OK) {
-        if ((int32)sysInfo.used_teams != fLastUsedTeams) {
+        if (fProcessesValue && (int32)sysInfo.used_teams != fLastUsedTeams) {
             fLastUsedTeams = sysInfo.used_teams;
             fCachedProcesses.SetToFormat("%" B_PRId32, fLastUsedTeams);
             fProcessesValue->SetText(fCachedProcesses.String());
         }
 
-        if ((int32)sysInfo.used_threads != fLastUsedThreads) {
+        if (fThreadsValue && (int32)sysInfo.used_threads != fLastUsedThreads) {
             fLastUsedThreads = sysInfo.used_threads;
             fCachedThreads.SetToFormat("%" B_PRId32, fLastUsedThreads);
             fThreadsValue->SetText(fCachedThreads.String());
         }
 
-        fUptimeValue->SetText(::FormatUptime(now).String());
+        if (fUptimeValue)
+            fUptimeValue->SetText(::FormatUptime(now).String());
     }
 
     fCurrentUsage = overallUsage;
