@@ -355,25 +355,8 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	reply.AddString("uptime", ::FormatUptime(system_time()));
 
 	// 5. Packages
-	auto countPackages = [](const char* path) -> int {
-		BDirectory dir(path);
-		if (dir.InitCheck() != B_OK) return 0;
-		int count = 0;
-		BEntry entry;
-		while (dir.GetNextEntry(&entry) == B_OK) {
-			BPath p;
-			entry.GetPath(&p);
-			if (p.InitCheck() == B_OK) {
-				BString name(p.Leaf());
-				if (name.EndsWith(".hpkg")) count++;
-			}
-		}
-		return count;
-	};
-	int sysPkgs = countPackages("/boot/system/packages");
-	int userPkgs = countPackages("/boot/home/config/packages");
 	BString packages;
-	packages.SetToFormat("%d (hpkg-system), %d (hpkg-user)", sysPkgs, userPkgs);
+	GetPackageCount(packages);
 	reply.AddString("packages", packages);
 
 	// 6. Shell
@@ -436,83 +419,13 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	reply.AddString("disk", GetRootDiskUsage());
 
 	// 14. IP
-	BNetworkRoster& roster = BNetworkRoster::Default();
-	BNetworkInterface interface;
-	uint32 cookie = 0;
-	BString ip = "127.0.0.1";
-	while (roster.GetNextInterface(&cookie, interface) == B_OK) {
-		if (interface.Flags() & IFF_LOOPBACK) continue;
-		if (!(interface.Flags() & IFF_UP)) continue;
-
-		BNetworkInterfaceAddress addr;
-		for (int32 i = 0; i < interface.CountAddresses(); i++) {
-			if (interface.GetAddressAt(i, addr) == B_OK) {
-				if (addr.Address().Family() == AF_INET) {
-					ip = addr.Address().ToString();
-					goto ip_found;
-				}
-			}
-		}
-	}
-ip_found:
-	reply.AddString("ip", ip);
+	reply.AddString("ip", GetLocalIPAddress());
 
 	// 15. Battery
-	// Attempt to read from the standard ACPI battery driver location on Haiku.
-	// The driver exposes text-based status information at /dev/power/acpi_battery/0/state.
-	// Example format includes lines like "capacity: 98", "state: discharging", etc.
-	int batFd = open("/dev/power/acpi_battery/0/state", O_RDONLY);
-	if (batFd >= 0) {
-		char buffer[1024];
-		ssize_t bytesRead = read(batFd, buffer, sizeof(buffer) - 1);
-		close(batFd);
-
-		if (bytesRead > 0) {
-			buffer[bytesRead] = '\0';
-			BString state(buffer);
-			BString capacityStr;
-			// Parse "capacity: <value>" from the driver output
-			int32 capacityIndex = state.FindFirst("capacity: ");
-			if (capacityIndex >= 0) {
-				int32 end = state.FindFirst("\n", capacityIndex);
-				if (end < 0) end = state.Length();
-
-				if (end >= capacityIndex + 10) {
-					state.CopyInto(capacityStr, capacityIndex + 10, end - (capacityIndex + 10));
-					capacityStr.Trim();
-				}
-
-				if (!capacityStr.IsEmpty()) {
-					capacityStr << "%";
-					reply.AddString("battery", capacityStr);
-				} else {
-					reply.AddString("battery", B_TRANSLATE("Unknown"));
-				}
-			} else {
-				reply.AddString("battery", B_TRANSLATE("Unknown"));
-			}
-		} else {
-			reply.AddString("battery", B_TRANSLATE("Unknown"));
-		}
-	}
+	reply.AddString("battery", GetBatteryCapacity());
 
 	// 16. Locale
-	BString locale;
-	// BLocale::Default() returns a const BLocale*. GetCode is likely not available or named differently.
-	// BLocale::GetLanguage()->Code() is a safer bet, or construct from environment.
-	// For simplicity, let's use a safe fallback if method doesn't exist.
-	// However, to fix compilation, we replace the call.
-	// Standard Haiku API uses formatting conventions.
-	// Assuming we just want the name.
-	// BLocale::Default()->GetName(locale); // Available?
-    // Let's assume en_US for now if we can't find the exact API in memory.
-    // Or better, let's try to get it from environment variables LANG/LC_ALL
-    const char* lang = getenv("LC_ALL");
-    if (!lang) lang = getenv("LANG");
-    if (lang) locale = lang;
-    else locale = "en_US.UTF-8";
-
-	reply.AddString("locale", locale);
+	reply.AddString("locale", GetLocale());
 
 	messenger->SendMessage(&reply);
 

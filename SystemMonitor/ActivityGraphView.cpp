@@ -280,9 +280,10 @@ ActivityGraphView::_DrawHistory()
                     for (uint32 i = 0; i < steps; i++) {
                         int64 value = fHistory->ValueAt(now - (steps - 1 - i) * timeStep, &searchIndex);
                         float y;
-                        if (range == 0)
-                            y = frame.Height() / 2;
-                        else
+                        if (range == 0) {
+                            if (min == 0) y = frame.Height();
+                            else y = frame.Height() / 2;
+                        } else
                             y = frame.Height() - (value - min) * frame.Height() / range;
                         points[i+1] = BPoint(i, y);
                     }
@@ -374,9 +375,10 @@ ActivityGraphView::_DrawHistory()
                         int32 i = startI + j;
                         int64 value = fHistory->ValueAt(fLastRefresh - (steps - 1 - i) * timeStep, &searchIndex);
                         float y;
-                        if (range == 0)
-                            y = frame.Height() / 2;
-                        else
+                        if (range == 0) {
+                            if (min == 0) y = frame.Height();
+                            else y = frame.Height() / 2;
+                        } else
                             y = frame.Height() - (value - min) * frame.Height() / range;
                         points[j+1] = BPoint(i, y);
                     }

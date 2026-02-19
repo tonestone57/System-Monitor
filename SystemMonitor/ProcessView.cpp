@@ -229,7 +229,9 @@ public:
     static int CompareState(const void* first, const void* second) {
         const ProcessListItem* item1 = *(const ProcessListItem**)first;
         const ProcessListItem* item2 = *(const ProcessListItem**)second;
-        return strcmp(item1->fCachedState.String(), item2->fCachedState.String());
+        if (item1->fInfo.state < item2->fInfo.state) return -1;
+        if (item1->fInfo.state > item2->fInfo.state) return 1;
+        return 0;
     }
 
     static int CompareUser(const void* first, const void* second) {
