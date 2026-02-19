@@ -268,7 +268,9 @@ ActivityGraphView::_DrawHistory()
 					view->StrokeLine(BPoint(frame.left, y), BPoint(frame.right, y));
 				}
 				// Vertical lines
-				float gridSpacing = 60.0f * GetScaleFactor(view->Font());
+				BFont viewFont;
+				view->GetFont(&viewFont);
+				float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
 				for (float x = 0; x < frame.Width(); x += gridSpacing) {
 					 view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
 				}
@@ -331,7 +333,9 @@ ActivityGraphView::_DrawHistory()
 					BRect dst(0, 0, frame.right - pixelsToScroll, frame.bottom);
 					view->CopyBits(src, dst);
 
-					float gridSpacing = 60.0f * GetScaleFactor(view->Font());
+					BFont viewFont;
+					view->GetFont(&viewFont);
+					float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
 					fScrollOffset += pixelsToScroll;
 					while (fScrollOffset >= gridSpacing)
 						fScrollOffset -= gridSpacing;
@@ -356,7 +360,9 @@ ActivityGraphView::_DrawHistory()
 				}
 
 				// Vertical lines
-				float gridSpacing = 60.0f * GetScaleFactor(view->Font());
+				BFont viewFont;
+				view->GetFont(&viewFont);
+				float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
 				int64 startK = (int64)ceilf((newArea.left + fScrollOffset) / gridSpacing);
 				for (int64 k = startK; ; k++) {
 					float x = k * gridSpacing - fScrollOffset;

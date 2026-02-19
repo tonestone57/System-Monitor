@@ -72,6 +72,8 @@ The following critical fixes and optimizations were applied to resolve remaining
 
 - **Logic Fixes**:
   - **Graph History Scaling**: Implemented proper propagation of `SetRefreshInterval` from `MainWindow` down to all `ActivityGraphView` instances. This ensures that the history duration (e.g., 60 seconds) remains constant regardless of the update speed (0.5s, 1s, or 2s).
+  - **Graph Scaling Accuracy**: Fixed a bug where `ActivityGraphView` would fail to redraw historical data correctly when the vertical scale changed. Added `fLastMin` and `fLastRange` tracking to force a full redraw on scale changes.
+  - **Sub-pixel Smoothness**: Optimized `ActivityGraphView` partial updates to always redraw the rightmost pixel using the latest available data, providing a smoother real-time feel.
   - `NetworkView`: Introduced `hasStats` flag to prevent invalid speed calculations when network interfaces fail to report statistics (e.g., transient driver errors).
   - `DataHistory`: Updated `SetRefreshInterval` to only commit changes if the buffer resize operation succeeds.
 
@@ -130,10 +132,17 @@ A final comprehensive audit was performed to centralize logic, improve consisten
   - Refactored `FormatSpeed` to internally utilize the improved `FormatBytes` logic.
   - Added a `double` overload for `FormatBytes` to provide high-precision formatting for small byte-per-second values (e.g., "1.5 B/s").
   - Ensured all formatted strings use consistent localized unit suffixes.
+  - Standardized MiB calculations in `SystemDetailsView` using a consistent ceiling division method.
 
 - **Improved Graph Rendering**:
   - Optimized `ActivityGraphView` to handle sub-pixel updates. The graph now ensures the rightmost pixel is redrawn even when enough time hasn't passed to scroll the graph, preventing a "frozen" appearance between pixel-shift intervals.
   - Corrected grid line alignment during sub-pixel rendering by properly accounting for `fScrollOffset` in partial updates.
+  - Standardized font retrieval logic using `GetFont()` to ensure compatibility with standard Haiku APIs.
+
+- **Interactive Sorting & UI Robustness**:
+  - Implemented full interactive column sorting for `DiskView` and `NetworkView`.
+  - Centralized `ClickableHeaderView` into `Utils` to reduce code duplication.
+  - Added font-responsive column width recalculation to all list-based views (`ProcessView`, `DiskView`, `NetworkView`) to ensure the UI remains correct when system font sizes change.
 
 - **Unified Selection Logic**:
   - Standardized list selection restoration across `DiskView`, `NetworkView`, and `ProcessView` by extracting the logic into private `_RestoreSelection` helpers. This ensures that the user's current selection is preserved reliably during periodic data updates.
