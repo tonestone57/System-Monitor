@@ -7,6 +7,7 @@
 class BFont;
 
 void FormatBytes(BString& out, uint64 bytes, int precision = 2);
+void FormatBytes(BString& out, double bytes, int precision = 2);
 void GetSwapUsage(uint64& used, uint64& total);
 uint64 GetCachedMemoryBytes(const system_info& sysInfo);
 BString FormatHertz(uint64 hertz);
@@ -16,5 +17,11 @@ float GetScaleFactor(const BFont* font);
 
 uint64 GetCpuFrequency();
 BString GetCPUBrandString();
+
+BString GetOSVersion();
+BString GetABIVersion();
+BString GetGPUInfo();
+BString GetDisplayInfo();
+BString GetRootDiskUsage();
 
 #endif // UTILS_H

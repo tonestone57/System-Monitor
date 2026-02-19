@@ -44,7 +44,7 @@ EXTRA_INCLUDES = /boot/system/develop/headers/os
 LDFLAGS =
 
 # Specify the level of optimization
-OPTIMIZE := NONE
+OPTIMIZE := FULL
 
 # Specify the level of localization
 LOCALES =
@@ -62,8 +62,8 @@ SYMBOLS :=
 DEBUGGER := FALSE
 
 # Target-specific flags
-TARGET_CFLAGS =-Og -g
-TARGET_CPPFLAGS =-Og -g
+TARGET_CFLAGS =
+TARGET_CPPFLAGS =
 TARGET_LDFLAGS =
 
 ## Include the Haiku makefile system rules

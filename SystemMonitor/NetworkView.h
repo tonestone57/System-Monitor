@@ -4,7 +4,7 @@
 #include <View.h>
 #include <Locker.h>
 #include <String.h>
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <set>
 #include <atomic>
@@ -68,14 +68,19 @@ private:
     
     BLocker fLocker;
 
-    struct BStringLess {
-        bool operator()(const BString& a, const BString& b) const {
-            return a.Compare(b) < 0;
+    struct BStringHash {
+        size_t operator()(const BString& s) const {
+            size_t hash = 5381;
+            const char* str = s.String();
+            int c;
+            while ((c = *str++))
+                hash = ((hash << 5) + hash) + c;
+            return hash;
         }
     };
 
-    std::map<BString, InterfaceStatsRecord, BStringLess> fPreviousStatsMap;
-    std::map<BString, InterfaceListItem*, BStringLess> fInterfaceItemMap;
+    std::unordered_map<BString, InterfaceStatsRecord, BStringHash> fPreviousStatsMap;
+    std::unordered_map<BString, InterfaceListItem*, BStringHash> fInterfaceItemMap;
     float fUploadSpeed;
     float fDownloadSpeed;
 
@@ -95,6 +100,8 @@ private:
     float fRecvWidth;
     float fTxSpeedWidth;
     float fRxSpeedWidth;
+
+    void _RestoreSelection(const BString& selectedName);
 };
 
 #endif // NETWORKVIEW_H

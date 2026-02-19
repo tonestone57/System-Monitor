@@ -9,7 +9,9 @@
 #include <stdlib.h>
 #include <new>
 
+#if defined(__HAIKU__) || defined(BEOS)
 #include <OS.h>
+#endif
 
 
 template<typename Type>

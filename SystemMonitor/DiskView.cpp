@@ -14,7 +14,6 @@
 #include <ListItem.h>
 #include <Box.h>
 #include <Font.h>
-#include <set>
 #include <Messenger.h>
 #include <Catalog.h>
 #include <ScrollView.h>
@@ -502,14 +501,14 @@ void DiskView::UpdateData(BMessage* message)
         }
 
 		DiskListItem* item;
-		if (fDeviceItemMap.find(deviceID) == fDeviceItemMap.end()) {
+		auto result = fDeviceItemMap.emplace(deviceID, nullptr);
+		if (result.second) {
 			item = new DiskListItem(deviceID, deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font, this);
 			fDiskListView->AddItem(item);
-			fDeviceItemMap[deviceID] = item;
+			result.first->second = item;
             listChanged = true;
 		} else {
-			item = fDeviceItemMap[deviceID];
-            // Ideally check for changes before calling Invalidate
+			item = result.first->second;
             item->Update(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font, fontChanged);
 		}
         item->SetGeneration(fListGeneration);
@@ -528,16 +527,7 @@ void DiskView::UpdateData(BMessage* message)
 	}
     fDiskListView->SortItems(DiskListItem::CompareUsage);
 
-    // Restore selection
-    if (selectedID != -1) {
-        for (int32 i = 0; i < fDiskListView->CountItems(); i++) {
-            DiskListItem* item = dynamic_cast<DiskListItem*>(fDiskListView->ItemAt(i));
-            if (item && item->DeviceID() == selectedID) {
-                fDiskListView->Select(i);
-                break;
-            }
-        }
-    }
+    _RestoreSelection(selectedID);
 
     fDiskListView->Invalidate();
 
@@ -547,6 +537,20 @@ void DiskView::UpdateData(BMessage* message)
 void DiskView::Draw(BRect updateRect)
 {
     BView::Draw(updateRect);
+}
+
+void DiskView::_RestoreSelection(dev_t selectedID)
+{
+    if (selectedID == -1)
+        return;
+
+    for (int32 i = 0; i < fDiskListView->CountItems(); i++) {
+        DiskListItem* item = dynamic_cast<DiskListItem*>(fDiskListView->ItemAt(i));
+        if (item && item->DeviceID() == selectedID) {
+            fDiskListView->Select(i);
+            break;
+        }
+    }
 }
 
 void DiskView::_ScanVolumes()

@@ -5,6 +5,14 @@
 #include <DurationFormat.h>
 #include <cstring>
 #include <vector>
+#include <sys/utsname.h>
+#include <Screen.h>
+#include <fs_info.h>
+#include <Volume.h>
+#include <FindDirectory.h>
+#include <AppFileInfo.h>
+#include <File.h>
+#include <Path.h>
 
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
@@ -14,8 +22,15 @@
 #define B_TRANSLATION_CONTEXT "Utils"
 
 void FormatBytes(BString& str, uint64 bytes, int precision) {
-	if (bytes < 1024) {
-		str.SetToFormat(B_TRANSLATE("%" B_PRIu64 " B"), bytes);
+	FormatBytes(str, (double)bytes, precision);
+}
+
+void FormatBytes(BString& str, double bytes, int precision) {
+	if (bytes < 1024.0) {
+		str.SetToFormat(B_TRANSLATE("%.1f B"), bytes);
+		// Optimization: if it is exactly an integer, don't show .0
+		if (bytes == (uint64)bytes)
+			str.SetToFormat(B_TRANSLATE("%" B_PRIu64 " B"), (uint64)bytes);
 		return;
 	}
 
@@ -79,12 +94,10 @@ BString FormatUptime(bigtime_t uptimeMicros) {
 BString FormatSpeed(uint64 bytesDelta, bigtime_t microSecondsDelta)
 {
 	if (microSecondsDelta <= 0) return B_TRANSLATE("0 B/s");
-	double speed = bytesDelta / (microSecondsDelta / 1000000.0);
-	double kbs = speed / 1024.0, mbs = kbs / 1024.0;
+	double speed = (double)bytesDelta * 1000000.0 / microSecondsDelta;
 	BString str;
-	if (mbs >= 1.0) str.SetToFormat(B_TRANSLATE("%.2f MiB/s"), mbs);
-	else if (kbs >= 1.0) str.SetToFormat(B_TRANSLATE("%.2f KiB/s"), kbs);
-	else str.SetToFormat(B_TRANSLATE("%.1f B/s"), speed);
+	FormatBytes(str, speed);
+	str << "/s";
 	return str;
 }
 
@@ -139,4 +152,100 @@ BString GetCPUBrandString()
 	}
 #endif
 	return B_TRANSLATE("Unknown CPU");
+}
+
+BString GetOSVersion()
+{
+	BString revision;
+	struct utsname u;
+	uname(&u);
+
+	system_info sysInfo;
+	if (get_system_info(&sysInfo) == B_OK) {
+		revision.SetToFormat(B_TRANSLATE("Haiku %s (hrev%" B_PRId64 ")"),
+			u.machine, sysInfo.kernel_version);
+	} else {
+		revision << u.sysname << " " << u.machine << " " << u.release;
+	}
+	return revision;
+}
+
+BString GetABIVersion()
+{
+	BString abiVersion;
+	BPath path;
+	if (find_directory(B_BEOS_LIB_DIRECTORY, &path) == B_OK) {
+		path.Append("libbe.so");
+
+		BAppFileInfo appFileInfo;
+		version_info versionInfo;
+		BFile file;
+		if (file.SetTo(path.Path(), B_READ_ONLY) == B_OK
+			&& appFileInfo.SetTo(&file) == B_OK
+			&& appFileInfo.GetVersionInfo(&versionInfo, B_APP_VERSION_KIND) == B_OK
+			&& versionInfo.short_info[0] != '\0') {
+			abiVersion = versionInfo.short_info;
+		}
+	}
+
+	if (abiVersion.IsEmpty())
+		abiVersion = B_TRANSLATE("Unknown");
+
+	abiVersion << " (" << B_HAIKU_ABI_NAME << ")";
+	return abiVersion;
+}
+
+BString GetGPUInfo()
+{
+	BScreen screen(B_MAIN_SCREEN_ID);
+	if (screen.IsValid()) {
+		accelerant_device_info info;
+		if (screen.GetDeviceInfo(&info) == B_OK) {
+			return BString(info.name);
+		}
+	}
+	return BString(B_TRANSLATE("Unknown"));
+}
+
+BString GetDisplayInfo()
+{
+	BScreen screen(B_MAIN_SCREEN_ID);
+	if (screen.IsValid()) {
+		display_mode mode;
+		if (screen.GetMode(&mode) == B_OK) {
+			BString display;
+			float refresh = 60.0;
+			if (mode.timing.pixel_clock > 0 && mode.timing.h_total > 0 && mode.timing.v_total > 0) {
+				refresh = (double)mode.timing.pixel_clock * 1000.0
+					/ (mode.timing.h_total * mode.timing.v_total);
+			}
+			display.SetToFormat(B_TRANSLATE("%dx%d, %d Hz"), mode.virtual_width,
+				mode.virtual_height, (int)(refresh + 0.5));
+			return display;
+		}
+	}
+	return BString(B_TRANSLATE("Unknown"));
+}
+
+BString GetRootDiskUsage()
+{
+	fs_info fs;
+	if (fs_stat_dev(dev_for_path("/"), &fs) == B_OK) {
+		uint64 total = fs.total_blocks * fs.block_size;
+		uint64 free = fs.free_blocks * fs.block_size;
+		uint64 used = total - free;
+		int percent = 0;
+		if (total > 0)
+			percent = (int)(100.0 * used / total);
+
+		BString usedStr, totalStr;
+		FormatBytes(usedStr, used);
+		FormatBytes(totalStr, total);
+
+		BString diskStr;
+		diskStr.SetToFormat(B_TRANSLATE("%s / %s (%d%%) - %s"), usedStr.String(),
+			totalStr.String(), percent, fs.fsh_name);
+		return diskStr;
+	}
+	return BString(B_TRANSLATE("Unknown"));
 }

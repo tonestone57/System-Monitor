@@ -10,9 +10,6 @@
 #include <NetworkRoster.h>
 #include <NetworkInterface.h>
 #include <Alert.h>
-#include <map>
-#include <set>
-#include <string>
 #include <cstring>
 #include <net/if.h>
 #include "ActivityGraphView.h"
@@ -389,14 +386,14 @@ void NetworkView::UpdateData(BMessage* message)
             rec.generation = fListGeneration;
 
             InterfaceListItem* item;
-            auto rowIt = fInterfaceItemMap.find(name);
-            if (rowIt == fInterfaceItemMap.end()) {
+            auto result = fInterfaceItemMap.emplace(name, nullptr);
+            if (result.second) {
                 item = new InterfaceListItem(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes, &font, this);
                 fInterfaceListView->AddItem(item);
-                fInterfaceItemMap[name] = item;
+                result.first->second = item;
                 listChanged = true;
             } else {
-                item = rowIt->second;
+                item = result.first->second;
                 item->Update(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes, &font, fontChanged);
             }
             item->SetGeneration(fListGeneration);
@@ -424,16 +421,7 @@ void NetworkView::UpdateData(BMessage* message)
     
     fInterfaceListView->SortItems(InterfaceListItem::CompareSpeed);
 
-    // Restore selection
-    if (selectedName != "") {
-        for (int32 i = 0; i < fInterfaceListView->CountItems(); i++) {
-            InterfaceListItem* item = dynamic_cast<InterfaceListItem*>(fInterfaceListView->ItemAt(i));
-            if (item && item->Name() == selectedName) {
-                fInterfaceListView->Select(i);
-                break;
-            }
-        }
-    }
+    _RestoreSelection(selectedName);
 
     fInterfaceListView->Invalidate();
 
@@ -496,7 +484,7 @@ int32 NetworkView::UpdateThread(void* data)
             strlcpy(info.typeStr, typeStr.String(), sizeof(info.typeStr));
 
             // Determine Address
-            BString addressStr = "N/A";
+            BString addressStr = B_TRANSLATE("N/A");
             for (int32 i = 0; i < interface.CountAddresses(); ++i) {
                 BNetworkInterfaceAddress ifaceAddr;
                 if (interface.GetAddressAt(i, ifaceAddr) == B_OK) {
@@ -555,3 +543,16 @@ void NetworkView::SetRefreshInterval(bigtime_t interval)
         fDownloadGraph->SetRefreshInterval(interval);
 }
 
+void NetworkView::_RestoreSelection(const BString& selectedName)
+{
+    if (selectedName == "")
+        return;
+
+    for (int32 i = 0; i < fInterfaceListView->CountItems(); i++) {
+        InterfaceListItem* item = dynamic_cast<InterfaceListItem*>(fInterfaceListView->ItemAt(i));
+        if (item && item->Name() == selectedName) {
+            fInterfaceListView->Select(i);
+            break;
+        }
+    }
+}
