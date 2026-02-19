@@ -18,7 +18,8 @@ ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_wh
     fLastRefresh(0),
     fScrollOffset(0)
 {
-	fPoints.reserve(2048); // Pre-allocate for typical screen widths to avoid reallocations
+	fPoints.resize(2048); // Pre-allocate for typical screen widths to avoid reallocations
+	fPoints.reserve(4096); // Pre-allocate for typical screen widths (including 4K) to avoid reallocations
 	fHistory = new DataHistory(10 * 60000000LL, 1000000);
 }
 
@@ -71,6 +72,9 @@ ActivityGraphView::FrameResized(float width, float /*height*/)
 	size_t needed = (size_t)width + 64;
 	if (fPoints.capacity() < needed) {
 		fPoints.reserve(std::max(needed, fPoints.capacity() * 2));
+	}
+	if (fPoints.size() < needed) {
+		fPoints.resize(needed);
 	}
 }
 
