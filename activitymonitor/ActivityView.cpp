@@ -316,8 +316,35 @@ DataHistory::AddValue(bigtime_t time, int64 value)
 int64
 DataHistory::ValueAt(bigtime_t time)
 {
+	int32 count = fBuffer.CountItems();
 	int32 left = 0;
-	int32 right = fBuffer.CountItems() - 1;
+	int32 right = count - 1;
+
+	// Optimization: check if we can start from fLastIndex
+	if (fLastIndex >= 0 && fLastIndex < count) {
+		data_item* lastItem = fBuffer.ItemAt(fLastIndex);
+		if (lastItem->time <= time) {
+			// Check if it's still the same item
+			data_item* nextItem = fBuffer.ItemAt(fLastIndex + 1);
+			if (nextItem == NULL)
+				return lastItem->value;
+
+			if (nextItem->time > time) {
+				// Still here
+				int64 value = lastItem->value;
+				value += int64(double(nextItem->value - value)
+					/ (nextItem->time - lastItem->time)
+					* (time - lastItem->time));
+				return value;
+			}
+			// It's after this item
+			left = fLastIndex + 1;
+		} else {
+			// It's before this item
+			right = fLastIndex - 1;
+		}
+	}
+
 	data_item* item = NULL;
 
 	while (left <= right) {
@@ -329,10 +356,13 @@ DataHistory::ValueAt(bigtime_t time)
 			right = index - 1;
 		} else {
 			data_item* nextItem = fBuffer.ItemAt(index + 1);
-			if (nextItem == NULL)
+			if (nextItem == NULL) {
+				fLastIndex = index;
 				return item->value;
+			}
 			if (nextItem->time > time) {
 				// found item
+				fLastIndex = index;
 				int64 value = item->value;
 				value += int64(double(nextItem->value - value)
 					/ (nextItem->time - item->time) * (time - item->time));
