@@ -3,7 +3,10 @@
 #include <OS.h>
 #include <Catalog.h>
 #include <cstring>
+
+#if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
+#endif
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Utils"
