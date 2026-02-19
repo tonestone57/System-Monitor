@@ -263,7 +263,6 @@ DiskView::~DiskView()
         delete pair.second;
     }
     fDeviceItemMap.clear();
-    fVisibleItems.clear();
 }
 
 void DiskView::AttachedToWindow()
@@ -507,7 +506,6 @@ void DiskView::UpdateData(BMessage* message)
 			item = new DiskListItem(deviceID, deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font, this);
 			fDiskListView->AddItem(item);
 			fDeviceItemMap[deviceID] = item;
-            fVisibleItems.insert(item);
             listChanged = true;
 		} else {
 			item = fDeviceItemMap[deviceID];
@@ -520,10 +518,7 @@ void DiskView::UpdateData(BMessage* message)
 	for (auto it = fDeviceItemMap.begin(); it != fDeviceItemMap.end();) {
 		if (it->second->Generation() != fListGeneration) {
 			DiskListItem* item = it->second;
-            if (fVisibleItems.find(item) != fVisibleItems.end()) {
-			    fDiskListView->RemoveItem(item);
-                fVisibleItems.erase(item);
-            }
+            fDiskListView->RemoveItem(item);
 			delete item;
 			it = fDeviceItemMap.erase(it);
             listChanged = true;

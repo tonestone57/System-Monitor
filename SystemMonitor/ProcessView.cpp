@@ -612,6 +612,21 @@ void ProcessView::_SortItems()
 }
 
 
+void ProcessView::_RestoreSelection(team_id selectedID)
+{
+    if (selectedID == -1)
+        return;
+
+    for (int32 i = 0; i < fProcessListView->CountItems(); i++) {
+        ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(i));
+        if (item && item->TeamID() == selectedID) {
+            fProcessListView->Select(i);
+            break;
+        }
+    }
+}
+
+
 bool ProcessView::_MatchesFilter(const ProcessInfo& info, const char* searchText)
 {
     if (searchText == NULL || strlen(searchText) == 0)
@@ -658,16 +673,7 @@ void ProcessView::FilterRows()
 
     _SortItems();
 
-    // Restore selection
-    if (selectedID != -1) {
-        for (int32 i = 0; i < fProcessListView->CountItems(); i++) {
-            ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(i));
-            if (item && item->TeamID() == selectedID) {
-                fProcessListView->Select(i);
-                break;
-            }
-        }
-    }
+    _RestoreSelection(selectedID);
 
     fProcessListView->Invalidate();
 }
@@ -773,16 +779,7 @@ void ProcessView::Update(BMessage* message)
 
     _SortItems();
 
-    // Restore selection
-    if (selectedID != -1) {
-        for (int32 i = 0; i < fProcessListView->CountItems(); i++) {
-            ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(i));
-            if (item && item->TeamID() == selectedID) {
-                fProcessListView->Select(i);
-                break;
-            }
-        }
-    }
+    _RestoreSelection(selectedID);
 
     fProcessListView->Invalidate();
 }

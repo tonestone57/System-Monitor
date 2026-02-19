@@ -107,6 +107,8 @@ void CPUView::CreateLayout()
     uint64 frequency = GetCpuFrequency();
     if (frequency > 0)
         fSpeedValue->SetText(::FormatHertz(frequency).String());
+    else
+        fSpeedValue->SetText(B_TRANSLATE("N/A"));
 
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Processes")), 0, 2);
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Threads")), 1, 2);
