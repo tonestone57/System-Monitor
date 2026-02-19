@@ -15,24 +15,24 @@
 
 void FormatBytes(BString& str, uint64 bytes, int precision) {
 	if (bytes < 1024) {
-		str.SetToFormat("%" B_PRIu64 " B", bytes);
+		str.SetToFormat(B_TRANSLATE("%" B_PRIu64 " B"), bytes);
 		return;
 	}
 
 	double kb = bytes / 1024.0;
 	if (kb < 1024.0) {
-		str.SetToFormat("%.*f KiB", precision, kb);
+		str.SetToFormat(B_TRANSLATE("%.*f KiB"), precision, kb);
 		return;
 	}
 
 	double mb = kb / 1024.0;
 	if (mb < 1024.0) {
-		str.SetToFormat("%.*f MiB", precision, mb);
+		str.SetToFormat(B_TRANSLATE("%.*f MiB"), precision, mb);
 		return;
 	}
 
 	double gb = mb / 1024.0;
-	str.SetToFormat("%.*f GiB", precision, gb);
+	str.SetToFormat(B_TRANSLATE("%.*f GiB"), precision, gb);
 }
 
 void GetSwapUsage(uint64& used, uint64& total) {

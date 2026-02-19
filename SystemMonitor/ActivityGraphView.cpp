@@ -6,6 +6,7 @@
 #include <Region.h>
 #include <algorithm>
 #include <new>
+#include "Utils.h"
 
 ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_which systemColor)
 	: BView(name, B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE),
@@ -258,7 +259,8 @@ ActivityGraphView::_DrawHistory()
                     view->StrokeLine(BPoint(frame.left, y), BPoint(frame.right, y));
                 }
                 // Vertical lines
-                for (int x = 0; x < frame.Width(); x += 60) {
+                float gridSpacing = 60.0f * GetScaleFactor(view->Font());
+                for (float x = 0; x < frame.Width(); x += gridSpacing) {
                      view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
                 }
 
@@ -334,9 +336,10 @@ ActivityGraphView::_DrawHistory()
                 }
 
                 // Vertical lines
-                int64 startK = (int64)(newArea.left + fScrollOffset + 59) / 60;
+                float gridSpacing = 60.0f * GetScaleFactor(view->Font());
+                int64 startK = (int64)(newArea.left + fScrollOffset + (gridSpacing - 1)) / gridSpacing;
                 for (int64 k = startK; ; k++) {
-                    float x = k * 60 - fScrollOffset;
+                    float x = k * gridSpacing - fScrollOffset;
                     if (x > newArea.right) break;
                     view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
                 }

@@ -700,8 +700,6 @@ void ProcessView::Update(BMessage* message)
 
     fListGeneration++;
 
-    bool listChanged = false;
-
     // Get font once
     BFont font;
     fProcessListView->GetFont(&font);
@@ -741,7 +739,6 @@ void ProcessView::Update(BMessage* message)
             if (match) {
                 fProcessListView->AddItem(item);
                 fVisibleItems.insert(item);
-                listChanged = true;
             }
         } else {
             item = result.first->second;
@@ -751,11 +748,9 @@ void ProcessView::Update(BMessage* message)
             if (match && !wasVisible) {
                 fProcessListView->AddItem(item);
                 fVisibleItems.insert(item);
-                listChanged = true;
             } else if (!match && wasVisible) {
                 fProcessListView->RemoveItem(item);
                 fVisibleItems.erase(item);
-                listChanged = true;
             }
         }
         item->SetGeneration(fListGeneration);
@@ -768,7 +763,6 @@ void ProcessView::Update(BMessage* message)
             if (fVisibleItems.find(item) != fVisibleItems.end()) {
                 fProcessListView->RemoveItem(item);
                 fVisibleItems.erase(item);
-                listChanged = true;
             }
 			delete item;
 			it = fTeamItemMap.erase(it);
