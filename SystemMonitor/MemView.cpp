@@ -116,13 +116,17 @@ void MemView::UpdateData()
         uint64 usedBytes = (uint64)sysInfo.used_pages * B_PAGE_SIZE;
         uint64 freeBytes = totalBytes - usedBytes;
 
-        // On Haiku, cached memory includes both the page cache and the block cache.
-        uint64 cachedBytes = ((uint64)sysInfo.cached_pages + (uint64)sysInfo.block_cache_pages) * B_PAGE_SIZE;
+        uint64 cachedBytes = GetCachedMemoryBytes(sysInfo);
 
         // Total memory is set in AttachedToWindow
         if (usedBytes != fLastUsedBytes) {
             fLastUsedBytes = usedBytes;
             ::FormatBytes(fCachedUsedStr, usedBytes);
+            if (totalBytes > 0) {
+                BString percentStr;
+                fNumberFormat.FormatPercent(percentStr, (double)usedBytes / totalBytes);
+                fCachedUsedStr << " (" << percentStr << ")";
+            }
             fUsedMemValue->SetText(fCachedUsedStr.String());
         }
 

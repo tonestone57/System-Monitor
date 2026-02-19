@@ -440,8 +440,7 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	if (get_system_info(&sysInfo) == B_OK) {
 		uint64 total = (uint64)sysInfo.max_pages * B_PAGE_SIZE;
 		uint64 used = (uint64)sysInfo.used_pages * B_PAGE_SIZE;
-		// On Haiku, cached memory includes both the page cache and the block cache.
-		uint64 cached = ((uint64)sysInfo.cached_pages + (uint64)sysInfo.block_cache_pages) * B_PAGE_SIZE;
+		uint64 cached = GetCachedMemoryBytes(sysInfo);
 
 		BString cachedStr;
 		::FormatBytes(cachedStr, cached);

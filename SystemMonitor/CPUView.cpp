@@ -220,11 +220,11 @@ void CPUView::UpdateData()
 
     if (fOverallUsageValue) {
         if (overallUsage >= 0) {
-            char buffer[32];
-            snprintf(buffer, sizeof(buffer), "%.1f%%", overallUsage);
-            fOverallUsageValue->SetText(buffer);
+            BString percentStr;
+            fNumberFormat.FormatPercent(percentStr, overallUsage / 100.0f);
+            fOverallUsageValue->SetText(percentStr.String());
         } else {
-            fOverallUsageValue->SetText("N/A");
+            fOverallUsageValue->SetText(B_TRANSLATE("N/A"));
         }
     }
 

@@ -4,6 +4,7 @@
 #include <View.h>
 #include <StringView.h>
 #include <Locker.h>
+#include <NumberFormat.h>
 #include <vector>
 #include "ActivityGraphView.h"
 
@@ -50,6 +51,8 @@ private:
     int32 fLastUsedThreads;
     BString fCachedProcesses;
     BString fCachedThreads;
+
+    BNumberFormat fNumberFormat;
 };
 
 #endif // CPUVIEW_H

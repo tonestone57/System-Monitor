@@ -2,6 +2,7 @@
 #include <Font.h>
 #include <OS.h>
 #include <Catalog.h>
+#include <DurationFormat.h>
 #include <cstring>
 #include <vector>
 
@@ -45,6 +46,11 @@ void GetSwapUsage(uint64& used, uint64& total) {
 	}
 }
 
+uint64 GetCachedMemoryBytes(const system_info& sysInfo) {
+	// On Haiku, cached memory includes both the page cache and the block cache.
+	return ((uint64)sysInfo.cached_pages + (uint64)sysInfo.block_cache_pages) * B_PAGE_SIZE;
+}
+
 BString FormatHertz(uint64 hertz) {
 	BString str;
 	double ghz = hertz / 1000000000.0;
@@ -64,21 +70,9 @@ BString FormatHertz(uint64 hertz) {
 }
 
 BString FormatUptime(bigtime_t uptimeMicros) {
-	uint32 seconds = uptimeMicros / 1000000;
-
-	uint32 days = seconds / (24 * 3600);
-	seconds %= (24 * 3600);
-	uint32 hours = seconds / 3600;
-	seconds %= 3600;
-	uint32 minutes = seconds / 60;
-	seconds %= 60;
-
 	BString uptimeStr;
-	if (days > 0) {
-		uptimeStr.SetToFormat("%u days, %02u:%02u:%02u", days, hours, minutes, seconds);
-	} else {
-		uptimeStr.SetToFormat("%02u:%02u:%02u", hours, minutes, seconds);
-	}
+	BDurationFormat formatter;
+	formatter.Format(uptimeStr, 0, uptimeMicros);
 	return uptimeStr;
 }
 
