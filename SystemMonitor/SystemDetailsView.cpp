@@ -424,16 +424,20 @@ BString SystemDetailsView::_GetRamUsage(system_info* sysInfo)
 
 BString SystemDetailsView::_GetSwapUsage(system_info* sysInfo)
 {
+	uint64 swapUsed, swapTotal;
+	GetSwapUsage(swapUsed, swapTotal);
+
+	BString usedStr, totalStr;
+	FormatBytes(usedStr, swapUsed);
+	FormatBytes(totalStr, swapTotal);
+
+	int percent = 0;
+	if (swapTotal > 0)
+		percent = (int)(100.0 * swapUsed / swapTotal);
+
 	BString swapUsage;
-
-	// Haiku system_info doesn't easily expose swap usage directly in a simple way
-	// without traversing VM pages, but sysInfo->page_faults is there.
-	// For basic swap size:
-	uint64 swapPages = sysInfo->max_swap_pages;
-
-	// Just showing total swap for now
-	swapUsage.SetToFormat(B_TRANSLATE("Swap: %" B_PRIu64 " MiB total"),
-		(uint64)(swapPages * B_PAGE_SIZE / 1048576.0));
+	swapUsage.SetToFormat(B_TRANSLATE("Swap: %s / %s (%d%%)"),
+		usedStr.String(), totalStr.String(), percent);
 
 	return swapUsage;
 }

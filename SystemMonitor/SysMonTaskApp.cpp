@@ -148,6 +148,8 @@ public:
 	PerformanceView();
 	virtual void AttachedToWindow();
 	virtual void Pulse();
+	virtual void Hide();
+	virtual void Show();
 	void SetRefreshInterval(bigtime_t interval);
 
 	void SaveState(BMessage& state);
@@ -215,10 +217,29 @@ void PerformanceView::AttachedToWindow()
 
 void PerformanceView::Pulse()
 {
+	if (IsHidden()) return;
+
+	if (fCPUView->IsHidden()) fCPUView->UpdateData();
+	if (fMemView->IsHidden()) fMemView->UpdateData();
+
 	fStats.cpuUsage = fCPUView->GetCurrentUsage();
 	fStats.memoryUsage = fMemView->GetCurrentUsage();
 	fStats.uploadSpeed = fNetworkView->GetUploadSpeed();
 	fStats.downloadSpeed = fNetworkView->GetDownloadSpeed();
+}
+
+void PerformanceView::Hide()
+{
+	BView::Hide();
+	fNetworkView->SetPerformanceViewVisible(false);
+	fDiskView->SetPerformanceViewVisible(false);
+}
+
+void PerformanceView::Show()
+{
+	BView::Show();
+	fNetworkView->SetPerformanceViewVisible(true);
+	fDiskView->SetPerformanceViewVisible(true);
 }
 
 void PerformanceView::SetRefreshInterval(bigtime_t interval)
@@ -432,14 +453,20 @@ void MainWindow::LoadSettings() {
 		}
 	}
 
-	// Update Menu Selection
-	bigtime_t currentRate = PulseRate();
+	// Update Menu Selection based on current PulseRate
+	bigtime_t rate = PulseRate();
 	uint32 command = MSG_REFRESH_SPEED_NORMAL;
-	if (currentRate <= 500000) command = MSG_REFRESH_SPEED_HIGH;
-	else if (currentRate >= 2000000) command = MSG_REFRESH_SPEED_LOW;
+	if (rate <= 500000) command = MSG_REFRESH_SPEED_HIGH;
+	else if (rate >= 2000000) command = MSG_REFRESH_SPEED_LOW;
 
-	if (KeyMenuBar()) {
-		BMenuItem* item = KeyMenuBar()->FindItem(command);
+	// Fallback to searching all children if KeyMenuBar is not yet set
+	BMenuBar* menuBar = KeyMenuBar();
+	if (!menuBar) {
+		menuBar = dynamic_cast<BMenuBar*>(FindView("MenuBar"));
+	}
+
+	if (menuBar) {
+		BMenuItem* item = menuBar->FindItem(command);
 		if (item) item->SetMarked(true);
 	}
 }

@@ -14,7 +14,7 @@
 
 void FormatBytes(BString& str, uint64 bytes, int precision) {
 	if (bytes < 1024) {
-		str.SetToFormat("%" B_PRIu64 " Bytes", bytes);
+		str.SetToFormat("%" B_PRIu64 " B", bytes);
 		return;
 	}
 
@@ -32,6 +32,17 @@ void FormatBytes(BString& str, uint64 bytes, int precision) {
 
 	double gb = mb / 1024.0;
 	str.SetToFormat("%.*f GiB", precision, gb);
+}
+
+void GetSwapUsage(uint64& used, uint64& total) {
+	system_info info;
+	if (get_system_info(&info) == B_OK) {
+		total = (uint64)info.max_swap_pages * B_PAGE_SIZE;
+		used = (uint64)info.used_swap_pages * B_PAGE_SIZE;
+	} else {
+		total = 0;
+		used = 0;
+	}
 }
 
 BString FormatHertz(uint64 hertz) {
@@ -79,7 +90,7 @@ BString FormatSpeed(uint64 bytesDelta, bigtime_t microSecondsDelta)
 	BString str;
 	if (mbs >= 1.0) str.SetToFormat("%.2f MiB/s", mbs);
 	else if (kbs >= 1.0) str.SetToFormat("%.2f KiB/s", kbs);
-	else str.SetToFormat("%.0f B/s", speed);
+	else str.SetToFormat("%.1f B/s", speed);
 	return str;
 }
 

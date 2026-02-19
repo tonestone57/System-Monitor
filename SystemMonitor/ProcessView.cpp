@@ -226,6 +226,18 @@ public:
         return 0;
     }
 
+    static int CompareState(const void* first, const void* second) {
+        const ProcessListItem* item1 = *(const ProcessListItem**)first;
+        const ProcessListItem* item2 = *(const ProcessListItem**)second;
+        return strcmp(item1->fCachedState.String(), item2->fCachedState.String());
+    }
+
+    static int CompareUser(const void* first, const void* second) {
+        const ProcessListItem* item1 = *(const ProcessListItem**)first;
+        const ProcessListItem* item2 = *(const ProcessListItem**)second;
+        return strcasecmp(item1->fInfo.userName, item2->fInfo.userName);
+    }
+
 private:
     ProcessInfo fInfo;
     BString fCachedPID;
@@ -347,11 +359,11 @@ ProcessView::ProcessView()
 
     addHeader(B_TRANSLATE("PID"), fPIDWidth, SORT_BY_PID);
     addHeader(B_TRANSLATE("Name"), fNameWidth, SORT_BY_NAME);
-    addHeader(B_TRANSLATE("State"), fStateWidth, SORT_BY_PID); // No sort by state for now
+    addHeader(B_TRANSLATE("State"), fStateWidth, SORT_BY_STATE);
     addHeader(B_TRANSLATE("CPU%"), fCPUWidth, SORT_BY_CPU);
     addHeader(B_TRANSLATE("Mem"), fMemWidth, SORT_BY_MEM);
     addHeader(B_TRANSLATE("Thds"), fThreadsWidth, SORT_BY_THREADS);
-    addHeader(B_TRANSLATE("User"), fUserWidth, SORT_BY_PID); // No sort by user for now
+    addHeader(B_TRANSLATE("User"), fUserWidth, SORT_BY_USER);
 
     headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
@@ -586,6 +598,20 @@ void ProcessView::SetRefreshInterval(bigtime_t interval)
         release_sem(fQuitSem);
 }
 
+void ProcessView::_SortItems()
+{
+    switch (fSortMode) {
+        case SORT_BY_PID: fProcessListView->SortItems(ProcessListItem::ComparePID); break;
+        case SORT_BY_NAME: fProcessListView->SortItems(ProcessListItem::CompareName); break;
+        case SORT_BY_MEM: fProcessListView->SortItems(ProcessListItem::CompareMem); break;
+        case SORT_BY_THREADS: fProcessListView->SortItems(ProcessListItem::CompareThreads); break;
+        case SORT_BY_STATE: fProcessListView->SortItems(ProcessListItem::CompareState); break;
+        case SORT_BY_USER: fProcessListView->SortItems(ProcessListItem::CompareUser); break;
+        case SORT_BY_CPU: default: fProcessListView->SortItems(ProcessListItem::CompareCPU); break;
+    }
+}
+
+
 bool ProcessView::_MatchesFilter(const ProcessInfo& info, const char* searchText)
 {
     if (searchText == NULL || strlen(searchText) == 0)
@@ -630,13 +656,7 @@ void ProcessView::FilterRows()
         }
     }
 
-    switch (fSortMode) {
-        case SORT_BY_PID: fProcessListView->SortItems(ProcessListItem::ComparePID); break;
-        case SORT_BY_NAME: fProcessListView->SortItems(ProcessListItem::CompareName); break;
-        case SORT_BY_MEM: fProcessListView->SortItems(ProcessListItem::CompareMem); break;
-        case SORT_BY_THREADS: fProcessListView->SortItems(ProcessListItem::CompareThreads); break;
-        case SORT_BY_CPU: default: fProcessListView->SortItems(ProcessListItem::CompareCPU); break;
-    }
+    _SortItems();
 
     // Restore selection
     if (selectedID != -1) {
@@ -751,13 +771,7 @@ void ProcessView::Update(BMessage* message)
 		}
 	}
 
-    switch (fSortMode) {
-        case SORT_BY_PID: fProcessListView->SortItems(ProcessListItem::ComparePID); break;
-        case SORT_BY_NAME: fProcessListView->SortItems(ProcessListItem::CompareName); break;
-        case SORT_BY_MEM: fProcessListView->SortItems(ProcessListItem::CompareMem); break;
-        case SORT_BY_THREADS: fProcessListView->SortItems(ProcessListItem::CompareThreads); break;
-        case SORT_BY_CPU: default: fProcessListView->SortItems(ProcessListItem::CompareCPU); break;
-    }
+    _SortItems();
 
     // Restore selection
     if (selectedID != -1) {
