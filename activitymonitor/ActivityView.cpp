@@ -313,6 +313,19 @@ DataHistory::AddValue(bigtime_t time, int64 value)
 }
 
 
+static int64
+Interpolate(data_item* item, data_item* nextItem, bigtime_t time)
+{
+	if (nextItem->time == item->time)
+		return item->value;
+
+	int64 value = item->value;
+	value += int64(double(nextItem->value - value)
+		/ (nextItem->time - item->time) * (time - item->time));
+	return value;
+}
+
+
 int64
 DataHistory::ValueAt(bigtime_t time)
 {
@@ -331,12 +344,20 @@ DataHistory::ValueAt(bigtime_t time)
 
 			if (nextItem->time > time) {
 				// Still here
-				int64 value = lastItem->value;
-				value += int64(double(nextItem->value - value)
-					/ (nextItem->time - lastItem->time)
-					* (time - lastItem->time));
-				return value;
+				return Interpolate(lastItem, nextItem, time);
 			}
+
+			// Check if it is in the next interval
+			data_item* nextNextItem = fBuffer.ItemAt(fLastIndex + 2);
+			if (nextNextItem == NULL) {
+				fLastIndex++;
+				return nextItem->value;
+			}
+			if (nextNextItem->time > time) {
+				fLastIndex++;
+				return Interpolate(nextItem, nextNextItem, time);
+			}
+
 			// It's after this item
 			left = fLastIndex + 1;
 		} else {
@@ -363,10 +384,7 @@ DataHistory::ValueAt(bigtime_t time)
 			if (nextItem->time > time) {
 				// found item
 				fLastIndex = index;
-				int64 value = item->value;
-				value += int64(double(nextItem->value - value)
-					/ (nextItem->time - item->time) * (time - item->time));
-				return value;
+				return Interpolate(item, nextItem, time);
 			}
 
 			// search in right part
