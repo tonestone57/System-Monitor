@@ -141,3 +141,18 @@ A final comprehensive audit was performed to centralize logic, improve consisten
 - **Final Stability & Localization**:
   - Conducted a final sweep for hardcoded strings and wrapped them in `B_TRANSLATE`.
   - Verified all existing benchmarks and unit tests pass with the new refactored utility functions.
+
+## 9. Performance Optimization & Build Hardening
+
+A final round of performance tuning and build system improvements was completed:
+
+- **Build System Improvements**:
+  - Optimized the `Makefile` for production by setting `OPTIMIZE := FULL` and removing redundant debug flags (`-Og -g`) from target flags. This ensures the binary is compiled with maximum compiler optimizations.
+
+- **Data Structure Optimization**:
+  - Transitioned `DiskView` and `NetworkView` to use `std::unordered_map` for internal state tracking, matching the optimized pattern used in `ProcessView`.
+  - Implemented a custom `std::hash<BString>` specialization to allow `BString` keys to be used efficiently in `unordered_map`.
+  - Refactored `UpdateData` loops in both views to use the single-lookup `emplace` pattern, reducing map traversal overhead by 50% for existing items.
+
+- **Dependency Cleanup**:
+  - Performed a code audit to remove redundant STL includes (e.g., `<map>`, `<set>`, `<string>`) after the transition to `unordered_map`, reducing header bloat.

@@ -14,7 +14,6 @@
 #include <ListItem.h>
 #include <Box.h>
 #include <Font.h>
-#include <set>
 #include <Messenger.h>
 #include <Catalog.h>
 #include <ScrollView.h>
@@ -502,14 +501,14 @@ void DiskView::UpdateData(BMessage* message)
         }
 
 		DiskListItem* item;
-		if (fDeviceItemMap.find(deviceID) == fDeviceItemMap.end()) {
+		auto result = fDeviceItemMap.emplace(deviceID, nullptr);
+		if (result.second) {
 			item = new DiskListItem(deviceID, deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font, this);
 			fDiskListView->AddItem(item);
-			fDeviceItemMap[deviceID] = item;
+			result.first->second = item;
             listChanged = true;
 		} else {
-			item = fDeviceItemMap[deviceID];
-            // Ideally check for changes before calling Invalidate
+			item = result.first->second;
             item->Update(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font, fontChanged);
 		}
         item->SetGeneration(fListGeneration);

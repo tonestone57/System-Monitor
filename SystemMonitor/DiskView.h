@@ -5,7 +5,7 @@
 #include <Locker.h>
 #include <String.h>
 #include <Volume.h>
-#include <map>
+#include <unordered_map>
 #include <set>
 #include <atomic>
 #include <Font.h>
@@ -58,7 +58,7 @@ private:
     BListView* fDiskListView;
     
     BLocker fLocker; // Protects fVolumeCache and fDeviceItemMap
-	std::map<dev_t, DiskListItem*> fDeviceItemMap;
+	std::unordered_map<dev_t, DiskListItem*> fDeviceItemMap;
 
     BFont fCachedFont;
 
@@ -79,7 +79,7 @@ private:
 
     void _RestoreSelection(dev_t selectedID);
     void _ScanVolumes();
-    std::map<dev_t, DiskInfo> fVolumeCache;
+    std::unordered_map<dev_t, DiskInfo> fVolumeCache;
 };
 
 #endif // DISKVIEW_H

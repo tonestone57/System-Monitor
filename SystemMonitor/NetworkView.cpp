@@ -10,9 +10,6 @@
 #include <NetworkRoster.h>
 #include <NetworkInterface.h>
 #include <Alert.h>
-#include <map>
-#include <set>
-#include <string>
 #include <cstring>
 #include <net/if.h>
 #include "ActivityGraphView.h"
@@ -389,14 +386,14 @@ void NetworkView::UpdateData(BMessage* message)
             rec.generation = fListGeneration;
 
             InterfaceListItem* item;
-            auto rowIt = fInterfaceItemMap.find(name);
-            if (rowIt == fInterfaceItemMap.end()) {
+            auto result = fInterfaceItemMap.emplace(name, nullptr);
+            if (result.second) {
                 item = new InterfaceListItem(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes, &font, this);
                 fInterfaceListView->AddItem(item);
-                fInterfaceItemMap[name] = item;
+                result.first->second = item;
                 listChanged = true;
             } else {
-                item = rowIt->second;
+                item = result.first->second;
                 item->Update(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes, &font, fontChanged);
             }
             item->SetGeneration(fListGeneration);
