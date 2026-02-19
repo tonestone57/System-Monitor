@@ -409,6 +409,13 @@ int32 DiskView::UpdateThread(void* data)
              info.totalSize = fsInfo.total_blocks * fsInfo.block_size;
              info.freeSize = fsInfo.free_blocks * fsInfo.block_size;
 
+             // Update name dynamically
+             if (strlen(fsInfo.volume_name) > 0) {
+                 info.deviceName = fsInfo.volume_name;
+             } else {
+                 info.deviceName = fsInfo.device_name;
+             }
+
              if (info.totalSize == 0) continue;
 
              BMessage volMsg;
