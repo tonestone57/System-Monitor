@@ -424,16 +424,7 @@ void NetworkView::UpdateData(BMessage* message)
     
     fInterfaceListView->SortItems(InterfaceListItem::CompareSpeed);
 
-    // Restore selection
-    if (selectedName != "") {
-        for (int32 i = 0; i < fInterfaceListView->CountItems(); i++) {
-            InterfaceListItem* item = dynamic_cast<InterfaceListItem*>(fInterfaceListView->ItemAt(i));
-            if (item && item->Name() == selectedName) {
-                fInterfaceListView->Select(i);
-                break;
-            }
-        }
-    }
+    _RestoreSelection(selectedName);
 
     fInterfaceListView->Invalidate();
 
@@ -496,7 +487,7 @@ int32 NetworkView::UpdateThread(void* data)
             strlcpy(info.typeStr, typeStr.String(), sizeof(info.typeStr));
 
             // Determine Address
-            BString addressStr = "N/A";
+            BString addressStr = B_TRANSLATE("N/A");
             for (int32 i = 0; i < interface.CountAddresses(); ++i) {
                 BNetworkInterfaceAddress ifaceAddr;
                 if (interface.GetAddressAt(i, ifaceAddr) == B_OK) {
@@ -555,3 +546,16 @@ void NetworkView::SetRefreshInterval(bigtime_t interval)
         fDownloadGraph->SetRefreshInterval(interval);
 }
 
+void NetworkView::_RestoreSelection(const BString& selectedName)
+{
+    if (selectedName == "")
+        return;
+
+    for (int32 i = 0; i < fInterfaceListView->CountItems(); i++) {
+        InterfaceListItem* item = dynamic_cast<InterfaceListItem*>(fInterfaceListView->ItemAt(i));
+        if (item && item->Name() == selectedName) {
+            fInterfaceListView->Select(i);
+            break;
+        }
+    }
+}

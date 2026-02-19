@@ -62,15 +62,15 @@ void GPUView::CreateLayout()
     infoGrid->AddView(fUtilizationValue, 0, 1);
 
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("GPU Memory")), 1, 0);
-    fMemorySizeValue = new BStringView("mem_val", "N/A");
+    fMemorySizeValue = new BStringView("mem_val", B_TRANSLATE("N/A"));
     infoGrid->AddView(fMemorySizeValue, 1, 1);
 
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Driver Version")), 0, 2);
-    fDriverVersionValue = new BStringView("driver_val", "N/A");
+    fDriverVersionValue = new BStringView("driver_val", B_TRANSLATE("N/A"));
     infoGrid->AddView(fDriverVersionValue, 0, 3);
 
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Resolution")), 1, 2);
-    fResolutionValue = new BStringView("res_val", "N/A");
+    fResolutionValue = new BStringView("res_val", B_TRANSLATE("N/A"));
     infoGrid->AddView(fResolutionValue, 1, 3);
 
     infoGrid->SetColumnWeight(0, 1.0f);
@@ -165,6 +165,6 @@ void GPUView::UpdateData()
             fResolutionValue->SetText(fCachedResolution.String());
         }
     } else {
-        fResolutionValue->SetText("N/A");
+        fResolutionValue->SetText(B_TRANSLATE("N/A"));
     }
 }

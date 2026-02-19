@@ -77,6 +77,7 @@ private:
     float fFreeWidth;
     float fPercentWidth;
 
+    void _RestoreSelection(dev_t selectedID);
     void _ScanVolumes();
     std::map<dev_t, DiskInfo> fVolumeCache;
 };

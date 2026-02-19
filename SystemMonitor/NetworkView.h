@@ -95,6 +95,8 @@ private:
     float fRecvWidth;
     float fTxSpeedWidth;
     float fRxSpeedWidth;
+
+    void _RestoreSelection(const BString& selectedName);
 };
 
 #endif // NETWORKVIEW_H

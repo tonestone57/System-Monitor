@@ -7,13 +7,10 @@
 #include <cmath>
 
 #include <AppDefs.h>
-#include <AppFileInfo.h>
 #include <Application.h>
 #include <ControlLook.h>
 #include <DateTimeFormat.h>
 #include <DurationFormat.h>
-#include <File.h>
-#include <FindDirectory.h>
 #include <Font.h>
 #include <LayoutBuilder.h>
 #include <Message.h>
@@ -24,11 +21,6 @@
 #include <StringFormat.h>
 #include <StringView.h>
 #include <TextView.h>
-#include <sys/utsname.h>
-#include <Screen.h>
-#include <GraphicsDefs.h>
-#include <fs_info.h>
-#include <Volume.h>
 
 #include <Catalog.h>
 #include <Locale.h>
@@ -276,48 +268,14 @@ void SystemDetailsView::_UpdateText(BTextView* textView)
 
 BString SystemDetailsView::_GetOSVersion()
 {
-	BString revision;
-
-	// Fallback to system_info for hrev if available
-	system_info sysInfo;
-	if (get_system_info(&sysInfo) == B_OK) {
-		revision.SetToFormat(B_TRANSLATE_COMMENT("Version: Haiku (hrev%" B_PRId64 ")",
-			"Version: Haiku (hrev99999)"), sysInfo.kernel_version);
-	} else {
-		struct utsname u;
-		uname(&u);
-		revision << "Version: " << u.sysname << " " << u.release;
-	}
-
+	BString revision = B_TRANSLATE("Version: ");
+	revision << GetOSVersion();
 	return revision;
 }
 
 BString SystemDetailsView::_GetABIVersion()
 {
-	BString abiVersion;
-
-	// the version is stored in the BEOS:APP_VERSION attribute of libbe.so
-	BPath path;
-	if (find_directory(B_BEOS_LIB_DIRECTORY, &path) == B_OK) {
-		path.Append("libbe.so");
-
-		BAppFileInfo appFileInfo;
-		version_info versionInfo;
-		BFile file;
-		if (file.SetTo(path.Path(), B_READ_ONLY) == B_OK
-			&& appFileInfo.SetTo(&file) == B_OK
-			&& appFileInfo.GetVersionInfo(&versionInfo,
-				B_APP_VERSION_KIND) == B_OK
-			&& versionInfo.short_info[0] != '\0')
-			abiVersion = versionInfo.short_info;
-	}
-
-	if (abiVersion.IsEmpty())
-		abiVersion = B_TRANSLATE("Unknown");
-
-	abiVersion << " (" << B_HAIKU_ABI_NAME << ")";
-
-	return abiVersion;
+	return GetABIVersion();
 }
 
 BString SystemDetailsView::_GetCPUCount(system_info* sysInfo)
@@ -468,48 +426,15 @@ BString SystemDetailsView::_GetUptime()
 
 BString SystemDetailsView::_GetGPUInfo()
 {
-	BScreen screen(B_MAIN_SCREEN_ID);
-	if (screen.IsValid()) {
-		accelerant_device_info info;
-		if (screen.GetDeviceInfo(&info) == B_OK) {
-			return BString(info.name);
-		}
-	}
-	return BString(B_TRANSLATE("Unknown"));
+	return GetGPUInfo();
 }
 
 BString SystemDetailsView::_GetDisplayInfo()
 {
-	BScreen screen(B_MAIN_SCREEN_ID);
-	if (screen.IsValid()) {
-		display_mode mode;
-		if (screen.GetMode(&mode) == B_OK) {
-			BString display;
-			float refresh = 60.0;
-			if (mode.timing.pixel_clock > 0 && mode.timing.h_total > 0 && mode.timing.v_total > 0)
-				refresh = (double)mode.timing.pixel_clock * 1000.0 / (mode.timing.h_total * mode.timing.v_total);
-
-			display.SetToFormat("%dx%d, %d Hz", mode.virtual_width, mode.virtual_height, (int)(refresh + 0.5));
-			return display;
-		}
-	}
-	return BString(B_TRANSLATE("Unknown"));
+	return GetDisplayInfo();
 }
 
 BString SystemDetailsView::_GetDiskUsage()
 {
-	fs_info fs;
-	if (fs_stat_dev(dev_for_path("/"), &fs) == B_OK) {
-		uint64 total = fs.total_blocks * fs.block_size;
-		uint64 free = fs.free_blocks * fs.block_size;
-		uint64 used = total - free;
-		int percent = (int)(100.0 * used / total);
-		BString diskStr;
-		BString usedStr, totalStr;
-		FormatBytes(usedStr, used);
-		FormatBytes(totalStr, total);
-		diskStr << usedStr << " / " << totalStr << " (" << percent << "%) - " << fs.fsh_name;
-		return diskStr;
-	}
-	return BString(B_TRANSLATE("Unknown"));
+	return GetRootDiskUsage();
 }

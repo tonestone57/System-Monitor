@@ -528,16 +528,7 @@ void DiskView::UpdateData(BMessage* message)
 	}
     fDiskListView->SortItems(DiskListItem::CompareUsage);
 
-    // Restore selection
-    if (selectedID != -1) {
-        for (int32 i = 0; i < fDiskListView->CountItems(); i++) {
-            DiskListItem* item = dynamic_cast<DiskListItem*>(fDiskListView->ItemAt(i));
-            if (item && item->DeviceID() == selectedID) {
-                fDiskListView->Select(i);
-                break;
-            }
-        }
-    }
+    _RestoreSelection(selectedID);
 
     fDiskListView->Invalidate();
 
@@ -547,6 +538,20 @@ void DiskView::UpdateData(BMessage* message)
 void DiskView::Draw(BRect updateRect)
 {
     BView::Draw(updateRect);
+}
+
+void DiskView::_RestoreSelection(dev_t selectedID)
+{
+    if (selectedID == -1)
+        return;
+
+    for (int32 i = 0; i < fDiskListView->CountItems(); i++) {
+        DiskListItem* item = dynamic_cast<DiskListItem*>(fDiskListView->ItemAt(i));
+        if (item && item->DeviceID() == selectedID) {
+            fDiskListView->Select(i);
+            break;
+        }
+    }
 }
 
 void DiskView::_ScanVolumes()

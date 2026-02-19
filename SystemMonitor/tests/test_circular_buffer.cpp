@@ -1,4 +1,3 @@
-#include "../CircularBuffer.h"
 #include <cstdio>
 #include <cassert>
 #include <string.h>
@@ -15,7 +14,10 @@
 typedef int32_t status_t;
 typedef int32_t int32;
 typedef uint32_t uint32;
+typedef long long bigtime_t;
 #endif
+
+#include "../CircularBuffer.h"
 
 int main() {
     printf("Testing CircularBuffer...\n");

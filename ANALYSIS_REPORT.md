@@ -117,3 +117,27 @@ A final extensive audit was conducted to resolve remaining logic fragility, code
 
 - **State Management**:
   - Simplified `DiskView` and `NetworkView` by removing redundant `fVisibleItems` tracking sets, as these views always display all collected items.
+
+## 8. Final System-Wide Audit & Refactoring
+
+A final comprehensive audit was performed to centralize logic, improve consistency, and resolve subtle rendering issues:
+
+- **Centralized System Information**:
+  - Migrated core system information gathering (OS version, ABI, GPU name, Display resolution, Root disk usage) into global functions in `Utils.h/cpp`.
+  - Updated `SystemSummaryView` and `SystemDetailsView` to use these centralized functions, eliminating significant code duplication and ensuring consistent reporting across different parts of the application.
+
+- **Enhanced Formatting Consistency**:
+  - Refactored `FormatSpeed` to internally utilize the improved `FormatBytes` logic.
+  - Added a `double` overload for `FormatBytes` to provide high-precision formatting for small byte-per-second values (e.g., "1.5 B/s").
+  - Ensured all formatted strings use consistent localized unit suffixes.
+
+- **Improved Graph Rendering**:
+  - Optimized `ActivityGraphView` to handle sub-pixel updates. The graph now ensures the rightmost pixel is redrawn even when enough time hasn't passed to scroll the graph, preventing a "frozen" appearance between pixel-shift intervals.
+  - Corrected grid line alignment during sub-pixel rendering by properly accounting for `fScrollOffset` in partial updates.
+
+- **Unified Selection Logic**:
+  - Standardized list selection restoration across `DiskView`, `NetworkView`, and `ProcessView` by extracting the logic into private `_RestoreSelection` helpers. This ensures that the user's current selection is preserved reliably during periodic data updates.
+
+- **Final Stability & Localization**:
+  - Conducted a final sweep for hardcoded strings and wrapped them in `B_TRANSLATE`.
+  - Verified all existing benchmarks and unit tests pass with the new refactored utility functions.

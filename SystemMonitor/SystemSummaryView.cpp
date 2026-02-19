@@ -1,11 +1,6 @@
 #include "SystemSummaryView.h"
 #include "Utils.h"
 #include <kernel/OS.h>
-#include <Screen.h>
-#include <GraphicsDefs.h>
-#include <VolumeRoster.h>
-#include <Volume.h>
-#include <fs_info.h>
 #include <stdio.h>
 #include <time.h>
 #include <TextView.h>
@@ -347,20 +342,11 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	reply.AddString("user_host", userHost);
 
 	// 2. OS
-	struct utsname u;
-	uname(&u);
-	BString os;
-	os << "Haiku " << u.machine;
-	// Attempt to get R1B5 etc from system_info if possible, but hrev is in sysInfo.kernel_version
-	if (get_system_info(&sysInfo) == B_OK) {
-		// sysInfo.kernel_version is int64 hrev
-		// We stick to uname for basic OS name, fastfetch often parses files.
-		// Let's format it simply: Haiku <Arch> (hrev)
-		os << " (hrev" << sysInfo.kernel_version << ")";
-	}
-	reply.AddString("os", os);
+	reply.AddString("os", GetOSVersion());
 
 	// 3. Kernel
+	struct utsname u;
+	uname(&u);
 	BString kernel;
 	kernel << u.sysname << " " << u.release;
 	reply.AddString("kernel", kernel);
@@ -398,19 +384,7 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	reply.AddString("shell", shell);
 
 	// 7. Display
-	BScreen screen(B_MAIN_SCREEN_ID);
-	if (screen.IsValid()) {
-		display_mode mode;
-		if (screen.GetMode(&mode) == B_OK) {
-			BString display;
-			float refresh = 60.0;
-			if (mode.timing.pixel_clock > 0 && mode.timing.h_total > 0 && mode.timing.v_total > 0)
-				refresh = (double)mode.timing.pixel_clock * 1000.0 / (mode.timing.h_total * mode.timing.v_total);
-
-			display.SetToFormat("%dx%d, %d Hz", mode.virtual_width, mode.virtual_height, (int)(refresh + 0.5));
-			reply.AddString("display", display);
-		}
-	}
+	reply.AddString("display", GetDisplayInfo());
 
 	// 8. DE / WM
 	reply.AddString("de", B_TRANSLATE("Application Kit"));
@@ -428,16 +402,7 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	reply.AddString("cpu", ::GetCPUBrandString());
 
 	// 11. GPU
-	if (screen.IsValid()) {
-		accelerant_device_info info;
-		if (screen.GetDeviceInfo(&info) == B_OK) {
-			reply.AddString("gpu", info.name);
-		} else {
-			 reply.AddString("gpu", B_TRANSLATE("Unknown"));
-		}
-	} else {
-		 reply.AddString("gpu", B_TRANSLATE("Unknown"));
-	}
+	reply.AddString("gpu", GetGPUInfo());
 
 	// 12. Memory
 	if (get_system_info(&sysInfo) == B_OK) {
@@ -468,19 +433,7 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	}
 
 	// 13. Disk (Root volume)
-	fs_info fs;
-	if (fs_stat_dev(dev_for_path("/"), &fs) == B_OK) {
-		uint64 total = fs.total_blocks * fs.block_size;
-		uint64 free = fs.free_blocks * fs.block_size;
-		uint64 used = total - free;
-		int percent = (int)(100.0 * used / total);
-		BString diskStr;
-		BString usedStr, totalStr;
-		::FormatBytes(usedStr, used);
-		::FormatBytes(totalStr, total);
-		diskStr << usedStr << " / " << totalStr << " (" << percent << "%) - " << fs.fsh_name;
-		reply.AddString("disk", diskStr);
-	}
+	reply.AddString("disk", GetRootDiskUsage());
 
 	// 14. IP
 	BNetworkRoster& roster = BNetworkRoster::Default();
