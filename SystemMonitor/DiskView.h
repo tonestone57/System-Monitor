@@ -9,6 +9,7 @@
 #include <set>
 #include <atomic>
 #include <Font.h>
+#include <NodeMonitor.h>
 
 class BBox;
 class BListView;
@@ -53,7 +54,7 @@ private:
     BBox* fDiskInfoBox;
     BListView* fDiskListView;
     
-    BLocker fLocker;
+    BLocker fLocker; // Protects fVolumeCache and fDeviceItemMap
 	std::map<dev_t, DiskListItem*> fDeviceItemMap;
     std::set<DiskListItem*> fVisibleItems;
 
@@ -71,6 +72,9 @@ private:
     float fUsedWidth;
     float fFreeWidth;
     float fPercentWidth;
+
+    void _ScanVolumes();
+    std::map<dev_t, DiskInfo> fVolumeCache;
 };
 
 #endif // DISKVIEW_H
