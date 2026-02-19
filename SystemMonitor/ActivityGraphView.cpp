@@ -3,6 +3,7 @@
 #include <Bitmap.h>
 #include <ControlLook.h>
 #include <Window.h>
+#include <Region.h>
 #include <algorithm>
 #include <new>
 
@@ -331,6 +332,10 @@ ActivityGraphView::_DrawHistory()
                     view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
                 }
 
+                // Clip drawing to new area to prevent overlap artifacts
+                BRegion clipRegion(newArea);
+                view->ConstrainClippingRegion(&clipRegion);
+
                 int32 startI = (int32)newArea.left - 1;
                 if (startI < 0) startI = 0;
                 int32 endI = steps - 1;
@@ -377,6 +382,8 @@ ActivityGraphView::_DrawHistory()
                 } catch (const std::bad_alloc&) {
                     // Ignore
                 }
+
+                view->ConstrainClippingRegion(NULL); // Reset clipping
             }
 		}
 		view->Sync();

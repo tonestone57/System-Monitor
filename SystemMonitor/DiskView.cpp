@@ -171,6 +171,7 @@ DiskView::DiskView()
       fUpdateThread(-1),
       fScanSem(-1),
       fTerminated(false),
+      fRefreshInterval(1000000),
       fListGeneration(0)
 {
     SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
@@ -331,7 +332,14 @@ void DiskView::MessageReceived(BMessage* message)
 
 void DiskView::Pulse()
 {
-    if (!IsHidden() && fScanSem >= 0) release_sem(fScanSem);
+    // No-op: UpdateThread handles timing
+}
+
+void DiskView::SetRefreshInterval(bigtime_t interval)
+{
+    fRefreshInterval = interval;
+    if (fScanSem >= 0)
+        release_sem(fScanSem);
 }
 
 status_t DiskView::GetDiskInfo(BVolume& volume, DiskInfo& info) {
@@ -378,16 +386,18 @@ int32 DiskView::UpdateThread(void* data)
     BMessenger target(view);
 
     while (!view->fTerminated) {
-        status_t err = acquire_sem(view->fScanSem);
-        if (err != B_OK) {
-            if (view->fTerminated) break;
-            if (err == B_INTERRUPTED) continue;
+        status_t err = acquire_sem_etc(view->fScanSem, 1, B_RELATIVE_TIMEOUT, view->fRefreshInterval);
+        if (err != B_OK && err != B_TIMED_OUT && err != B_INTERRUPTED)
             break;
-        }
 
-        int32 count;
-        if (get_sem_count(view->fScanSem, &count) == B_OK && count > 0)
-            acquire_sem_etc(view->fScanSem, count, B_RELATIVE_TIMEOUT, 0);
+        if (view->fTerminated) break;
+
+        // Drain the semaphore if we were woken up explicitly (e.g. interval change)
+        if (err == B_OK) {
+            int32 count;
+            if (get_sem_count(view->fScanSem, &count) == B_OK && count > 0)
+                acquire_sem_etc(view->fScanSem, count, B_RELATIVE_TIMEOUT, 0);
+        }
 
         BMessage updateMsg(kMsgDiskDataUpdate);
 

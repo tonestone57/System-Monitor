@@ -84,6 +84,7 @@ private:
     thread_id fUpdateThread;
     sem_id fScanSem;
     std::atomic<bool> fTerminated;
+    std::atomic<bigtime_t> fRefreshInterval;
     int32 fListGeneration;
 
     float fNameWidth;

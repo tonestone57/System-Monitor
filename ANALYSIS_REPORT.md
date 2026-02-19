@@ -78,3 +78,19 @@ The following critical fixes and optimizations were applied to resolve remaining
 - **Initialization Safety**:
   - `CircularBuffer`: Fixed uninitialized member variables (`fFirst`, `fIn`, `fSize`, `fBuffer`) in constructors, which could lead to undefined behavior.
   - Added a comprehensive unit test (`SystemMonitor/tests/test_circular_buffer.cpp`) to verify circular buffer correctness (initialization, circularity, resizing, copying).
+
+## 6. Final Polish Updates
+
+The following architectural improvements and rendering fixes were implemented to ensure robustness and visual correctness:
+
+- **Threading Robustness (DiskView & NetworkView)**:
+  - Refactored `DiskView` and `NetworkView` to use timeout-based semaphore acquisition (`acquire_sem_etc` with `B_RELATIVE_TIMEOUT`) instead of relying on the UI thread's `Pulse()` method.
+  - This decouples data collection from the UI refresh cycle, ensuring reliable statistics updates even if the main thread is busy or the window is hidden/inactive.
+  - Implemented `SetRefreshInterval` to dynamically adjust the update frequency and immediately wake up the collection thread, improving responsiveness.
+
+- **Graph Rendering Fix (ActivityGraphView)**:
+  - Fixed a visual artifact where partial updates caused dark stripes due to alpha blending accumulation at the scroll boundary.
+  - Implemented `ConstrainClippingRegion` in `_DrawHistory` to strictly limit drawing operations to the newly exposed area, preventing unintended overlap with existing content.
+
+- **Type Consistency (CircularBuffer)**:
+  - Updated `CircularBuffer` constructor and `SetSize` method to use `uint32` for size parameters, aligning with the internal member variable type and eliminating potential implicit truncation warnings on 64-bit platforms.
