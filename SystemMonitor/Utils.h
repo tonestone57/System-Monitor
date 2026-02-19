@@ -12,7 +12,7 @@ BString FormatUptime(bigtime_t uptimeMicros);
 BString FormatSpeed(uint64 bytesDelta, bigtime_t microSecondsDelta);
 float GetScaleFactor(const BFont* font);
 
-uint64 GetRoundedCpuSpeed();
+uint64 GetCpuFrequency();
 BString GetCPUBrandString();
 
 #endif // UTILS_H

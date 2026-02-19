@@ -283,6 +283,7 @@ ProcessView::ProcessView()
     : BView("ProcessView", B_WILL_DRAW),
       fFilterName(""),
       fFilterID(""),
+      fFilterArgs(""),
       fLastSystemTime(0),
       fRefreshInterval(1000000),
       fUpdateThread(B_ERROR),
@@ -603,13 +604,11 @@ void ProcessView::FilterRows()
         if (filtering) {
             fFilterName.SetTo(item->Info().name);
             fFilterID.SetToFormat("%" B_PRId32, id);
+            fFilterArgs.SetTo(item->Info().args);
 
-            bool argsMatch = false;
-            BString args(item->Info().args);
-            if (args.IFindFirst(searchText) != B_ERROR)
-                 argsMatch = true;
-
-            if (!argsMatch && fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
+            if (fFilterName.IFindFirst(searchText) == B_ERROR
+                && fFilterID.IFindFirst(searchText) == B_ERROR
+                && fFilterArgs.IFindFirst(searchText) == B_ERROR) {
                 match = false;
             }
         }
@@ -659,7 +658,7 @@ void ProcessView::Update(BMessage* message)
     // First pass: Update existing items or create new ones
     for (size_t i = 0; i < count; i++) {
         const ProcessInfo& info = infos[i];
-        
+
         const char* stateStr;
         switch (info.state) {
             case PROCESS_STATE_RUNNING:
@@ -676,27 +675,25 @@ void ProcessView::Update(BMessage* message)
                 break;
         }
 
+        bool match = true;
+        if (filtering) {
+            fFilterName.SetTo(info.name);
+            fFilterID.SetToFormat("%" B_PRId32, info.id);
+            fFilterArgs.SetTo(info.args);
+
+            if (fFilterName.IFindFirst(searchText) == B_ERROR
+                && fFilterID.IFindFirst(searchText) == B_ERROR
+                && fFilterArgs.IFindFirst(searchText) == B_ERROR) {
+                match = false;
+            }
+        }
+
         ProcessListItem* item;
         auto result = fTeamItemMap.emplace(info.id, nullptr);
         if (result.second) {
             item = new ProcessListItem(info, stateStr, &font, this);
             result.first->second = item;
 
-            // Check filter before adding
-            bool match = true;
-            if (filtering) {
-                 fFilterName.SetTo(info.name);
-                 fFilterID.SetToFormat("%" B_PRId32, info.id);
-
-                 bool argsMatch = false;
-                 BString args(info.args);
-                 if (args.IFindFirst(searchText) != B_ERROR)
-                      argsMatch = true;
-
-                 if (!argsMatch && fFilterName.IFindFirst(searchText) == B_ERROR && fFilterID.IFindFirst(searchText) == B_ERROR) {
-                     match = false;
-                 }
-            }
             if (match) {
                 fProcessListView->AddItem(item);
                 fVisibleItems.insert(item);
@@ -704,7 +701,18 @@ void ProcessView::Update(BMessage* message)
             }
         } else {
             item = result.first->second;
+            bool wasVisible = fVisibleItems.find(item) != fVisibleItems.end();
             item->Update(info, stateStr, &font, fontChanged);
+
+            if (match && !wasVisible) {
+                fProcessListView->AddItem(item);
+                fVisibleItems.insert(item);
+                listChanged = true;
+            } else if (!match && wasVisible) {
+                fProcessListView->RemoveItem(item);
+                fVisibleItems.erase(item);
+                listChanged = true;
+            }
         }
         item->SetGeneration(fListGeneration);
     }

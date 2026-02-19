@@ -326,24 +326,6 @@ void SystemSummaryView::MessageReceived(BMessage* message)
 	}
 }
 
-BString SystemSummaryView::GetCPUBrandString()
-{
-	return ::GetCPUBrandString();
-}
-
-// Wrapper to use global functions or reimplement if needed
-void SystemSummaryView::FormatBytes(BString& out, uint64 bytes, int precision) {
-	::FormatBytes(out, bytes, precision);
-}
-
-BString SystemSummaryView::FormatHertz(uint64 hertz) {
-	return ::FormatHertz(hertz);
-}
-
-BString SystemSummaryView::FormatUptime(bigtime_t bootTime) {
-	return ::FormatUptime(bootTime);
-}
-
 int32 SystemSummaryView::_LoadDataThread(void* data) {
 	BMessenger* messenger = static_cast<BMessenger*>(data);
 	if (!messenger) return B_BAD_VALUE;
@@ -381,7 +363,7 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	reply.AddString("kernel", kernel);
 
 	// 4. Uptime
-	reply.AddString("uptime", FormatUptime(system_time()));
+	reply.AddString("uptime", ::FormatUptime(system_time()));
 
 	// 5. Packages
 	auto countPackages = [](const char* path) -> int {
@@ -440,7 +422,7 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	reply.AddString("font", font);
 
 	// 10. CPU
-	reply.AddString("cpu", GetCPUBrandString());
+	reply.AddString("cpu", ::GetCPUBrandString());
 
 	// 11. GPU
 	if (screen.IsValid()) {
@@ -458,29 +440,28 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	if (get_system_info(&sysInfo) == B_OK) {
 		uint64 total = (uint64)sysInfo.max_pages * B_PAGE_SIZE;
 		uint64 used = (uint64)sysInfo.used_pages * B_PAGE_SIZE;
+		// On Haiku, cached memory includes both the page cache and the block cache.
+		uint64 cached = ((uint64)sysInfo.cached_pages + (uint64)sysInfo.block_cache_pages) * B_PAGE_SIZE;
+
+		BString cachedStr;
+		::FormatBytes(cachedStr, cached);
+
 		BString memStr;
 		int percent = (int)(100.0 * used / total);
 		BString usedStr, totalStr;
-		FormatBytes(usedStr, used);
-		FormatBytes(totalStr, total);
-		memStr << usedStr << " / " << totalStr << " (" << percent << "%)";
+		::FormatBytes(usedStr, used);
+		::FormatBytes(totalStr, total);
+		memStr << usedStr << " / " << totalStr << " (" << percent << "%), Cached: " << cachedStr;
 		reply.AddString("memory", memStr);
 
-		// Swap (This logic matches original SysInfoView logic roughly)
-		// max_swap_pages is total swap+mem usually? or just swap?
-		// Original logic: swapBytes = (max_swap - max_pages) * PAGE_SIZE.
-		uint64 swapTotal = 0;
-		if (sysInfo.max_swap_pages > sysInfo.max_pages)
-			swapTotal = (uint64)(sysInfo.max_swap_pages - sysInfo.max_pages) * B_PAGE_SIZE;
-		// Used swap? Haiku doesn't expose used_swap directly in basic system_info?
-		// Actually page_faults etc are there.
-		// We'll stick to total swap for now or just 0 used as placeholder if we can't easily get it.
-		// The screenshot shows "0 B / 15.35 GiB".
-		// Let's just report total.
+		uint64 swapUsed, swapTotal;
+		::GetSwapUsage(swapUsed, swapTotal);
+
 		BString swapStr;
-		BString swapTotalStr;
-		FormatBytes(swapTotalStr, swapTotal);
-		swapStr << "0 B / " << swapTotalStr;
+		BString swapUsedStr, swapTotalStr;
+		::FormatBytes(swapUsedStr, swapUsed);
+		::FormatBytes(swapTotalStr, swapTotal);
+		swapStr << swapUsedStr << " / " << swapTotalStr;
 		reply.AddString("swap", swapStr);
 	}
 
@@ -493,8 +474,8 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 		int percent = (int)(100.0 * used / total);
 		BString diskStr;
 		BString usedStr, totalStr;
-		FormatBytes(usedStr, used);
-		FormatBytes(totalStr, total);
+		::FormatBytes(usedStr, used);
+		::FormatBytes(totalStr, total);
 		diskStr << usedStr << " / " << totalStr << " (" << percent << "%) - " << fs.fsh_name;
 		reply.AddString("disk", diskStr);
 	}

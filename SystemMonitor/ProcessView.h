@@ -133,6 +133,7 @@ private:
     // Buffers for filtering to avoid reallocation
     BString fFilterName; // Buffer for name filtering
     BString fFilterID;   // Buffer for ID filtering
+    BString fFilterArgs; // Buffer for args filtering
 
     std::unordered_map<uid_t, CachedUser> fUserNameCache;
     bigtime_t fLastSystemTime;

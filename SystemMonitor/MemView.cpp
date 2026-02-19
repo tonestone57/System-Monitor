@@ -115,6 +115,8 @@ void MemView::UpdateData()
         uint64 totalBytes = (uint64)sysInfo.max_pages * B_PAGE_SIZE;
         uint64 usedBytes = (uint64)sysInfo.used_pages * B_PAGE_SIZE;
         uint64 freeBytes = totalBytes - usedBytes;
+
+        // On Haiku, cached memory includes both the page cache and the block cache.
         uint64 cachedBytes = ((uint64)sysInfo.cached_pages + (uint64)sysInfo.block_cache_pages) * B_PAGE_SIZE;
 
         // Total memory is set in AttachedToWindow
