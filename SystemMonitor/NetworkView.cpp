@@ -42,6 +42,7 @@ public:
 
     void SetGeneration(int32 generation) { fGeneration = generation; }
     int32 Generation() const { return fGeneration; }
+    const BString& Name() const { return fName; }
 
     void Update(const BString& name, const BString& type, const BString& addr,
                       uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed, const BFont* font, bool force = false)
@@ -310,7 +311,15 @@ void NetworkView::Pulse()
 void NetworkView::UpdateData(BMessage* message)
 {
     fLocker.Lock();
-    
+
+    // Preserve selection
+    int32 selection = fInterfaceListView->CurrentSelection();
+    BString selectedName = "";
+    if (selection >= 0) {
+        InterfaceListItem* item = dynamic_cast<InterfaceListItem*>(fInterfaceListView->ItemAt(selection));
+        if (item) selectedName = item->Name();
+    }
+
     fListGeneration++;
     bigtime_t currentTime = system_time();
     uint64 totalSentDelta = 0;
@@ -418,6 +427,18 @@ void NetworkView::UpdateData(BMessage* message)
 	}
     
     fInterfaceListView->SortItems(InterfaceListItem::CompareSpeed);
+
+    // Restore selection
+    if (selectedName != "") {
+        for (int32 i = 0; i < fInterfaceListView->CountItems(); i++) {
+            InterfaceListItem* item = dynamic_cast<InterfaceListItem*>(fInterfaceListView->ItemAt(i));
+            if (item && item->Name() == selectedName) {
+                fInterfaceListView->Select(i);
+                break;
+            }
+        }
+    }
+
     fInterfaceListView->Invalidate();
 
     // Update graphs
@@ -534,11 +555,3 @@ void NetworkView::SetRefreshInterval(bigtime_t interval)
         fDownloadGraph->SetRefreshInterval(interval);
 }
 
-void NetworkView::FormatBytes(BString& out, uint64 bytes)
-{
-    // Duplicate of Utils::FormatBytes?
-    // Let's just use Utils::FormatBytes if available.
-    // The previous code called FormatBytes(fValue) inside SizeField.
-    // Utils.h has FormatBytes.
-    ::FormatBytes(out, bytes);
-}

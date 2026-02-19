@@ -33,7 +33,6 @@ private:
 	std::deque<data_item> fMinDeque;
 	std::deque<data_item> fMaxDeque;
 	bigtime_t			fRefreshInterval;
-	int32				fLastIndex;
 };
 
 #endif // DATAHISTORY_H
