@@ -6,6 +6,7 @@
 #include <Region.h>
 #include <algorithm>
 #include <new>
+#include <cmath>
 #include "Utils.h"
 
 ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_which systemColor)
@@ -315,7 +316,10 @@ ActivityGraphView::_DrawHistory()
                 BRect dst(0, 0, frame.right - pixelsToScroll, frame.bottom);
                 view->CopyBits(src, dst);
 
+                float gridSpacing = 60.0f * GetScaleFactor(view->Font());
                 fScrollOffset += pixelsToScroll;
+                while (fScrollOffset >= gridSpacing)
+                    fScrollOffset -= gridSpacing;
                 fLastRefresh += (bigtime_t)pixelsToScroll * timeStep;
 
                 // New Area
@@ -336,8 +340,7 @@ ActivityGraphView::_DrawHistory()
                 }
 
                 // Vertical lines
-                float gridSpacing = 60.0f * GetScaleFactor(view->Font());
-                int64 startK = (int64)(newArea.left + fScrollOffset + (gridSpacing - 1)) / gridSpacing;
+                int64 startK = (int64)ceilf((newArea.left + fScrollOffset) / gridSpacing);
                 for (int64 k = startK; ; k++) {
                     float x = k * gridSpacing - fScrollOffset;
                     if (x > newArea.right) break;
@@ -365,7 +368,7 @@ ActivityGraphView::_DrawHistory()
                     int32 searchIndex = 0;
                     for (int32 j = 0; j < count; j++) {
                         int32 i = startI + j;
-                        int64 value = fHistory->ValueAt(now - (steps - 1 - i) * timeStep, &searchIndex);
+                        int64 value = fHistory->ValueAt(fLastRefresh - (steps - 1 - i) * timeStep, &searchIndex);
                         float y;
                         if (range == 0)
                             y = frame.Height() / 2;

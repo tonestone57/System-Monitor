@@ -40,7 +40,7 @@ private:
 	int64				fManualMax;
 
 	bigtime_t			fLastRefresh;
-	int64				fScrollOffset;
+	float				fScrollOffset;
 };
 
 #endif // ACTIVITYGRAPHVIEW_H
