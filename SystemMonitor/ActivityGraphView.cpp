@@ -54,6 +54,7 @@ ActivityGraphView::MessageReceived(BMessage* message)
 				if (fResolution < 10000) fResolution = 10000;
 				if (fResolution > 60000000) fResolution = 60000000;
 
+				fLastRefresh = 0;
 				Invalidate();
 			}
 			break;
