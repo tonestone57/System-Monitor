@@ -30,6 +30,7 @@ struct NetworkInfo {
     uint64 bytesSent;
     uint64 bytesReceived;
     bool hasStats;
+    bool isLoopback;
 };
 
 const uint32 kMsgNetworkDataUpdate = 'netd';
@@ -75,7 +76,6 @@ private:
 
     std::map<BString, InterfaceStatsRecord, BStringLess> fPreviousStatsMap;
     std::map<BString, InterfaceListItem*, BStringLess> fInterfaceItemMap;
-    std::set<InterfaceListItem*> fVisibleItems;
     float fUploadSpeed;
     float fDownloadSpeed;
 

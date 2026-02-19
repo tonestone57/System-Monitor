@@ -4,6 +4,7 @@
 #include <View.h>
 #include <StringView.h>
 #include <Locker.h>
+#include <NumberFormat.h>
 #include "ActivityGraphView.h"
 
 class BBox;
@@ -43,6 +44,8 @@ private:
     BString fCachedUsedStr;
     BString fCachedFreeStr;
     BString fCachedCachedStr;
+
+    BNumberFormat fNumberFormat;
 };
 
 #endif // MEMVIEW_H

@@ -6,7 +6,6 @@
 #include <TextView.h>
 #include <String.h>
 #include <NumberFormat.h>
-#include <DurationFormat.h>
 #include <kernel/OS.h>
 
 class SystemDetailsView : public BView {
@@ -57,7 +56,6 @@ private:
 	BTextView*   fUptimeView;
 
 	BNumberFormat fNumberFormat;
-	BDurationFormat fDurationFormat;
 
 	static const uint8 kLabelCount = 9;
 	static const uint8 kSubtextCount = 9;

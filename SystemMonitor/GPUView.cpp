@@ -57,7 +57,8 @@ void GPUView::CreateLayout()
     infoGrid->SetInsets(0, B_USE_DEFAULT_SPACING, 0, 0);
 
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Utilization")), 0, 0);
-    infoGrid->AddView(new BStringView(NULL, "0%"), 0, 1);
+    fUtilizationValue = new BStringView("util_val", "0%");
+    infoGrid->AddView(fUtilizationValue, 0, 1);
 
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("GPU Memory")), 1, 0);
     fMemorySizeValue = new BStringView("mem_val", "N/A");
@@ -91,10 +92,14 @@ void GPUView::Pulse() {
 
     UpdateData();
 
+    // Placeholder: Haiku currently lacks a generic API for GPU utilization.
+    // Graphs and values are injected with 0 until driver support is available.
     bigtime_t now = system_time();
     for (auto* graph : fGpuGraphs) {
         graph->AddValue(now, 0);
     }
+    if (fUtilizationValue)
+        fUtilizationValue->SetText("0%");
 }
 
 GPUView::~GPUView()

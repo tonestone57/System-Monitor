@@ -107,6 +107,8 @@ void CPUView::CreateLayout()
     uint64 frequency = GetCpuFrequency();
     if (frequency > 0)
         fSpeedValue->SetText(::FormatHertz(frequency).String());
+    else
+        fSpeedValue->SetText(B_TRANSLATE("N/A"));
 
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Processes")), 0, 2);
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Threads")), 1, 2);
@@ -218,11 +220,11 @@ void CPUView::UpdateData()
 
     if (fOverallUsageValue) {
         if (overallUsage >= 0) {
-            char buffer[32];
-            snprintf(buffer, sizeof(buffer), "%.1f%%", overallUsage);
-            fOverallUsageValue->SetText(buffer);
+            BString percentStr;
+            fNumberFormat.FormatPercent(percentStr, overallUsage / 100.0f);
+            fOverallUsageValue->SetText(percentStr.String());
         } else {
-            fOverallUsageValue->SetText("N/A");
+            fOverallUsageValue->SetText(B_TRANSLATE("N/A"));
         }
     }
 

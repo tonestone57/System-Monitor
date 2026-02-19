@@ -26,6 +26,7 @@ private:
     BStringView* fDriverVersionValue;
     BStringView* fMemorySizeValue;
     BStringView* fResolutionValue;
+    BStringView* fUtilizationValue;
 
     std::vector<ActivityGraphView*> fGpuGraphs;
 

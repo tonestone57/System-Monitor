@@ -463,13 +463,7 @@ BString SystemDetailsView::_GetKernelDateTime(system_info* sysInfo)
 
 BString SystemDetailsView::_GetUptime()
 {
-	BString uptimeText;
-
-	bigtime_t uptime = system_time();
-	bigtime_t now = (bigtime_t)time(NULL) * 1000000;
-	fDurationFormat.Format(uptimeText, now - uptime, now);
-
-	return uptimeText;
+	return ::FormatUptime(system_time());
 }
 
 BString SystemDetailsView::_GetGPUInfo()
