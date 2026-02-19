@@ -2,6 +2,7 @@
 #include <Font.h>
 #include <OS.h>
 #include <Catalog.h>
+#include <DurationFormat.h>
 #include <cstring>
 #include <vector>
 
@@ -14,24 +15,24 @@
 
 void FormatBytes(BString& str, uint64 bytes, int precision) {
 	if (bytes < 1024) {
-		str.SetToFormat("%" B_PRIu64 " B", bytes);
+		str.SetToFormat(B_TRANSLATE("%" B_PRIu64 " B"), bytes);
 		return;
 	}
 
 	double kb = bytes / 1024.0;
 	if (kb < 1024.0) {
-		str.SetToFormat("%.*f KiB", precision, kb);
+		str.SetToFormat(B_TRANSLATE("%.*f KiB"), precision, kb);
 		return;
 	}
 
 	double mb = kb / 1024.0;
 	if (mb < 1024.0) {
-		str.SetToFormat("%.*f MiB", precision, mb);
+		str.SetToFormat(B_TRANSLATE("%.*f MiB"), precision, mb);
 		return;
 	}
 
 	double gb = mb / 1024.0;
-	str.SetToFormat("%.*f GiB", precision, gb);
+	str.SetToFormat(B_TRANSLATE("%.*f GiB"), precision, gb);
 }
 
 void GetSwapUsage(uint64& used, uint64& total) {
@@ -43,6 +44,11 @@ void GetSwapUsage(uint64& used, uint64& total) {
 		total = 0;
 		used = 0;
 	}
+}
+
+uint64 GetCachedMemoryBytes(const system_info& sysInfo) {
+	// On Haiku, cached memory includes both the page cache and the block cache.
+	return ((uint64)sysInfo.cached_pages + (uint64)sysInfo.block_cache_pages) * B_PAGE_SIZE;
 }
 
 BString FormatHertz(uint64 hertz) {
@@ -64,33 +70,21 @@ BString FormatHertz(uint64 hertz) {
 }
 
 BString FormatUptime(bigtime_t uptimeMicros) {
-	uint32 seconds = uptimeMicros / 1000000;
-
-	uint32 days = seconds / (24 * 3600);
-	seconds %= (24 * 3600);
-	uint32 hours = seconds / 3600;
-	seconds %= 3600;
-	uint32 minutes = seconds / 60;
-	seconds %= 60;
-
 	BString uptimeStr;
-	if (days > 0) {
-		uptimeStr.SetToFormat("%u days, %02u:%02u:%02u", days, hours, minutes, seconds);
-	} else {
-		uptimeStr.SetToFormat("%02u:%02u:%02u", hours, minutes, seconds);
-	}
+	BDurationFormat formatter;
+	formatter.Format(uptimeStr, 0, uptimeMicros);
 	return uptimeStr;
 }
 
 BString FormatSpeed(uint64 bytesDelta, bigtime_t microSecondsDelta)
 {
-	if (microSecondsDelta <= 0) return "0 B/s";
+	if (microSecondsDelta <= 0) return B_TRANSLATE("0 B/s");
 	double speed = bytesDelta / (microSecondsDelta / 1000000.0);
 	double kbs = speed / 1024.0, mbs = kbs / 1024.0;
 	BString str;
-	if (mbs >= 1.0) str.SetToFormat("%.2f MiB/s", mbs);
-	else if (kbs >= 1.0) str.SetToFormat("%.2f KiB/s", kbs);
-	else str.SetToFormat("%.1f B/s", speed);
+	if (mbs >= 1.0) str.SetToFormat(B_TRANSLATE("%.2f MiB/s"), mbs);
+	else if (kbs >= 1.0) str.SetToFormat(B_TRANSLATE("%.2f KiB/s"), kbs);
+	else str.SetToFormat(B_TRANSLATE("%.1f B/s"), speed);
 	return str;
 }
 

@@ -8,6 +8,7 @@ class BFont;
 
 void FormatBytes(BString& out, uint64 bytes, int precision = 2);
 void GetSwapUsage(uint64& used, uint64& total);
+uint64 GetCachedMemoryBytes(const system_info& sysInfo);
 BString FormatHertz(uint64 hertz);
 BString FormatUptime(bigtime_t uptimeMicros);
 BString FormatSpeed(uint64 bytesDelta, bigtime_t microSecondsDelta);

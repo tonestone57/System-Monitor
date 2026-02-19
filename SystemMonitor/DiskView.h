@@ -59,7 +59,6 @@ private:
     
     BLocker fLocker; // Protects fVolumeCache and fDeviceItemMap
 	std::map<dev_t, DiskListItem*> fDeviceItemMap;
-    std::set<DiskListItem*> fVisibleItems;
 
     BFont fCachedFont;
 

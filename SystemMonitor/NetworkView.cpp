@@ -264,7 +264,6 @@ NetworkView::~NetworkView()
     }
     fInterfaceListView->MakeEmpty();
     fInterfaceItemMap.clear();
-    fVisibleItems.clear();
 }
 
 void NetworkView::AttachedToWindow()
@@ -377,7 +376,7 @@ void NetworkView::UpdateData(BMessage* message)
                     sendSpeedBytes = sentDelta * 1000000 / dt;
                     recvSpeedBytes = recvDelta * 1000000 / dt;
 
-                    if (typeStr != B_TRANSLATE("Loopback")) {
+                    if (!info->isLoopback) {
                         totalSentDelta += sentDelta;
                         totalReceivedDelta += recvDelta;
                     }
@@ -395,7 +394,6 @@ void NetworkView::UpdateData(BMessage* message)
                 item = new InterfaceListItem(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes, &font, this);
                 fInterfaceListView->AddItem(item);
                 fInterfaceItemMap[name] = item;
-                fVisibleItems.insert(item);
                 listChanged = true;
             } else {
                 item = rowIt->second;
@@ -415,10 +413,7 @@ void NetworkView::UpdateData(BMessage* message)
 	for (auto it = fInterfaceItemMap.begin(); it != fInterfaceItemMap.end();) {
 		if (it->second->Generation() != fListGeneration) {
 			InterfaceListItem* item = it->second;
-            if (fVisibleItems.find(item) != fVisibleItems.end()) {
-			    fInterfaceListView->RemoveItem(item);
-                fVisibleItems.erase(item);
-            }
+            fInterfaceListView->RemoveItem(item);
 			delete item;
 			it = fInterfaceItemMap.erase(it);
             listChanged = true;
@@ -492,7 +487,8 @@ int32 NetworkView::UpdateThread(void* data)
 
             // Determine Type
             BString typeStr = B_TRANSLATE("Ethernet");
-            if (interface.Flags() & IFF_LOOPBACK) {
+            info.isLoopback = (interface.Flags() & IFF_LOOPBACK) != 0;
+            if (info.isLoopback) {
                 typeStr = B_TRANSLATE("Loopback");
             } else if (interface.Flags() & IFF_POINTOPOINT) {
                 typeStr = B_TRANSLATE("Point-to-Point");

@@ -87,6 +87,7 @@ private:
     void Update(BMessage* message);
     void FilterRows();
     void _SortItems();
+    void _RestoreSelection(team_id selectedID);
     bool _MatchesFilter(const ProcessInfo& info, const char* searchText);
 
     void KillSelectedProcess();
