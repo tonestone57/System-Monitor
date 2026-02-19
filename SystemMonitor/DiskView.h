@@ -39,6 +39,7 @@ public:
     virtual void Draw(BRect updateRect);
 
     void SetRefreshInterval(bigtime_t interval);
+    void SetPerformanceViewVisible(bool visible) { fPerformanceViewVisible = visible; }
 
     float DeviceWidth() const { return fDeviceWidth; }
     float MountWidth() const { return fMountWidth; }
@@ -65,6 +66,7 @@ private:
     thread_id fUpdateThread;
     sem_id fScanSem;
     std::atomic<bool> fTerminated;
+    std::atomic<bool> fPerformanceViewVisible;
     std::atomic<bigtime_t> fRefreshInterval;
     int32 fListGeneration;
 

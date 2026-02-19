@@ -184,6 +184,7 @@ NetworkView::NetworkView()
     fUpdateThread(-1),
     fScanSem(-1),
     fTerminated(false),
+    fPerformanceViewVisible(true),
     fRefreshInterval(1000000),
     fListGeneration(0)
 {
@@ -469,6 +470,9 @@ int32 NetworkView::UpdateThread(void* data)
             break;
 
         if (view->fTerminated) break;
+
+        if (!view->fPerformanceViewVisible)
+            continue;
 
         // Drain the semaphore if we were woken up explicitly (e.g. interval change)
         if (err == B_OK) {

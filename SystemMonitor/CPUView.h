@@ -20,10 +20,10 @@ public:
 
     float GetCurrentUsage();
     void SetRefreshInterval(bigtime_t interval);
+    void UpdateData();
 
 private:
     void CreateLayout();
-    void UpdateData();
     void GetCPUUsage(bigtime_t now, float& overallUsage);
     
     BStringView* fOverallUsageValue;

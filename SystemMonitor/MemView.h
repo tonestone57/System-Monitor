@@ -18,9 +18,9 @@ public:
 
     float GetCurrentUsage();
     void SetRefreshInterval(bigtime_t interval);
+    void UpdateData();
 
 private:
-    void UpdateData();
     
     BStringView* fTotalMemLabel;
     BStringView* fTotalMemValue;

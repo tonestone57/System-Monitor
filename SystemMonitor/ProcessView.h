@@ -51,7 +51,9 @@ enum ProcessSortMode {
     SORT_BY_NAME,
     SORT_BY_CPU,
     SORT_BY_MEM,
-    SORT_BY_THREADS
+    SORT_BY_THREADS,
+    SORT_BY_STATE,
+    SORT_BY_USER
 };
 
 class ProcessListItem; // Forward declaration
@@ -84,6 +86,7 @@ private:
     static int32 UpdateThread(void* data);
     void Update(BMessage* message);
     void FilterRows();
+    void _SortItems();
     bool _MatchesFilter(const ProcessInfo& info, const char* searchText);
 
     void KillSelectedProcess();
