@@ -84,6 +84,7 @@ private:
     static int32 UpdateThread(void* data);
     void Update(BMessage* message);
     void FilterRows();
+    bool _MatchesFilter(const ProcessInfo& info, const char* searchText);
 
     void KillSelectedProcess();
     void SuspendSelectedProcess();

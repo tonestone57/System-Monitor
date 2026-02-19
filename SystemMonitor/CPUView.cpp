@@ -47,7 +47,7 @@ void CPUView::CreateLayout()
     headerFont.SetSize(headerFont.Size() * 1.5);
     cpuLabel->SetFont(&headerFont);
 
-    fModelName = new BStringView("model_name", "Processor");
+    fModelName = new BStringView("model_name", GetCPUBrandString().String());
     fModelName->SetAlignment(B_ALIGN_RIGHT);
 
     // Utilization Header

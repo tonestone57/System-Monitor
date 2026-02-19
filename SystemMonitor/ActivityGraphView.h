@@ -20,6 +20,7 @@ public:
 			void		AddValue(bigtime_t time, int64 value);
 			void		SetRefreshInterval(bigtime_t interval);
 			void		SetManualScale(int64 min, int64 max);
+			void		SetAutoScale();
 
 private:
 			void		_UpdateOffscreenBitmap();

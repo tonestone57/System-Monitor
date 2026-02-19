@@ -227,6 +227,7 @@ void PerformanceView::SetRefreshInterval(bigtime_t interval)
 	if (fCPUView) fCPUView->SetRefreshInterval(interval);
 	if (fMemView) fMemView->SetRefreshInterval(interval);
 	if (fNetworkView) fNetworkView->SetRefreshInterval(interval);
+	if (fDiskView) fDiskView->SetRefreshInterval(interval);
 	if (fGPUView) fGPUView->SetRefreshInterval(interval);
 }
 
@@ -266,6 +267,8 @@ private:
 	ProcessView* fProcessView;
 	PerformanceView* fPerformanceView;
 	SystemTab* fSystemTab;
+
+	BMessenger fAboutWindow;
 };
 
 MainWindow::MainWindow(BRect frame)
@@ -337,8 +340,16 @@ void MainWindow::MessageReceived(BMessage* message) {
 	switch (message->what) {
 		case MSG_ABOUT_REQUESTED:
 			{
+				if (fAboutWindow.IsValid()) {
+					BWindow* window;
+					if (fAboutWindow.Target(&window) == B_OK && window != NULL) {
+						window->Activate(true);
+						break;
+					}
+				}
 				AboutWindow* about = new AboutWindow();
 				about->Show();
+				fAboutWindow = BMessenger(about);
 			}
 			break;
 
