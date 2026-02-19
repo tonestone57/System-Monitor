@@ -112,6 +112,7 @@ private:
         int32 cachedAreaCount;
         int32 memoryGeneration;
         bigtime_t cpuTime;
+        thread_id lastRunningThread;
     };
 
     struct CachedUser {

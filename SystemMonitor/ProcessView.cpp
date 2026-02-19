@@ -838,6 +838,7 @@ int32 ProcessView::UpdateThread(void* data)
                 info.cachedAreaCount = -1;
                 info.memoryGeneration = 0;
                 info.cpuTime = 0;
+                info.lastRunningThread = -1;
                 view->fCachedTeamInfo[teamInfo.team] = info;
                 cachedInfo = &view->fCachedTeamInfo[teamInfo.team];
             }
@@ -890,12 +891,26 @@ int32 ProcessView::UpdateThread(void* data)
                 }
 
                 if (!skipThreadScan) {
-                    while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
-                        if (tInfo.state == B_THREAD_RUNNING) {
+                    // Optimization: Check the last known running thread first
+                    if (cached && cachedInfo->lastRunningThread != -1) {
+                        thread_info lastInfo;
+                        if (get_thread_info(cachedInfo->lastRunningThread, &lastInfo) == B_OK
+                            && lastInfo.team == teamInfo.team
+                            && lastInfo.state == B_THREAD_RUNNING) {
                             isRunning = true;
-                            break; // Found running, can stop scanning
+                            skipThreadScan = true;
                         }
-                        if (tInfo.state == B_THREAD_READY) isReady = true;
+                    }
+
+                    if (!skipThreadScan) {
+                        while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
+                            if (tInfo.state == B_THREAD_RUNNING) {
+                                isRunning = true;
+                                cachedInfo->lastRunningThread = tInfo.thread;
+                                break; // Found running, can stop scanning
+                            }
+                            if (tInfo.state == B_THREAD_READY) isReady = true;
+                        }
                     }
                 }
             }

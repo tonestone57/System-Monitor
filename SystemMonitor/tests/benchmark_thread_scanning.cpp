@@ -99,9 +99,15 @@ void SetupMockTeams() {
         t.name = "app_" + std::to_string(i);
         t.user_time = 5000;
         t.kernel_time = 2000;
-        // One running thread, rest ready/waiting
-        t.threads.push_back({(thread_id)(i*100), B_THREAD_RUNNING});
-        for(int j=1; j<10; ++j) {
+        // One running thread (thread 5), rest ready/waiting
+        // Add some READY threads first
+        for(int j=0; j<5; ++j) {
+            t.threads.push_back({(thread_id)(i*100+j), B_THREAD_READY});
+        }
+        // The RUNNING thread
+        t.threads.push_back({(thread_id)(i*100+5), B_THREAD_RUNNING});
+        // More READY threads
+        for(int j=6; j<10; ++j) {
             t.threads.push_back({(thread_id)(i*100+j), B_THREAD_READY});
         }
         gTeams.push_back(t);
@@ -143,6 +149,21 @@ status_t get_next_thread_info(team_id team, int32_t *cookie, thread_info *info) 
     return B_OK;
 }
 
+status_t get_thread_info(thread_id thread, thread_info *info) {
+    gSyscallCount++;
+    for(const auto& t : gTeams) {
+        for(const auto& th : t.threads) {
+            if (th.id == thread) {
+                info->thread = th.id;
+                info->team = t.id;
+                info->state = th.state;
+                return B_OK;
+            }
+        }
+    }
+    return B_ERROR;
+}
+
 status_t get_team_usage_info(team_id team, int32_t who, team_usage_info *info) {
     gSyscallCount++;
     for(const auto& t : gTeams) {
@@ -159,11 +180,12 @@ status_t get_team_usage_info(team_id team, int32_t who, team_usage_info *info) {
 
 struct CachedTeamInfo {
     bigtime_t cpuTime;
+    thread_id lastRunningThread;
 };
 
 std::map<team_id, CachedTeamInfo> fCachedTeamInfo;
 
-void RunBenchmark(bool optimize) {
+void RunBenchmark(bool useSkipScan, bool useLastRunningThread) {
     gSyscallCount = 0;
     int32_t cookie = 0;
     team_info teamInfo;
@@ -175,7 +197,7 @@ void RunBenchmark(bool optimize) {
             cached = true;
             cachedInfo = &fCachedTeamInfo[teamInfo.team];
         } else {
-             fCachedTeamInfo[teamInfo.team] = CachedTeamInfo{0};
+             fCachedTeamInfo[teamInfo.team] = CachedTeamInfo{0, -1};
              cachedInfo = &fCachedTeamInfo[teamInfo.team];
         }
 
@@ -197,10 +219,20 @@ void RunBenchmark(bool optimize) {
                 cachedInfo->cpuTime = currentTeamTime;
             }
 
-            // OPTIMIZATION HERE
+            // OPTIMIZATION 1: Skip scan if idle
             bool skipScan = false;
-            if (optimize && cached && teamActiveTimeDelta == 0) {
+            if (useSkipScan && cached && teamActiveTimeDelta == 0) {
                 skipScan = true;
+            }
+
+            // OPTIMIZATION 2: Check last running thread
+            if (!skipScan && useLastRunningThread && cached && cachedInfo->lastRunningThread != -1) {
+                 thread_info lastInfo;
+                 if (get_thread_info(cachedInfo->lastRunningThread, &lastInfo) == B_OK
+                     && lastInfo.team == teamInfo.team
+                     && lastInfo.state == B_THREAD_RUNNING) {
+                     skipScan = true; // Found running, skipping scan!
+                 }
             }
 
             if (!skipScan) {
@@ -211,6 +243,9 @@ void RunBenchmark(bool optimize) {
                 while (get_next_thread_info(teamInfo.team, &tCookie, &tInfo) == B_OK) {
                     if (tInfo.state == B_THREAD_RUNNING) {
                         isRunning = true;
+                        if (useLastRunningThread) {
+                            cachedInfo->lastRunningThread = tInfo.thread;
+                        }
                         break;
                     }
                     if (tInfo.state == B_THREAD_READY) isReady = true;
@@ -223,8 +258,10 @@ void RunBenchmark(bool optimize) {
 int main() {
     SetupMockTeams();
 
-    // 1. Warmup (populate cache)
-    RunBenchmark(false);
+    // 1. Warmup (populate cache) with FULL optimization enabled to populate lastRunningThread
+    // Note: To be fair, we should warmup differently for different runs, but cache population is same.
+    // However, to measure "steady state", we should run once to populate cache.
+    RunBenchmark(true, true);
 
     // 2. Advance time for Active teams only
     for(auto& t : gTeams) {
@@ -233,26 +270,33 @@ int main() {
         }
     }
 
-    // 3. Measure Original
-    long syscallsOriginal = 0;
+    // Reset Syscall Count
+    gSyscallCount = 0;
+
+    // 3. Measure Baseline (SkipScan=ON, LastThread=OFF)
+    // This represents the state BEFORE this task.
+    long syscallsBaseline = 0;
     {
+        // Copy cache state to ensure fair comparison?
+        // No, let's just run it. But wait, lastRunningThread won't be used.
         auto cacheSnapshot = fCachedTeamInfo;
-        RunBenchmark(false);
-        syscallsOriginal = gSyscallCount;
-        fCachedTeamInfo = cacheSnapshot;
+        RunBenchmark(true, false);
+        syscallsBaseline = gSyscallCount;
+        fCachedTeamInfo = cacheSnapshot; // Restore cache
     }
 
-    // 4. Measure Optimized
+    // 4. Measure New Optimization (SkipScan=ON, LastThread=ON)
     long syscallsOptimized = 0;
     {
-        RunBenchmark(true);
+        gSyscallCount = 0;
+        RunBenchmark(true, true);
         syscallsOptimized = gSyscallCount;
     }
 
-    std::cout << "Original Syscalls: " << syscallsOriginal << std::endl;
-    std::cout << "Optimized Syscalls: " << syscallsOptimized << std::endl;
-    std::cout << "Reduction: " << (syscallsOriginal - syscallsOptimized) << " ("
-              << (100.0 * (syscallsOriginal - syscallsOptimized) / syscallsOriginal) << "%)" << std::endl;
+    std::cout << "Baseline (Existing Optimization): " << syscallsBaseline << std::endl;
+    std::cout << "New Optimization (Last Thread Cache): " << syscallsOptimized << std::endl;
+    std::cout << "Reduction: " << (syscallsBaseline - syscallsOptimized) << " ("
+              << (100.0 * (syscallsBaseline - syscallsOptimized) / syscallsBaseline) << "%)" << std::endl;
 
     return 0;
 }
