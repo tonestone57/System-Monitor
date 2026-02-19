@@ -3,6 +3,7 @@
 #include <Bitmap.h>
 #include <ControlLook.h>
 #include <Window.h>
+#include <algorithm>
 #include <new>
 
 ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_which systemColor)
@@ -17,6 +18,7 @@ ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_wh
     fLastRefresh(0),
     fScrollOffset(0)
 {
+	fPoints.reserve(2048); // Pre-allocate for typical screen widths to avoid reallocations
 	fHistory = new DataHistory(10 * 60000000LL, 1000000);
 }
 
@@ -61,9 +63,15 @@ ActivityGraphView::MessageReceived(BMessage* message)
 
 
 void
-ActivityGraphView::FrameResized(float /*width*/, float /*height*/)
+ActivityGraphView::FrameResized(float width, float /*height*/)
 {
 	_UpdateOffscreenBitmap();
+
+	// Pre-allocate points vector to avoid frequent resizing during window growth
+	size_t needed = (size_t)width + 64;
+	if (fPoints.capacity() < needed) {
+		fPoints.reserve(std::max(needed, fPoints.capacity() * 2));
+	}
 }
 
 
