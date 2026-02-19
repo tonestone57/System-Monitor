@@ -15,7 +15,7 @@
 template<typename Type>
 class CircularBuffer {
 public:
-	CircularBuffer(size_t size)
+	CircularBuffer(uint32 size)
 		:
 		fFirst(0),
 		fIn(0),
@@ -80,7 +80,7 @@ public:
 		return fBuffer != NULL ? B_OK : B_NO_MEMORY;
 	}
 
-	status_t SetSize(size_t size)
+	status_t SetSize(uint32 size)
 	{
 		if (fSize == size)
 			return B_OK;
