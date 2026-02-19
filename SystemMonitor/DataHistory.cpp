@@ -4,8 +4,7 @@
 DataHistory::DataHistory(bigtime_t memorize, bigtime_t interval)
 	:
 	fBuffer(memorize > 0 && interval > 0 ? memorize / interval : 100),
-	fRefreshInterval(interval),
-	fLastIndex(-1)
+	fRefreshInterval(interval)
 {
 }
 

@@ -33,15 +33,16 @@ const float kBaseDiskPercentWidth = 80;
 
 class DiskListItem : public BListItem {
 public:
-    DiskListItem(const BString& device, const BString& mount, const BString& fs,
+    DiskListItem(dev_t deviceID, const BString& device, const BString& mount, const BString& fs,
                  uint64 total, uint64 used, uint64 free, double percent, const BFont* font, DiskView* view)
-        : BListItem(), fGeneration(0), fView(view)
+        : BListItem(), fDeviceID(deviceID), fGeneration(0), fView(view)
     {
         Update(device, mount, fs, total, used, free, percent, font, true);
     }
 
     void SetGeneration(int32 generation) { fGeneration = generation; }
     int32 Generation() const { return fGeneration; }
+    dev_t DeviceID() const { return fDeviceID; }
 
     void Update(const BString& device, const BString& mount, const BString& fs,
                  uint64 total, uint64 used, uint64 free, double percent, const BFont* font, bool force = false) {
@@ -162,6 +163,7 @@ private:
     BString fTruncatedMount;
     BString fTruncatedFS;
     int32 fGeneration;
+    dev_t fDeviceID;
     DiskView* fView;
 };
 
@@ -453,6 +455,14 @@ void DiskView::UpdateData(BMessage* message)
         return;
     }
 
+    // Preserve selection
+    int32 selection = fDiskListView->CurrentSelection();
+    dev_t selectedID = -1;
+    if (selection >= 0) {
+        DiskListItem* item = dynamic_cast<DiskListItem*>(fDiskListView->ItemAt(selection));
+        if (item) selectedID = item->DeviceID();
+    }
+
     fListGeneration++;
     int32 count = 0;
     type_code type;
@@ -490,7 +500,7 @@ void DiskView::UpdateData(BMessage* message)
 
 		DiskListItem* item;
 		if (fDeviceItemMap.find(deviceID) == fDeviceItemMap.end()) {
-			item = new DiskListItem(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font, this);
+			item = new DiskListItem(deviceID, deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font, this);
 			fDiskListView->AddItem(item);
 			fDeviceItemMap[deviceID] = item;
             fVisibleItems.insert(item);
@@ -518,6 +528,18 @@ void DiskView::UpdateData(BMessage* message)
 		}
 	}
     fDiskListView->SortItems(DiskListItem::CompareUsage);
+
+    // Restore selection
+    if (selectedID != -1) {
+        for (int32 i = 0; i < fDiskListView->CountItems(); i++) {
+            DiskListItem* item = dynamic_cast<DiskListItem*>(fDiskListView->ItemAt(i));
+            if (item && item->DeviceID() == selectedID) {
+                fDiskListView->Select(i);
+                break;
+            }
+        }
+    }
+
     fDiskListView->Invalidate();
 
     fLocker.Unlock();

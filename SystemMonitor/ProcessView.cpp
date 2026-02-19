@@ -51,8 +51,8 @@ const int32 kMemoryCacheGenerations = 10;
 
 class ClickableHeaderView : public BStringView {
 public:
-    ClickableHeaderView(const char* label, float width, int32 mode)
-        : BStringView(NULL, label), fMode(mode)
+    ClickableHeaderView(const char* label, float width, int32 mode, BHandler* target)
+        : BStringView(NULL, label), fMode(mode), fTarget(target)
     {
         SetExplicitMinSize(BSize(width, B_SIZE_UNSET));
         SetExplicitMaxSize(BSize(width, B_SIZE_UNSET));
@@ -63,7 +63,7 @@ public:
 
     virtual void MouseDown(BPoint where) {
         if (Window()) {
-            BMessenger target(Parent()->Parent()); // Target ProcessView (Header -> Group -> ProcessView)
+            BMessenger target(fTarget);
             BMessage msg(MSG_HEADER_CLICKED);
             msg.AddInt32("mode", fMode);
             target.SendMessage(&msg);
@@ -72,6 +72,7 @@ public:
 
 private:
     int32 fMode;
+    BHandler* fTarget;
 };
 
 class ProcessListItem : public BListItem {
@@ -340,7 +341,7 @@ ProcessView::ProcessView()
 
     // Helper to add header label
     auto addHeader = [&](const char* label, float width, int32 mode) {
-        ClickableHeaderView* sv = new ClickableHeaderView(label, width, mode);
+        ClickableHeaderView* sv = new ClickableHeaderView(label, width, mode, this);
         headerView->AddChild(sv);
     };
 
@@ -585,10 +586,34 @@ void ProcessView::SetRefreshInterval(bigtime_t interval)
         release_sem(fQuitSem);
 }
 
+bool ProcessView::_MatchesFilter(const ProcessInfo& info, const char* searchText)
+{
+    if (searchText == NULL || strlen(searchText) == 0)
+        return true;
+
+    fFilterName.SetTo(info.name);
+    fFilterID.SetToFormat("%" B_PRId32, info.id);
+    fFilterArgs.SetTo(info.args);
+
+    if (fFilterName.IFindFirst(searchText) != B_ERROR
+        || fFilterID.IFindFirst(searchText) != B_ERROR
+        || fFilterArgs.IFindFirst(searchText) != B_ERROR) {
+        return true;
+    }
+    return false;
+}
+
 void ProcessView::FilterRows()
 {
     const char* searchText = fSearchControl->Text();
-    bool filtering = (searchText != NULL && strlen(searchText) > 0);
+
+    // Preserve selection
+    int32 selection = fProcessListView->CurrentSelection();
+    team_id selectedID = -1;
+    if (selection >= 0) {
+        ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
+        if (item) selectedID = item->TeamID();
+    }
 
     // BListView doesn't support hiding items easily.
     // We have to remove them from the list but keep them in fTeamItemMap.
@@ -597,29 +622,14 @@ void ProcessView::FilterRows()
     fVisibleItems.clear();
 
     for (auto& pair : fTeamItemMap) {
-        team_id id = pair.first;
         ProcessListItem* item = pair.second;
-        bool match = true;
 
-        if (filtering) {
-            fFilterName.SetTo(item->Info().name);
-            fFilterID.SetToFormat("%" B_PRId32, id);
-            fFilterArgs.SetTo(item->Info().args);
-
-            if (fFilterName.IFindFirst(searchText) == B_ERROR
-                && fFilterID.IFindFirst(searchText) == B_ERROR
-                && fFilterArgs.IFindFirst(searchText) == B_ERROR) {
-                match = false;
-            }
-        }
-
-        if (match) {
+        if (_MatchesFilter(item->Info(), searchText)) {
             fProcessListView->AddItem(item);
             fVisibleItems.insert(item);
         }
     }
 
-    // Restore selection? Too hard for now.
     switch (fSortMode) {
         case SORT_BY_PID: fProcessListView->SortItems(ProcessListItem::ComparePID); break;
         case SORT_BY_NAME: fProcessListView->SortItems(ProcessListItem::CompareName); break;
@@ -627,6 +637,18 @@ void ProcessView::FilterRows()
         case SORT_BY_THREADS: fProcessListView->SortItems(ProcessListItem::CompareThreads); break;
         case SORT_BY_CPU: default: fProcessListView->SortItems(ProcessListItem::CompareCPU); break;
     }
+
+    // Restore selection
+    if (selectedID != -1) {
+        for (int32 i = 0; i < fProcessListView->CountItems(); i++) {
+            ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(i));
+            if (item && item->TeamID() == selectedID) {
+                fProcessListView->Select(i);
+                break;
+            }
+        }
+    }
+
     fProcessListView->Invalidate();
 }
 
@@ -641,7 +663,14 @@ void ProcessView::Update(BMessage* message)
     size_t count = size / sizeof(ProcessInfo);
 
     const char* searchText = fSearchControl->Text();
-    bool filtering = (searchText != NULL && strlen(searchText) > 0);
+
+    // Preserve selection
+    int32 selection = fProcessListView->CurrentSelection();
+    team_id selectedID = -1;
+    if (selection >= 0) {
+        ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
+        if (item) selectedID = item->TeamID();
+    }
 
     fListGeneration++;
 
@@ -675,18 +704,7 @@ void ProcessView::Update(BMessage* message)
                 break;
         }
 
-        bool match = true;
-        if (filtering) {
-            fFilterName.SetTo(info.name);
-            fFilterID.SetToFormat("%" B_PRId32, info.id);
-            fFilterArgs.SetTo(info.args);
-
-            if (fFilterName.IFindFirst(searchText) == B_ERROR
-                && fFilterID.IFindFirst(searchText) == B_ERROR
-                && fFilterArgs.IFindFirst(searchText) == B_ERROR) {
-                match = false;
-            }
-        }
+        bool match = _MatchesFilter(info, searchText);
 
         ProcessListItem* item;
         auto result = fTeamItemMap.emplace(info.id, nullptr);
@@ -740,6 +758,18 @@ void ProcessView::Update(BMessage* message)
         case SORT_BY_THREADS: fProcessListView->SortItems(ProcessListItem::CompareThreads); break;
         case SORT_BY_CPU: default: fProcessListView->SortItems(ProcessListItem::CompareCPU); break;
     }
+
+    // Restore selection
+    if (selectedID != -1) {
+        for (int32 i = 0; i < fProcessListView->CountItems(); i++) {
+            ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(i));
+            if (item && item->TeamID() == selectedID) {
+                fProcessListView->Select(i);
+                break;
+            }
+        }
+    }
+
     fProcessListView->Invalidate();
 }
 
@@ -890,17 +920,6 @@ int32 ProcessView::UpdateThread(void* data)
                     if (cached) {
                         teamActiveTimeDelta = currentTeamTime - cachedInfo->cpuTime;
                         if (teamActiveTimeDelta < 0) teamActiveTimeDelta = 0;
-
-                        // Optimization: If process consumed no CPU time, assume threads are sleeping
-                        if (teamActiveTimeDelta == 0)
-                            skipThreadScan = true;
-                        else if (teamActiveTimeDelta > 0) {
-                            // If process consumed CPU time, assume it is running (avoids scanning threads).
-                            // This optimization assumes that if a process is active, it's effectively "Running"
-                            // for the user, even if it might be momentarily "Ready" or blocked.
-                            skipThreadScan = true;
-                            isRunning = true;
-                        }
                     }
                     cachedInfo->cpuTime = currentTeamTime;
                 }

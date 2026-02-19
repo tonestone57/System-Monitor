@@ -33,6 +33,14 @@ ActivityGraphView::~ActivityGraphView()
 
 
 void
+ActivityGraphView::SetAutoScale()
+{
+	fManualScale = false;
+	Invalidate();
+}
+
+
+void
 ActivityGraphView::AttachedToWindow()
 {
 	BView::AttachedToWindow();
@@ -306,7 +314,7 @@ ActivityGraphView::_DrawHistory()
                 view->CopyBits(src, dst);
 
                 fScrollOffset += pixelsToScroll;
-                fLastRefresh = now;
+                fLastRefresh += (bigtime_t)pixelsToScroll * timeStep;
 
                 // New Area
                 BRect newArea(frame.right - pixelsToScroll, frame.top, frame.right, frame.bottom);
