@@ -3,6 +3,7 @@
 #include <OS.h>
 #include <Catalog.h>
 #include <cstring>
+#include <vector>
 
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
@@ -40,13 +41,13 @@ BString FormatHertz(uint64 hertz) {
 	double khz = hertz / 1000.0;
 
 	if (ghz >= 1.0) {
-		str.SetToFormat("%.2f GHz", ghz);
+		str.SetToFormat(B_TRANSLATE("%.2f GHz"), ghz);
 	} else if (mhz >= 1.0) {
-		str.SetToFormat("%.0f MHz", mhz);
+		str.SetToFormat(B_TRANSLATE("%.0f MHz"), mhz);
 	} else if (khz >= 1.0) {
-		str.SetToFormat("%.0f KHz", khz);
+		str.SetToFormat(B_TRANSLATE("%.0f KHz"), khz);
 	} else {
-		str.SetToFormat("%" B_PRIu64 " Hz", hertz);
+		str.SetToFormat(B_TRANSLATE("%" B_PRIu64 " Hz"), hertz);
 	}
 	return str;
 }
@@ -89,15 +90,26 @@ float GetScaleFactor(const BFont* font) {
 	return scale;
 }
 
-uint64 GetRoundedCpuSpeed()
+uint64 GetCpuFrequency()
 {
-	// cpu_clock_speed is not available in system_info in this environment's headers.
-	// Returning 0 as a fallback.
-	/*
-	system_info info;
-	if (get_system_info(&info) == B_OK)
-		return info.cpu_clock_speed / 1000000;
-	*/
+	// Try to get frequency from topology info
+	uint32_t topologyNodeCount = 0;
+	if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
+		std::vector<cpu_topology_node_info> topology(topologyNodeCount);
+		uint32_t actualCount = topologyNodeCount;
+		if (get_cpu_topology_info(topology.data(), &actualCount) == B_OK) {
+			uint64 maxFreq = 0;
+			for (uint32 i = 0; i < actualCount; i++) {
+				if (topology[i].type == B_TOPOLOGY_CORE) {
+					if (topology[i].data.core.default_frequency > maxFreq)
+						maxFreq = topology[i].data.core.default_frequency;
+				}
+			}
+			if (maxFreq > 0)
+				return maxFreq;
+		}
+	}
+
 	return 0;
 }
 

@@ -340,19 +340,7 @@ BString SystemDetailsView::_GetCPUInfo()
 
 BString SystemDetailsView::_GetCPUFrequency()
 {
-	BString clockSpeed;
-
-	uint64 frequency = GetRoundedCpuSpeed();
-	if (frequency < 1000) {
-		clockSpeed.SetToFormat(B_TRANSLATE_COMMENT("%" B_PRIu64 " MHz",
-			"750 Mhz (CPU clock speed)"), frequency);
-	}
-	else {
-		clockSpeed.SetToFormat(B_TRANSLATE_COMMENT("%.2f GHz",
-			"3.49 Ghz (CPU clock speed)"), frequency / 1000.0f);
-	}
-
-	return clockSpeed;
+	return ::FormatHertz(GetCpuFrequency());
 }
 
 BString SystemDetailsView::_GetCPUFeatures()

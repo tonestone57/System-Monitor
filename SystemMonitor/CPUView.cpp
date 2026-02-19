@@ -104,22 +104,9 @@ void CPUView::CreateLayout()
     infoGrid->AddView(fSpeedValue, 1, 1);
 
     // Get CPU Speed (static)
-    uint32_t topologyNodeCount = 0;
-    if (get_cpu_topology_info(NULL, &topologyNodeCount) == B_OK && topologyNodeCount > 0) {
-         std::vector<cpu_topology_node_info> topology(topologyNodeCount);
-         uint32_t actualCount = topologyNodeCount;
-         if (get_cpu_topology_info(topology.data(), &actualCount) == B_OK) {
-             uint64 maxFreq = 0;
-             for (uint32 i = 0; i < actualCount; i++) {
-                 if (topology[i].type == B_TOPOLOGY_CORE) {
-                     if (topology[i].data.core.default_frequency > maxFreq)
-                         maxFreq = topology[i].data.core.default_frequency;
-                 }
-             }
-             if (maxFreq > 0)
-                 fSpeedValue->SetText(::FormatHertz(maxFreq).String());
-         }
-    }
+    uint64 frequency = GetCpuFrequency();
+    if (frequency > 0)
+        fSpeedValue->SetText(::FormatHertz(frequency).String());
 
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Processes")), 0, 2);
     infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Threads")), 1, 2);
