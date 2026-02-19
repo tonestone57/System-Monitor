@@ -4,6 +4,10 @@
 #include <Catalog.h>
 #include <cstring>
 
+#if defined(__x86_64__) || defined(__i386__)
+#include <cpuid.h>
+#endif
+
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Utils"
 
@@ -101,17 +105,21 @@ BString GetCPUBrandString()
 {
 #if defined(__x86_64__) || defined(__i386__)
 	char brand[49] = {};
-	uint32 regs[4] = {};
-	for (int i = 0; i < 3; ++i) {
-		__asm__ volatile("cpuid"
-						 : "=a"(regs[0]), "=b"(regs[1]), "=c"(regs[2]), "=d"(regs[3])
-						 : "a"(0x80000002 + i));
-		memcpy(brand + i * 16, regs, sizeof(regs));
+	unsigned int regs[4];
+
+	// Check if CPU supports extended function 0x80000000
+	if (__get_cpuid(0x80000000, &regs[0], &regs[1], &regs[2], &regs[3])) {
+		if (regs[0] >= 0x80000004) {
+			for (int i = 0; i < 3; ++i) {
+				__get_cpuid(0x80000002 + i, &regs[0], &regs[1], &regs[2], &regs[3]);
+				memcpy(brand + i * 16, regs, sizeof(regs));
+			}
+			BString brandStr(brand);
+			brandStr.Trim();
+			if (brandStr.Length() > 0)
+				return brandStr;
+		}
 	}
-	BString brandStr(brand);
-	brandStr.Trim();
-	if (brandStr.Length() > 0)
-		return brandStr;
 #endif
 	return B_TRANSLATE("Unknown CPU");
 }

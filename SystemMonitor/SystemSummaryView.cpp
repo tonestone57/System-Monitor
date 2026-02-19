@@ -306,7 +306,10 @@ void SystemSummaryView::MessageReceived(BMessage* message)
 				rgb_color c6 = {255, 0, 255, 255};   // Magenta
 
 				auto colorBlock = [&](int index, rgb_color c) {
-					 fInfoTextView->SetFontAndColor(blockStart + index*4, blockStart + index*4 + 3, NULL, 0, &c);
+					 // "███" is 9 bytes in UTF-8. " " is 1 byte.
+					 // Stride is 10 bytes (9 + 1). Block length is 9.
+					 int32 offset = index * 10;
+					 fInfoTextView->SetFontAndColor(blockStart + offset, blockStart + offset + 9, NULL, 0, &c);
 				};
 				colorBlock(0, c1);
 				colorBlock(1, c2);
@@ -537,8 +540,12 @@ ip_found:
 			if (capacityIndex >= 0) {
 				int32 end = state.FindFirst("\n", capacityIndex);
 				if (end < 0) end = state.Length();
-				state.CopyInto(capacityStr, capacityIndex + 10, end - (capacityIndex + 10));
-				capacityStr.Trim();
+
+				if (end >= capacityIndex + 10) {
+					state.CopyInto(capacityStr, capacityIndex + 10, end - (capacityIndex + 10));
+					capacityStr.Trim();
+				}
+
 				if (!capacityStr.IsEmpty()) {
 					capacityStr << "%";
 					reply.AddString("battery", capacityStr);
