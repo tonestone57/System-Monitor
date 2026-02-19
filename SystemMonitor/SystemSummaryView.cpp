@@ -230,26 +230,29 @@ void SystemSummaryView::MessageReceived(BMessage* message)
 			infoText << userHost << "\n" << separator << "\n";
 
 			// Order from screenshot
-			infoText << "OS: " << message->FindString("os") << "\n";
-			infoText << "Kernel: " << message->FindString("kernel") << "\n";
-			infoText << "Uptime: " << message->FindString("uptime") << "\n";
-			infoText << "Packages: " << message->FindString("packages") << "\n";
-			infoText << "Shell: " << message->FindString("shell") << "\n";
-			infoText << "Display: " << message->FindString("display") << "\n";
-			infoText << "DE: " << message->FindString("de") << "\n";
-			infoText << "WM: " << message->FindString("wm") << "\n";
-			infoText << "Font: " << message->FindString("font") << "\n";
-			// Terminal skipped
-			// Terminal Font skipped
-			infoText << "CPU: " << message->FindString("cpu") << "\n";
-			infoText << "GPU: " << message->FindString("gpu") << "\n";
-			infoText << "Memory: " << message->FindString("memory") << "\n";
-			infoText << "Swap: " << message->FindString("swap") << "\n";
-			infoText << "Disk: " << message->FindString("disk") << "\n";
-			infoText << "Local IP: " << message->FindString("ip") << "\n";
+			auto addInfoLine = [&](const char* key, const char* field) {
+				BString localizedKey = B_TRANSLATE(key);
+				infoText << localizedKey << ": " << message->FindString(field) << "\n";
+			};
+
+			addInfoLine("OS", "os");
+			addInfoLine("Kernel", "kernel");
+			addInfoLine("Uptime", "uptime");
+			addInfoLine("Packages", "packages");
+			addInfoLine("Shell", "shell");
+			addInfoLine("Display", "display");
+			addInfoLine("DE", "de");
+			addInfoLine("WM", "wm");
+			addInfoLine("Font", "font");
+			addInfoLine("CPU", "cpu");
+			addInfoLine("GPU", "gpu");
+			addInfoLine("Memory", "memory");
+			addInfoLine("Swap", "swap");
+			addInfoLine("Disk", "disk");
+			addInfoLine("Local IP", "ip");
 			if (message->HasString("battery"))
-				infoText << "Battery: " << message->FindString("battery") << "\n";
-			infoText << "Locale: " << message->FindString("locale") << "\n";
+				addInfoLine("Battery", "battery");
+			addInfoLine("Locale", "locale");
 
 			// Add Color Blocks at bottom
 			infoText << "\n";
@@ -283,8 +286,8 @@ void SystemSummaryView::MessageReceived(BMessage* message)
 
 			BString currentText = fInfoTextView->Text();
 			for (int i=0; keys[i]; i++) {
-				BString keyStr;
-				keyStr << keys[i] << ":";
+				BString keyStr = B_TRANSLATE(keys[i]);
+				keyStr << ":";
 				int32 keyStart = currentText.FindFirst(keyStr, pos);
 				if (keyStart >= 0) {
 					fInfoTextView->SetFontAndColor(keyStart, keyStart + keyStr.Length(), NULL, 0, &keyColor);

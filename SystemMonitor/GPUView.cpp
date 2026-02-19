@@ -29,12 +29,13 @@ void GPUView::CreateLayout()
     headerFont.SetSize(headerFont.Size() * 1.5);
     gpuLabel->SetFont(&headerFont);
 
-    fCardNameValue = new BStringView("card_name", "Unknown GPU");
+    fCardNameValue = new BStringView("card_name", B_TRANSLATE("Unknown GPU"));
     fCardNameValue->SetAlignment(B_ALIGN_RIGHT);
 
     // Graph Grid (4 graphs)
     BGridLayout* graphGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-    const char* titles[] = {"3D", "Copy", "Video Encode", "Video Decode"};
+    const char* titles[] = {B_TRANSLATE("3D"), B_TRANSLATE("Copy"),
+        B_TRANSLATE("Video Encode"), B_TRANSLATE("Video Decode")};
 
     for (int i = 0; i < 4; i++) {
         BView* container = new BView("graph_container", B_WILL_DRAW);

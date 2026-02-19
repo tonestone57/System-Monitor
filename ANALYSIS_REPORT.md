@@ -94,3 +94,26 @@ The following architectural improvements and rendering fixes were implemented to
 
 - **Type Consistency (CircularBuffer)**:
   - Updated `CircularBuffer` constructor and `SetSize` method to use `uint32` for size parameters, aligning with the internal member variable type and eliminating potential implicit truncation warnings on 64-bit platforms.
+
+## 7. Extended Audit & Localization Phase
+
+A final extensive audit was conducted to resolve remaining logic fragility, code duplication, and localization gaps:
+
+- **Logic Accuracy & Robustness**:
+  - **Network Monitoring**: Fixed a bug in `NetworkView` where traffic calculations for total speed depended on comparing translated UI strings ("Loopback"). Introduced a reliable `isLoopback` boolean flag in `NetworkInfo`, populated from interface flags.
+  - **CPU Frequency**: Improved `CPUView` to handle cases where core frequency cannot be determined (e.g., in virtualized environments), displaying a localized "N/A" instead of misleading zero values.
+  - **Graph Precision**: Refined `ActivityGraphView` partial update logic to use the exact `fLastRefresh` timestamp for history lookups, eliminating visual discontinuities.
+  - **Sub-pixel Drawing**: Updated `ActivityGraphView` to use `float` for `fScrollOffset` and improved HiDPI grid line calculation using `ceilf` and `GetScaleFactor`.
+  - **GPU Placeholder**: Fixed a bug in `GPUView` where the utilization label was never updated; it now correctly refreshes in the pulse loop.
+
+- **Code De-duplication**:
+  - **Shared Metrics**: Centralized "Cached Memory" calculation (Page Cache + Block Cache) into `Utils::GetCachedMemoryBytes`, eliminating duplicated math in `MemView` and `SystemSummaryView`.
+  - **UI Synchronization**: Extracted list selection restoration into a private helper `_RestoreSelection` in `ProcessView`, reducing duplication between update and filter paths.
+  - **Global Formatting**: Standardized uptime formatting across the app using `Utils::FormatUptime` (powered by Haiku's `BDurationFormat`).
+
+- **Thorough Localization**:
+  - Applied `B_TRANSLATE` to all remaining hardcoded strings, including chart titles, card names, speed units ("B/s", "KiB/s", etc.), and system info keys.
+  - Integrated `BNumberFormat` for localized percentage displays in `MemView` and `CPUView`.
+
+- **State Management**:
+  - Simplified `DiskView` and `NetworkView` by removing redundant `fVisibleItems` tracking sets, as these views always display all collected items.
