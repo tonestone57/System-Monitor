@@ -271,6 +271,7 @@ void DiskView::AttachedToWindow()
         fScanSem = create_sem(0, "disk scan sem");
 
     BVolumeRoster().StartWatching(BMessenger(this));
+    // Initial scan to populate cache
     _ScanVolumes();
 
     fUpdateThread = spawn_thread(UpdateThread, "DiskView Update", B_NORMAL_PRIORITY, this);
