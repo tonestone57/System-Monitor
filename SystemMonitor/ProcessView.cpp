@@ -886,13 +886,6 @@ int32 ProcessView::UpdateThread(void* data)
                         // Optimization: If process consumed no CPU time, assume threads are sleeping
                         if (teamActiveTimeDelta == 0)
                             skipThreadScan = true;
-                        else if (teamActiveTimeDelta > 0) {
-                            // If process consumed CPU time, assume it is running (avoids scanning threads).
-                            // This optimization assumes that if a process is active, it's effectively "Running"
-                            // for the user, even if it might be momentarily "Ready" or blocked.
-                            skipThreadScan = true;
-                            isRunning = true;
-                        }
                     }
                     cachedInfo->cpuTime = currentTeamTime;
                 }

@@ -305,7 +305,7 @@ ActivityGraphView::_DrawHistory()
                 view->CopyBits(src, dst);
 
                 fScrollOffset += pixelsToScroll;
-                fLastRefresh = now;
+                fLastRefresh += pixelsToScroll * timeStep;
 
                 // New Area
                 BRect newArea(frame.right - pixelsToScroll, frame.top, frame.right, frame.bottom);
@@ -353,7 +353,7 @@ ActivityGraphView::_DrawHistory()
                     int32 searchIndex = 0;
                     for (int32 j = 0; j < count; j++) {
                         int32 i = startI + j;
-                        int64 value = fHistory->ValueAt(now - (steps - 1 - i) * timeStep, &searchIndex);
+                        int64 value = fHistory->ValueAt(fLastRefresh - (steps - 1 - i) * timeStep, &searchIndex);
                         float y;
                         if (range == 0)
                             y = frame.Height() / 2;
