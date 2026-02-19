@@ -18,6 +18,7 @@
 #include <Messenger.h>
 #include <Catalog.h>
 #include <ScrollView.h>
+#include <vector>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "DiskView"
@@ -269,6 +270,9 @@ void DiskView::AttachedToWindow()
     if (fScanSem < 0)
         fScanSem = create_sem(0, "disk scan sem");
 
+    BVolumeRoster().StartWatching(BMessenger(this));
+    _ScanVolumes();
+
     fUpdateThread = spawn_thread(UpdateThread, "DiskView Update", B_NORMAL_PRIORITY, this);
     if (fUpdateThread >= 0)
         resume_thread(fUpdateThread);
@@ -277,6 +281,7 @@ void DiskView::AttachedToWindow()
 void DiskView::DetachedFromWindow()
 {
     fTerminated = true;
+    stop_watching(BMessenger(this));
     if (fScanSem >= 0) {
         delete_sem(fScanSem);
         fScanSem = -1;
@@ -293,6 +298,31 @@ void DiskView::MessageReceived(BMessage* message)
 {
     if (message->what == kMsgDiskDataUpdate) {
         UpdateData(message);
+    } else if (message->what == B_NODE_MONITOR) {
+        int32 opcode;
+        if (message->FindInt32("opcode", &opcode) == B_OK) {
+            if (opcode == B_DEVICE_MOUNTED) {
+                dev_t device;
+                if (message->FindInt32("new_device", &device) == B_OK) {
+                    BVolume volume(device);
+                    if (volume.InitCheck() == B_OK && volume.Capacity() > 0) {
+                        DiskInfo info;
+                        if (GetDiskInfo(volume, info) == B_OK) {
+                            fLocker.Lock();
+                            fVolumeCache[info.deviceID] = info;
+                            fLocker.Unlock();
+                        }
+                    }
+                }
+            } else if (opcode == B_DEVICE_UNMOUNTED) {
+                dev_t device;
+                if (message->FindInt32("device", &device) == B_OK) {
+                    fLocker.Lock();
+                    fVolumeCache.erase(device);
+                    fLocker.Unlock();
+                }
+            }
+        }
     } else {
         BView::MessageReceived(message);
     }
@@ -359,26 +389,34 @@ int32 DiskView::UpdateThread(void* data)
             acquire_sem_etc(view->fScanSem, count, B_RELATIVE_TIMEOUT, 0);
 
         BMessage updateMsg(kMsgDiskDataUpdate);
-        BVolumeRoster volRoster;
-        BVolume volume;
-        volRoster.Rewind();
 
-        while (volRoster.GetNextVolume(&volume) == B_OK) {
-             if (volume.Capacity() <= 0) continue;
+        std::vector<DiskInfo> volumesToPoll;
+        if (view->fLocker.Lock()) {
+            for (auto const& pair : view->fVolumeCache) {
+                 volumesToPoll.push_back(pair.second);
+            }
+            view->fLocker.Unlock();
+        }
 
-             DiskInfo currentDiskInfo;
-             if (view->GetDiskInfo(volume, currentDiskInfo) != B_OK) {
+        for (auto& info : volumesToPoll) {
+             fs_info fsInfo;
+             if (fs_stat_dev(info.deviceID, &fsInfo) != B_OK) {
                  continue;
              }
-             if (currentDiskInfo.totalSize == 0) continue;
+
+             // Update dynamic info
+             info.totalSize = fsInfo.total_blocks * fsInfo.block_size;
+             info.freeSize = fsInfo.free_blocks * fsInfo.block_size;
+
+             if (info.totalSize == 0) continue;
 
              BMessage volMsg;
-             volMsg.AddInt32("device_id", currentDiskInfo.deviceID);
-             volMsg.AddString("device_name", currentDiskInfo.deviceName);
-             volMsg.AddString("mount_point", currentDiskInfo.mountPoint);
-             volMsg.AddString("fs_type", currentDiskInfo.fileSystemType);
-             volMsg.AddUInt64("total_size", currentDiskInfo.totalSize);
-             volMsg.AddUInt64("free_size", currentDiskInfo.freeSize);
+             volMsg.AddInt32("device_id", info.deviceID);
+             volMsg.AddString("device_name", info.deviceName);
+             volMsg.AddString("mount_point", info.mountPoint);
+             volMsg.AddString("fs_type", info.fileSystemType);
+             volMsg.AddUInt64("total_size", info.totalSize);
+             volMsg.AddUInt64("free_size", info.freeSize);
 
              updateMsg.AddMessage("volume", &volMsg);
         }
@@ -470,4 +508,26 @@ void DiskView::UpdateData(BMessage* message)
 void DiskView::Draw(BRect updateRect)
 {
     BView::Draw(updateRect);
+}
+
+void DiskView::_ScanVolumes()
+{
+    fLocker.Lock();
+    fVolumeCache.clear();
+    fLocker.Unlock();
+
+    BVolumeRoster volRoster;
+    BVolume volume;
+    volRoster.Rewind();
+
+    while (volRoster.GetNextVolume(&volume) == B_OK) {
+        if (volume.Capacity() <= 0) continue;
+
+        DiskInfo info;
+        if (GetDiskInfo(volume, info) == B_OK) {
+             fLocker.Lock();
+             fVolumeCache[info.deviceID] = info;
+             fLocker.Unlock();
+        }
+    }
 }
