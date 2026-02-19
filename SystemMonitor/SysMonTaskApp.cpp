@@ -227,6 +227,7 @@ void PerformanceView::SetRefreshInterval(bigtime_t interval)
 	if (fCPUView) fCPUView->SetRefreshInterval(interval);
 	if (fMemView) fMemView->SetRefreshInterval(interval);
 	if (fNetworkView) fNetworkView->SetRefreshInterval(interval);
+	if (fDiskView) fDiskView->SetRefreshInterval(interval);
 	if (fGPUView) fGPUView->SetRefreshInterval(interval);
 }
 
