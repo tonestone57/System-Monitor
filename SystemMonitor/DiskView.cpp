@@ -210,7 +210,7 @@ private:
 
 
 DiskView::DiskView()
-	: BView("DiskView", B_WILL_DRAW | B_PULSE_NEEDED),
+	: BView("DiskView", B_WILL_DRAW),
 	  fUpdateThread(-1),
 	  fScanSem(-1),
 	  fTerminated(false),
@@ -379,11 +379,6 @@ void DiskView::MessageReceived(BMessage* message)
 	}
 }
 
-void DiskView::Pulse()
-{
-	// No-op: UpdateThread handles timing
-}
-
 void DiskView::SetRefreshInterval(bigtime_t interval)
 {
 	fRefreshInterval = interval;
@@ -529,8 +524,6 @@ void DiskView::UpdateData(BMessage* message)
 	type_code type;
 	message->GetInfo("volume", &type, &count);
 
-	bool listChanged = false;
-
 	// Get Font once
 	BFont font;
 	fDiskListView->GetFont(&font);
@@ -576,7 +569,6 @@ void DiskView::UpdateData(BMessage* message)
 			item = new DiskListItem(deviceID, deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font, this);
 			fDiskListView->AddItem(item);
 			result.first->second = item;
-			listChanged = true;
 		} else {
 			item = result.first->second;
 			item->Update(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font, fontChanged);
@@ -590,7 +582,6 @@ void DiskView::UpdateData(BMessage* message)
 			fDiskListView->RemoveItem(item);
 			delete item;
 			it = fDeviceItemMap.erase(it);
-			listChanged = true;
 		} else {
 			++it;
 		}

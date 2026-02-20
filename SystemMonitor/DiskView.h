@@ -46,7 +46,6 @@ public:
 
 	virtual void AttachedToWindow();
 	virtual void DetachedFromWindow();
-	virtual void Pulse();
 	virtual void MessageReceived(BMessage* message);
 	virtual void Draw(BRect updateRect);
 
