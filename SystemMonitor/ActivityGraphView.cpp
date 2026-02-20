@@ -10,7 +10,7 @@
 #include "Utils.h"
 
 ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_which systemColor)
-	: BView(name, B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE),
+	: BView(name, B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE | B_FRAME_EVENTS),
 	fColor(color),
 	fSystemColor(systemColor),
 	fOffscreen(NULL),
@@ -24,7 +24,6 @@ ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_wh
 	fLastRefresh(0),
 	fScrollOffset(0)
 {
-	fPoints.resize(2048); // Pre-allocate for typical screen widths to avoid reallocations
 	fPoints.reserve(4096); // Pre-allocate for typical screen widths (including 4K) to avoid reallocations
 	fHistory = new DataHistory(10 * 60000000LL, 1000000);
 }
@@ -83,14 +82,12 @@ ActivityGraphView::FrameResized(float width, float /*height*/)
 {
 	_UpdateOffscreenBitmap();
 
-	// Pre-allocate points vector to avoid frequent resizing during window growth
-	size_t needed = static_cast<size_t>(width) + 64;
+	// Pre-allocate points vector to avoid frequent reallocations during window growth
+	size_t needed = static_cast<size_t>(width) + 128;
 	if (fPoints.capacity() < needed) {
 		fPoints.reserve(std::max(needed, fPoints.capacity() * 2));
 	}
-	if (fPoints.size() < needed) {
-		fPoints.resize(needed);
-	}
+	fPoints.resize(needed);
 }
 
 
@@ -282,8 +279,9 @@ ActivityGraphView::_DrawHistory()
 				int32 pointCount = steps + 2;
 
 				try {
-					if (fPoints.size() < (size_t)pointCount)
-						fPoints.resize(pointCount);
+					if (fPoints.capacity() < (size_t)pointCount)
+						fPoints.reserve(pointCount + 64);
+					fPoints.resize(pointCount);
 
 					BPoint* points = fPoints.data();
 
@@ -390,8 +388,9 @@ ActivityGraphView::_DrawHistory()
 				int32 polyCount = count + 2;
 
 				try {
-					if (fPoints.size() < (size_t)polyCount)
-						fPoints.resize(polyCount);
+					if (fPoints.capacity() < (size_t)polyCount)
+						fPoints.reserve(polyCount + 64);
+					fPoints.resize(polyCount);
 
 					BPoint* points = fPoints.data();
 
