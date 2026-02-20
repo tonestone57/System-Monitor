@@ -32,11 +32,6 @@
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "SystemDetailsView"
 
-static int pages_to_mib(uint64 pages)
-{
-	return (int)((pages * B_PAGE_SIZE + 1048575) / 1048576);
-}
-
 SystemDetailsView::SystemDetailsView()
 	: BView("SystemDetailsView", B_WILL_DRAW | B_PULSE_NEEDED),
 	  fVersionLabelView(NULL),
@@ -105,7 +100,7 @@ SystemDetailsView::SystemDetailsView()
 	const float inset = offset;
 
 	SetLayout(new BGroupLayout(B_VERTICAL, 0));
-	BLayoutBuilder::Group<>((BGroupLayout*)GetLayout())
+	BLayoutBuilder::Group<>(static_cast<BGroupLayout*>(GetLayout()))
 		.Add(new BScrollView("scroll_details", BLayoutBuilder::Group<>(B_VERTICAL)
 			// Version:
 			.Add(fVersionLabelView)
@@ -254,26 +249,32 @@ BString SystemDetailsView::_GetCPUFeatures()
 
 BString SystemDetailsView::_GetRamSize(system_info* sysInfo)
 {
+	uint64 used, total, physical;
+	GetMemoryUsage(used, total, physical);
+
 	BString ramSize;
 	ramSize.SetToFormat(B_TRANSLATE_COMMENT("%d MiB Memory:",
-		"2048 MiB Memory:"), pages_to_mib(sysInfo->max_pages + sysInfo->ignored_pages));
+		"2048 MiB Memory:"), static_cast<int>(BytesToMiB(physical)));
 
 	return ramSize;
 }
 
 BString SystemDetailsView::_GetRamUsage(system_info* sysInfo)
 {
+	uint64 used, total, physical;
+	GetMemoryUsage(used, total, physical);
+
 	BString ramUsage;
 	BString data;
-	double usedMemoryPercent = double(sysInfo->used_pages) / sysInfo->max_pages;
+	double usedMemoryPercent = total > 0 ? static_cast<double>(used) / total : 0.0;
 	status_t status = fNumberFormat.FormatPercent(data, usedMemoryPercent);
 
 	if (status == B_OK) {
 		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %d MiB used (%s)",
-			"RAM: 326 MiB used (16%)"), pages_to_mib(sysInfo->used_pages), data.String());
+			"RAM: 326 MiB used (16%)"), static_cast<int>(BytesToMiB(used)), data.String());
 	} else {
 		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %d MiB used (%d%%)",
-			"RAM: 326 MiB used (16%)"), pages_to_mib(sysInfo->used_pages), (int)(100 * usedMemoryPercent));
+			"RAM: 326 MiB used (16%)"), static_cast<int>(BytesToMiB(used)), static_cast<int>(100 * usedMemoryPercent));
 	}
 
 	return ramUsage;
@@ -290,7 +291,7 @@ BString SystemDetailsView::_GetSwapUsage(system_info* sysInfo)
 
 	int percent = 0;
 	if (swapTotal > 0)
-		percent = (int)(100.0 * swapUsed / swapTotal);
+		percent = static_cast<int>(100.0 * swapUsed / swapTotal);
 
 	BString swapUsage;
 	swapUsage.SetToFormat(B_TRANSLATE("Swap: %s / %s (%d%%)"),

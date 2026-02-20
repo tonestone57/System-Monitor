@@ -85,7 +85,7 @@ private:
 
 class SummaryView : public BView {
 public:
-	SummaryView(SystemStats* stats) : BView("SummaryView", B_WILL_DRAW | B_PULSE_NEEDED), fStats(stats) {
+	SummaryView(SystemStats* stats) : BView("SummaryView", B_WILL_DRAW), fStats(stats) {
 		SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
 		fCpuGraph = new ActivityGraphView("cpu_summary_graph", {0, 0, 0, 0}, B_SUCCESS_COLOR);
@@ -126,7 +126,7 @@ private:
 		return card;
 	}
 
-	virtual void Pulse() {
+	void UpdateData() {
 		if (fStats) {
 			const bigtime_t now = system_time();
 			fCpuGraph->AddValue(now, fStats->cpuUsage * 10);
@@ -226,6 +226,9 @@ void PerformanceView::Pulse()
 	fStats.memoryUsage = fMemView->GetCurrentUsage();
 	fStats.uploadSpeed = fNetworkView->GetUploadSpeed();
 	fStats.downloadSpeed = fNetworkView->GetDownloadSpeed();
+
+	if (fSummaryView)
+		fSummaryView->UpdateData();
 }
 
 void PerformanceView::Hide()

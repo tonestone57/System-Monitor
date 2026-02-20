@@ -385,7 +385,7 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	font_style style;
 	be_plain_font->GetFamilyAndStyle(&family, &style);
 	BString font;
-	font << family << " " << style << " (" << (int)be_plain_font->Size() << "pt)";
+	font << family << " " << style << " (" << static_cast<int>(be_plain_font->Size()) << "pt)";
 	reply.AddString("font", font);
 
 	// 10. CPU
@@ -395,16 +395,16 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	reply.AddString("gpu", GetGPUInfo());
 
 	// 12. Memory
-	if (get_system_info(&sysInfo) == B_OK) {
-		uint64 total = (uint64)sysInfo.max_pages * B_PAGE_SIZE;
-		uint64 used = (uint64)sysInfo.used_pages * B_PAGE_SIZE;
+	uint64 used, total, physical;
+	GetMemoryUsage(used, total, physical);
+	if (total > 0 && get_system_info(&sysInfo) == B_OK) {
 		uint64 cached = GetCachedMemoryBytes(sysInfo);
 
 		BString cachedStr;
 		::FormatBytes(cachedStr, cached);
 
 		BString memStr;
-		int percent = (int)(100.0 * used / total);
+		int percent = static_cast<int>(100.0 * used / total);
 		BString usedStr, totalStr;
 		::FormatBytes(usedStr, used);
 		::FormatBytes(totalStr, total);

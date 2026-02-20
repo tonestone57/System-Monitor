@@ -137,50 +137,50 @@ public:
 	}
 
 	static int CompareDevice(const void* first, const void* second) {
-		const DiskListItem* item1 = *(const DiskListItem**)first;
-		const DiskListItem* item2 = *(const DiskListItem**)second;
+		const DiskListItem* item1 = *static_cast<const DiskListItem* const*>(first);
+		const DiskListItem* item2 = *static_cast<const DiskListItem* const*>(second);
 		return strcasecmp(item1->fDevice.String(), item2->fDevice.String());
 	}
 
 	static int CompareMount(const void* first, const void* second) {
-		const DiskListItem* item1 = *(const DiskListItem**)first;
-		const DiskListItem* item2 = *(const DiskListItem**)second;
+		const DiskListItem* item1 = *static_cast<const DiskListItem* const*>(first);
+		const DiskListItem* item2 = *static_cast<const DiskListItem* const*>(second);
 		return strcasecmp(item1->fMount.String(), item2->fMount.String());
 	}
 
 	static int CompareFS(const void* first, const void* second) {
-		const DiskListItem* item1 = *(const DiskListItem**)first;
-		const DiskListItem* item2 = *(const DiskListItem**)second;
+		const DiskListItem* item1 = *static_cast<const DiskListItem* const*>(first);
+		const DiskListItem* item2 = *static_cast<const DiskListItem* const*>(second);
 		return strcasecmp(item1->fFS.String(), item2->fFS.String());
 	}
 
 	static int CompareTotal(const void* first, const void* second) {
-		const DiskListItem* item1 = *(const DiskListItem**)first;
-		const DiskListItem* item2 = *(const DiskListItem**)second;
+		const DiskListItem* item1 = *static_cast<const DiskListItem* const*>(first);
+		const DiskListItem* item2 = *static_cast<const DiskListItem* const*>(second);
 		if (item1->fTotal > item2->fTotal) return -1;
 		if (item1->fTotal < item2->fTotal) return 1;
 		return 0;
 	}
 
 	static int CompareUsed(const void* first, const void* second) {
-		const DiskListItem* item1 = *(const DiskListItem**)first;
-		const DiskListItem* item2 = *(const DiskListItem**)second;
+		const DiskListItem* item1 = *static_cast<const DiskListItem* const*>(first);
+		const DiskListItem* item2 = *static_cast<const DiskListItem* const*>(second);
 		if (item1->fUsed > item2->fUsed) return -1;
 		if (item1->fUsed < item2->fUsed) return 1;
 		return 0;
 	}
 
 	static int CompareFree(const void* first, const void* second) {
-		const DiskListItem* item1 = *(const DiskListItem**)first;
-		const DiskListItem* item2 = *(const DiskListItem**)second;
+		const DiskListItem* item1 = *static_cast<const DiskListItem* const*>(first);
+		const DiskListItem* item2 = *static_cast<const DiskListItem* const*>(second);
 		if (item1->fFree > item2->fFree) return -1;
 		if (item1->fFree < item2->fFree) return 1;
 		return 0;
 	}
 
 	static int CompareUsage(const void* first, const void* second) {
-		const DiskListItem* item1 = *(const DiskListItem**)first;
-		const DiskListItem* item2 = *(const DiskListItem**)second;
+		const DiskListItem* item1 = *static_cast<const DiskListItem* const*>(first);
+		const DiskListItem* item2 = *static_cast<const DiskListItem* const*>(second);
 		if (item1->fPercent > item2->fPercent) return -1;
 		if (item1->fPercent < item2->fPercent) return 1;
 		return 0;
@@ -246,6 +246,7 @@ DiskView::DiskView()
 		ClickableHeaderView* sv = new ClickableHeaderView(label, width, mode, this);
 		sv->SetAlignment(align);
 		headerView->AddChild(sv);
+		fHeaders.push_back(sv);
 	};
 
 	addHeader(B_TRANSLATE("Device"), fDeviceWidth, SORT_DISK_BY_DEVICE);
@@ -468,8 +469,8 @@ int32 DiskView::UpdateThread(void* data)
 			 }
 
 			 // Update dynamic info
-			 info.totalSize = (uint64)fsInfo.total_blocks * fsInfo.block_size;
-			 info.freeSize = (uint64)fsInfo.free_blocks * fsInfo.block_size;
+			 info.totalSize = static_cast<uint64>(fsInfo.total_blocks) * fsInfo.block_size;
+			 info.freeSize = static_cast<uint64>(fsInfo.free_blocks) * fsInfo.block_size;
 
 			 // Update name dynamically
 			 if (strlen(fsInfo.volume_name) > 0) {
@@ -545,14 +546,16 @@ void DiskView::UpdateData(BMessage* message)
 		fUsedWidth = kBaseDiskUsedWidth * scale;
 		fFreeWidth = kBaseDiskFreeWidth * scale;
 		fPercentWidth = kBaseDiskPercentWidth * scale;
+
+		UpdateHeaderWidths(fHeaders, { fDeviceWidth, fMountWidth, fFSWidth, fTotalWidth, fUsedWidth, fFreeWidth, fPercentWidth });
 	}
 
 	for (int32 i = 0; i < count; i++) {
 		BMessage volMsg;
 		if (message->FindMessage("volume", i, &volMsg) != B_OK) continue;
 
-		dev_t deviceID;
-		if (volMsg.FindInt32("device_id", (int32*)&deviceID) != B_OK) continue;
+		int32 deviceID;
+		if (volMsg.FindInt32("device_id", &deviceID) != B_OK) continue;
 
 		BString deviceName = volMsg.FindString("device_name");
 		BString mountPoint = volMsg.FindString("mount_point");
@@ -564,7 +567,7 @@ void DiskView::UpdateData(BMessage* message)
 		uint64 usedSize = totalSize - freeSize;
 		double usagePercent = 0.0;
 		if (totalSize > 0) {
-			usagePercent = (double)usedSize / totalSize * 100.0;
+			usagePercent = static_cast<double>(usedSize) / totalSize * 100.0;
 		}
 
 		DiskListItem* item;

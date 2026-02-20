@@ -18,6 +18,7 @@
 class BListView;
 class BMenuItem;
 class BListItem;
+class ClickableHeaderView;
 
 #include <kernel/OS.h>
 
@@ -141,6 +142,7 @@ private:
 	BString fFilterArgs; // Buffer for args filtering
 
 	std::unordered_map<uid_t, CachedUser> fUserNameCache;
+	std::vector<ClickableHeaderView*> fHeaders;
 	bigtime_t fLastSystemTime;
 	std::atomic<bigtime_t> fRefreshInterval;
 

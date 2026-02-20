@@ -84,7 +84,7 @@ ActivityGraphView::FrameResized(float width, float /*height*/)
 	_UpdateOffscreenBitmap();
 
 	// Pre-allocate points vector to avoid frequent resizing during window growth
-	size_t needed = (size_t)width + 64;
+	size_t needed = static_cast<size_t>(width) + 64;
 	if (fPoints.capacity() < needed) {
 		fPoints.reserve(std::max(needed, fPoints.capacity() * 2));
 	}
@@ -336,10 +336,10 @@ ActivityGraphView::_DrawHistory()
 					BFont viewFont;
 					view->GetFont(&viewFont);
 					float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
-					fScrollOffset += pixelsToScroll;
+					fScrollOffset += static_cast<float>(pixelsToScroll);
 					while (fScrollOffset >= gridSpacing)
 						fScrollOffset -= gridSpacing;
-					fLastRefresh += (bigtime_t)pixelsToScroll * timeStep;
+					fLastRefresh += static_cast<bigtime_t>(pixelsToScroll) * timeStep;
 				}
 
 				// New Area (at least the last pixel)
@@ -374,7 +374,7 @@ ActivityGraphView::_DrawHistory()
 				BRegion clipRegion(newArea);
 				view->ConstrainClippingRegion(&clipRegion);
 
-				int32 startI = (int32)newArea.left - 1;
+				int32 startI = static_cast<int32>(newArea.left) - 1;
 				if (startI < 0) startI = 0;
 				int32 endI = steps - 1;
 				int32 count = endI - startI + 1;
@@ -393,8 +393,8 @@ ActivityGraphView::_DrawHistory()
 						int32 i = startI + j;
 						// For the very last pixel, use 'now' for maximum smoothness
 						bigtime_t t;
-						if (i == (int32)steps - 1) t = now;
-						else t = fLastRefresh - (steps - 1 - i) * timeStep;
+						if (i == static_cast<int32>(steps) - 1) t = now;
+						else t = fLastRefresh - static_cast<bigtime_t>(steps - 1 - i) * timeStep;
 
 						int64 value = fHistory->ValueAt(t, &searchIndex);
 						float y;

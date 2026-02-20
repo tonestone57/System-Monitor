@@ -5,6 +5,7 @@
 #include <Locker.h>
 #include <String.h>
 #include <unordered_map>
+#include <vector>
 #include <string>
 #include <set>
 #include <atomic>
@@ -13,6 +14,7 @@
 
 class BListView;
 class BListItem;
+class ClickableHeaderView;
 class InterfaceListItem; // Forward declaration
 class ActivityGraphView;
 
@@ -73,6 +75,7 @@ private:
 	void UpdateData(BMessage* message);
 
 	BListView* fInterfaceListView;
+	std::vector<ClickableHeaderView*> fHeaders;
 	ActivityGraphView* fDownloadGraph;
 	ActivityGraphView* fUploadGraph;
 

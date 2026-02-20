@@ -4,6 +4,8 @@
 #include <String.h>
 #include <SupportDefs.h>
 #include <StringView.h>
+#include <vector>
+#include <initializer_list>
 
 class BFont;
 
@@ -13,6 +15,7 @@ class ClickableHeaderView : public BStringView {
 public:
 	ClickableHeaderView(const char* label, float width, int32 mode, BHandler* target);
 	virtual void MouseDown(BPoint where);
+	void SetWidth(float width);
 
 private:
 	int32 fMode;
@@ -21,6 +24,9 @@ private:
 
 void FormatBytes(BString& out, uint64 bytes, int precision = 2);
 void FormatBytes(BString& out, double bytes, int precision = 2);
+uint64 BytesToMiB(uint64 bytes);
+void UpdateHeaderWidths(const std::vector<ClickableHeaderView*>& headers, std::initializer_list<float> widths);
+void GetMemoryUsage(uint64& used, uint64& total, uint64& physical);
 void GetSwapUsage(uint64& used, uint64& total);
 uint64 GetCachedMemoryBytes(const system_info& sysInfo);
 BString FormatHertz(uint64 hertz);

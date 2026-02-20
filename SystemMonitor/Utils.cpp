@@ -49,16 +49,31 @@ void ClickableHeaderView::MouseDown(BPoint where) {
 	}
 }
 
+void ClickableHeaderView::SetWidth(float width) {
+	SetExplicitMinSize(BSize(width, B_SIZE_UNSET));
+	SetExplicitMaxSize(BSize(width, B_SIZE_UNSET));
+	InvalidateLayout();
+}
+
+void UpdateHeaderWidths(const std::vector<ClickableHeaderView*>& headers, std::initializer_list<float> widths) {
+	size_t i = 0;
+	for (float width : widths) {
+		if (i >= headers.size()) break;
+		headers[i]->SetWidth(width);
+		i++;
+	}
+}
+
 void FormatBytes(BString& str, uint64 bytes, int precision) {
-	FormatBytes(str, (double)bytes, precision);
+	FormatBytes(str, static_cast<double>(bytes), precision);
 }
 
 void FormatBytes(BString& str, double bytes, int precision) {
 	if (bytes < 1024.0) {
 		str.SetToFormat(B_TRANSLATE("%.1f B"), bytes);
 		// Optimization: if it is exactly an integer, don't show .0
-		if (bytes == (uint64)bytes)
-			str.SetToFormat(B_TRANSLATE("%" B_PRIu64 " B"), (uint64)bytes);
+		if (bytes == static_cast<uint64>(bytes))
+			str.SetToFormat(B_TRANSLATE("%" B_PRIu64 " B"), static_cast<uint64>(bytes));
 		return;
 	}
 
@@ -78,11 +93,28 @@ void FormatBytes(BString& str, double bytes, int precision) {
 	str.SetToFormat(B_TRANSLATE("%.*f GiB"), precision, gb);
 }
 
+uint64 BytesToMiB(uint64 bytes) {
+	return (bytes + 1048575) / 1048576;
+}
+
+void GetMemoryUsage(uint64& used, uint64& total, uint64& physical) {
+	system_info info;
+	if (get_system_info(&info) == B_OK) {
+		total = static_cast<uint64>(info.max_pages) * B_PAGE_SIZE;
+		used = static_cast<uint64>(info.used_pages) * B_PAGE_SIZE;
+		physical = static_cast<uint64>(info.max_pages + info.ignored_pages) * B_PAGE_SIZE;
+	} else {
+		total = 0;
+		used = 0;
+		physical = 0;
+	}
+}
+
 void GetSwapUsage(uint64& used, uint64& total) {
 	system_info info;
 	if (get_system_info(&info) == B_OK) {
-		total = (uint64)info.max_swap_pages * B_PAGE_SIZE;
-		used = (uint64)info.used_swap_pages * B_PAGE_SIZE;
+		total = static_cast<uint64>(info.max_swap_pages) * B_PAGE_SIZE;
+		used = static_cast<uint64>(info.used_swap_pages) * B_PAGE_SIZE;
 	} else {
 		total = 0;
 		used = 0;
@@ -91,7 +123,7 @@ void GetSwapUsage(uint64& used, uint64& total) {
 
 uint64 GetCachedMemoryBytes(const system_info& sysInfo) {
 	// On Haiku, cached memory includes both the page cache and the block cache.
-	return ((uint64)sysInfo.cached_pages + (uint64)sysInfo.block_cache_pages) * B_PAGE_SIZE;
+	return (static_cast<uint64>(sysInfo.cached_pages) + static_cast<uint64>(sysInfo.block_cache_pages)) * B_PAGE_SIZE;
 }
 
 BString FormatHertz(uint64 hertz) {
@@ -122,7 +154,7 @@ BString FormatUptime(bigtime_t uptimeMicros) {
 BString FormatSpeed(uint64 bytesDelta, bigtime_t microSecondsDelta)
 {
 	if (microSecondsDelta <= 0) return B_TRANSLATE("0 B/s");
-	double speed = (double)bytesDelta * 1000000.0 / microSecondsDelta;
+	double speed = static_cast<double>(bytesDelta) * 1000000.0 / microSecondsDelta;
 	BString str;
 	FormatBytes(str, speed);
 	str << "/s";
@@ -458,11 +490,11 @@ BString GetDisplayInfo()
 			BString display;
 			float refresh = 60.0;
 			if (mode.timing.pixel_clock > 0 && mode.timing.h_total > 0 && mode.timing.v_total > 0) {
-				refresh = (double)mode.timing.pixel_clock * 1000.0
-					/ (mode.timing.h_total * mode.timing.v_total);
+				refresh = static_cast<double>(mode.timing.pixel_clock) * 1000.0
+					/ (static_cast<double>(mode.timing.h_total) * mode.timing.v_total);
 			}
 			display.SetToFormat(B_TRANSLATE("%dx%d, %d Hz"), mode.virtual_width,
-				mode.virtual_height, (int)(refresh + 0.5));
+				mode.virtual_height, static_cast<int>(refresh + 0.5));
 			return display;
 		}
 	}
@@ -478,7 +510,7 @@ BString GetRootDiskUsage()
 		uint64 used = total - free;
 		int percent = 0;
 		if (total > 0)
-			percent = (int)(100.0 * used / total);
+			percent = static_cast<int>(100.0 * used / total);
 
 		BString usedStr, totalStr;
 		FormatBytes(usedStr, used);

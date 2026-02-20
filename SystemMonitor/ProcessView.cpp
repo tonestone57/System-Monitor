@@ -163,54 +163,54 @@ public:
 	const ProcessInfo& Info() const { return fInfo; }
 
 	static int CompareCPU(const void* first, const void* second) {
-		const ProcessListItem* item1 = *(const ProcessListItem**)first;
-		const ProcessListItem* item2 = *(const ProcessListItem**)second;
+		const ProcessListItem* item1 = *static_cast<const ProcessListItem* const*>(first);
+		const ProcessListItem* item2 = *static_cast<const ProcessListItem* const*>(second);
 		if (item1->fInfo.cpuUsage > item2->fInfo.cpuUsage) return -1;
 		if (item1->fInfo.cpuUsage < item2->fInfo.cpuUsage) return 1;
 		return 0;
 	}
 
 	static int ComparePID(const void* first, const void* second) {
-		const ProcessListItem* item1 = *(const ProcessListItem**)first;
-		const ProcessListItem* item2 = *(const ProcessListItem**)second;
+		const ProcessListItem* item1 = *static_cast<const ProcessListItem* const*>(first);
+		const ProcessListItem* item2 = *static_cast<const ProcessListItem* const*>(second);
 		if (item1->fInfo.id < item2->fInfo.id) return -1;
 		if (item1->fInfo.id > item2->fInfo.id) return 1;
 		return 0;
 	}
 
 	static int CompareName(const void* first, const void* second) {
-		const ProcessListItem* item1 = *(const ProcessListItem**)first;
-		const ProcessListItem* item2 = *(const ProcessListItem**)second;
+		const ProcessListItem* item1 = *static_cast<const ProcessListItem* const*>(first);
+		const ProcessListItem* item2 = *static_cast<const ProcessListItem* const*>(second);
 		return strcasecmp(item1->fInfo.name, item2->fInfo.name);
 	}
 
 	static int CompareMem(const void* first, const void* second) {
-		const ProcessListItem* item1 = *(const ProcessListItem**)first;
-		const ProcessListItem* item2 = *(const ProcessListItem**)second;
+		const ProcessListItem* item1 = *static_cast<const ProcessListItem* const*>(first);
+		const ProcessListItem* item2 = *static_cast<const ProcessListItem* const*>(second);
 		if (item1->fInfo.memoryUsageBytes > item2->fInfo.memoryUsageBytes) return -1;
 		if (item1->fInfo.memoryUsageBytes < item2->fInfo.memoryUsageBytes) return 1;
 		return 0;
 	}
 
 	static int CompareThreads(const void* first, const void* second) {
-		const ProcessListItem* item1 = *(const ProcessListItem**)first;
-		const ProcessListItem* item2 = *(const ProcessListItem**)second;
+		const ProcessListItem* item1 = *static_cast<const ProcessListItem* const*>(first);
+		const ProcessListItem* item2 = *static_cast<const ProcessListItem* const*>(second);
 		if (item1->fInfo.threadCount > item2->fInfo.threadCount) return -1;
 		if (item1->fInfo.threadCount < item2->fInfo.threadCount) return 1;
 		return 0;
 	}
 
 	static int CompareState(const void* first, const void* second) {
-		const ProcessListItem* item1 = *(const ProcessListItem**)first;
-		const ProcessListItem* item2 = *(const ProcessListItem**)second;
+		const ProcessListItem* item1 = *static_cast<const ProcessListItem* const*>(first);
+		const ProcessListItem* item2 = *static_cast<const ProcessListItem* const*>(second);
 		if (item1->fInfo.state < item2->fInfo.state) return -1;
 		if (item1->fInfo.state > item2->fInfo.state) return 1;
 		return 0;
 	}
 
 	static int CompareUser(const void* first, const void* second) {
-		const ProcessListItem* item1 = *(const ProcessListItem**)first;
-		const ProcessListItem* item2 = *(const ProcessListItem**)second;
+		const ProcessListItem* item1 = *static_cast<const ProcessListItem* const*>(first);
+		const ProcessListItem* item2 = *static_cast<const ProcessListItem* const*>(second);
 		return strcasecmp(item1->fInfo.userName, item2->fInfo.userName);
 	}
 
@@ -331,6 +331,7 @@ ProcessView::ProcessView()
 	auto addHeader = [&](const char* label, float width, int32 mode) {
 		ClickableHeaderView* sv = new ClickableHeaderView(label, width, mode, this);
 		headerView->AddChild(sv);
+		fHeaders.push_back(sv);
 	};
 
 	addHeader(B_TRANSLATE("PID"), fPIDWidth, SORT_BY_PID);
@@ -439,10 +440,10 @@ void ProcessView::MessageReceived(BMessage* message)
 		}
 		case MSG_CONFIRM_KILL: {
 			int32 button_index;
-			team_id team;
+			int32 team;
 			if (message->FindInt32("which", &button_index) == B_OK && button_index == 0) {
-				if (message->FindInt32("team_id", (int32*)&team) == B_OK) {
-					if (kill_team(team) != B_OK) {
+				if (message->FindInt32("team_id", &team) == B_OK) {
+					if (kill_team(static_cast<team_id>(team)) != B_OK) {
 						BAlert* errAlert = new BAlert(B_TRANSLATE("Error"), B_TRANSLATE("Failed to kill process."), B_TRANSLATE("OK"),
 													  NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
 						errAlert->Go(NULL);
@@ -528,7 +529,7 @@ void ProcessView::KillSelectedProcess() {
 
 	BString alertMsg;
 	alertMsg.SetToFormat(B_TRANSLATE("Are you sure you want to kill process %d (%s)?"),
-						 (int)team, item->Name());
+						 static_cast<int>(team), item->Name());
 	BAlert* confirmAlert = new BAlert(B_TRANSLATE("Confirm Kill"), alertMsg.String(), B_TRANSLATE("Kill"), B_TRANSLATE("Cancel"),
 									  NULL, B_WIDTH_AS_USUAL, B_WARNING_ALERT);
 
@@ -661,7 +662,7 @@ void ProcessView::Update(BMessage* message)
 	if (message->FindData("procs", B_RAW_TYPE, &data, &size) != B_OK)
 		return;
 
-	const ProcessInfo* infos = (const ProcessInfo*)data;
+	const ProcessInfo* infos = static_cast<const ProcessInfo*>(data);
 	size_t count = size / sizeof(ProcessInfo);
 
 	const char* searchText = fSearchControl->Text();
@@ -691,6 +692,8 @@ void ProcessView::Update(BMessage* message)
 		fMemWidth = kBaseMemWidth * scale;
 		fThreadsWidth = kBaseThreadsWidth * scale;
 		fUserWidth = kBaseUserWidth * scale;
+
+		UpdateHeaderWidths(fHeaders, { fPIDWidth, fNameWidth, fStateWidth, fCPUWidth, fMemWidth, fThreadsWidth, fUserWidth });
 	}
 
 	// First pass: Update existing items or create new ones
@@ -939,7 +942,7 @@ int32 ProcessView::UpdateThread(void* data)
 			else if (isReady) currentProc.state = PROCESS_STATE_READY;
 			else currentProc.state = PROCESS_STATE_SLEEPING;
 
-			float teamCpuPercent = (float)teamActiveTimeDelta / totalPossibleCoreTime * 100.0f;
+			float teamCpuPercent = static_cast<float>(teamActiveTimeDelta) / totalPossibleCoreTime * 100.0f;
 			if (teamCpuPercent < 0.0f) teamCpuPercent = 0.0f;
 			if (teamCpuPercent > 100.0f) teamCpuPercent = 100.0f;
 			currentProc.cpuUsage = teamCpuPercent;

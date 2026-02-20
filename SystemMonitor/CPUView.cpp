@@ -63,7 +63,7 @@ void CPUView::CreateLayout()
 		fCpuInfos.resize(fCpuCount);
 		fPerCoreUsage.resize(fCpuCount, 0.0f);
 
-		int cols = ceil(sqrt((double)fCpuCount));
+		int cols = static_cast<int>(ceil(sqrt(static_cast<double>(fCpuCount))));
 		if (cols < 1) cols = 1;
 
 		for (uint32 i = 0; i < fCpuCount; ++i) {
@@ -193,7 +193,7 @@ void CPUView::GetCPUUsage(bigtime_t now, float& overallUsage)
 			bigtime_t delta = fCpuInfos[i].active_time - fPreviousActiveTime[i];
 			if (delta < 0) delta = 0; // Handle time rollover
 
-			float coreUsage = (float)delta / elapsedWallTime * 100.0f;
+			float coreUsage = static_cast<float>(delta) / elapsedWallTime * 100.0f;
 			if (coreUsage < 0.0f) coreUsage = 0.0f;
 			if (coreUsage > 100.0f) coreUsage = 100.0f;
 			if (i < fPerCoreUsage.size())
@@ -204,7 +204,7 @@ void CPUView::GetCPUUsage(bigtime_t now, float& overallUsage)
 		}
 	}
 
-	overallUsage = (float)totalDeltaActiveTime / (elapsedWallTime * fCpuCount) * 100.0f;
+	overallUsage = static_cast<float>(totalDeltaActiveTime) / (static_cast<float>(elapsedWallTime) * fCpuCount) * 100.0f;
 
 	if (overallUsage < 0.0f) overallUsage = 0.0f;
 	if (overallUsage > 100.0f) overallUsage = 100.0f;

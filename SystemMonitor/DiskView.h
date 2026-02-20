@@ -6,6 +6,7 @@
 #include <String.h>
 #include <Volume.h>
 #include <unordered_map>
+#include <vector>
 #include <set>
 #include <atomic>
 #include <Font.h>
@@ -14,6 +15,7 @@
 class BBox;
 class BListView;
 class BListItem;
+class ClickableHeaderView;
 class DiskListItem; // Forward declaration
 
 struct DiskInfo {
@@ -66,6 +68,7 @@ private:
 
 	BBox* fDiskInfoBox;
 	BListView* fDiskListView;
+	std::vector<ClickableHeaderView*> fHeaders;
 
 	BLocker fLocker; // Protects fVolumeCache and fDeviceItemMap
 	std::unordered_map<dev_t, DiskListItem*> fDeviceItemMap;
