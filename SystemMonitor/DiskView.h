@@ -14,6 +14,7 @@
 class BBox;
 class BListView;
 class BListItem;
+class ClickableHeaderView;
 class DiskListItem; // Forward declaration
 
 struct DiskInfo {
@@ -66,6 +67,7 @@ private:
 
 	BBox* fDiskInfoBox;
 	BListView* fDiskListView;
+	std::vector<ClickableHeaderView*> fHeaders;
 
 	BLocker fLocker; // Protects fVolumeCache and fDeviceItemMap
 	std::unordered_map<dev_t, DiskListItem*> fDeviceItemMap;
@@ -91,6 +93,7 @@ private:
 
 	void _SortItems();
 	void _RestoreSelection(dev_t selectedID);
+	void _UpdateHeaderWidths();
 	void _ScanVolumes();
 	std::unordered_map<dev_t, DiskInfo> fVolumeCache;
 };

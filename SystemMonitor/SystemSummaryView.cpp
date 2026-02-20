@@ -395,9 +395,9 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	reply.AddString("gpu", GetGPUInfo());
 
 	// 12. Memory
-	if (get_system_info(&sysInfo) == B_OK) {
-		uint64 total = (uint64)sysInfo.max_pages * B_PAGE_SIZE;
-		uint64 used = (uint64)sysInfo.used_pages * B_PAGE_SIZE;
+	uint64 used, total, physical;
+	GetMemoryUsage(used, total, physical);
+	if (total > 0 && get_system_info(&sysInfo) == B_OK) {
 		uint64 cached = GetCachedMemoryBytes(sysInfo);
 
 		BString cachedStr;

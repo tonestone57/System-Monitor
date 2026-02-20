@@ -49,6 +49,12 @@ void ClickableHeaderView::MouseDown(BPoint where) {
 	}
 }
 
+void ClickableHeaderView::SetWidth(float width) {
+	SetExplicitMinSize(BSize(width, B_SIZE_UNSET));
+	SetExplicitMaxSize(BSize(width, B_SIZE_UNSET));
+	InvalidateLayout();
+}
+
 void FormatBytes(BString& str, uint64 bytes, int precision) {
 	FormatBytes(str, (double)bytes, precision);
 }
@@ -76,6 +82,19 @@ void FormatBytes(BString& str, double bytes, int precision) {
 
 	double gb = mb / 1024.0;
 	str.SetToFormat(B_TRANSLATE("%.*f GiB"), precision, gb);
+}
+
+void GetMemoryUsage(uint64& used, uint64& total, uint64& physical) {
+	system_info info;
+	if (get_system_info(&info) == B_OK) {
+		total = (uint64)info.max_pages * B_PAGE_SIZE;
+		used = (uint64)info.used_pages * B_PAGE_SIZE;
+		physical = (uint64)(info.max_pages + info.ignored_pages) * B_PAGE_SIZE;
+	} else {
+		total = 0;
+		used = 0;
+		physical = 0;
+	}
 }
 
 void GetSwapUsage(uint64& used, uint64& total) {

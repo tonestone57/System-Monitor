@@ -331,6 +331,7 @@ ProcessView::ProcessView()
 	auto addHeader = [&](const char* label, float width, int32 mode) {
 		ClickableHeaderView* sv = new ClickableHeaderView(label, width, mode, this);
 		headerView->AddChild(sv);
+		fHeaders.push_back(sv);
 	};
 
 	addHeader(B_TRANSLATE("PID"), fPIDWidth, SORT_BY_PID);
@@ -594,11 +595,21 @@ void ProcessView::_RestoreSelection(team_id selectedID)
 		return;
 
 	for (int32 i = 0; i < fProcessListView->CountItems(); i++) {
-		ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(i));
+		ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(i));
 		if (item && item->TeamID() == selectedID) {
 			fProcessListView->Select(i);
 			break;
 		}
+	}
+}
+
+
+void ProcessView::_UpdateHeaderWidths()
+{
+	float widths[] = { fPIDWidth, fNameWidth, fStateWidth, fCPUWidth, fMemWidth, fThreadsWidth, fUserWidth };
+	size_t count = std::min(fHeaders.size(), sizeof(widths) / sizeof(widths[0]));
+	for (size_t i = 0; i < count; i++) {
+		fHeaders[i]->SetWidth(widths[i]);
 	}
 }
 
@@ -691,6 +702,8 @@ void ProcessView::Update(BMessage* message)
 		fMemWidth = kBaseMemWidth * scale;
 		fThreadsWidth = kBaseThreadsWidth * scale;
 		fUserWidth = kBaseUserWidth * scale;
+
+		_UpdateHeaderWidths();
 	}
 
 	// First pass: Update existing items or create new ones

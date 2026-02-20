@@ -254,26 +254,32 @@ BString SystemDetailsView::_GetCPUFeatures()
 
 BString SystemDetailsView::_GetRamSize(system_info* sysInfo)
 {
+	uint64 used, total, physical;
+	GetMemoryUsage(used, total, physical);
+
 	BString ramSize;
 	ramSize.SetToFormat(B_TRANSLATE_COMMENT("%d MiB Memory:",
-		"2048 MiB Memory:"), pages_to_mib(sysInfo->max_pages + sysInfo->ignored_pages));
+		"2048 MiB Memory:"), (int)(physical / 1048576));
 
 	return ramSize;
 }
 
 BString SystemDetailsView::_GetRamUsage(system_info* sysInfo)
 {
+	uint64 used, total, physical;
+	GetMemoryUsage(used, total, physical);
+
 	BString ramUsage;
 	BString data;
-	double usedMemoryPercent = double(sysInfo->used_pages) / sysInfo->max_pages;
+	double usedMemoryPercent = total > 0 ? (double)used / total : 0.0;
 	status_t status = fNumberFormat.FormatPercent(data, usedMemoryPercent);
 
 	if (status == B_OK) {
 		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %d MiB used (%s)",
-			"RAM: 326 MiB used (16%)"), pages_to_mib(sysInfo->used_pages), data.String());
+			"RAM: 326 MiB used (16%)"), (int)(used / 1048576), data.String());
 	} else {
 		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %d MiB used (%d%%)",
-			"RAM: 326 MiB used (16%)"), pages_to_mib(sysInfo->used_pages), (int)(100 * usedMemoryPercent));
+			"RAM: 326 MiB used (16%)"), (int)(used / 1048576), (int)(100 * usedMemoryPercent));
 	}
 
 	return ramUsage;

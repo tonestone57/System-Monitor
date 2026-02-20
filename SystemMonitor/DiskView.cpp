@@ -246,6 +246,7 @@ DiskView::DiskView()
 		ClickableHeaderView* sv = new ClickableHeaderView(label, width, mode, this);
 		sv->SetAlignment(align);
 		headerView->AddChild(sv);
+		fHeaders.push_back(sv);
 	};
 
 	addHeader(B_TRANSLATE("Device"), fDeviceWidth, SORT_DISK_BY_DEVICE);
@@ -545,6 +546,16 @@ void DiskView::UpdateData(BMessage* message)
 		fUsedWidth = kBaseDiskUsedWidth * scale;
 		fFreeWidth = kBaseDiskFreeWidth * scale;
 		fPercentWidth = kBaseDiskPercentWidth * scale;
+
+		if (fHeaders.size() >= 7) {
+			fHeaders[0]->SetWidth(fDeviceWidth);
+			fHeaders[1]->SetWidth(fMountWidth);
+			fHeaders[2]->SetWidth(fFSWidth);
+			fHeaders[3]->SetWidth(fTotalWidth);
+			fHeaders[4]->SetWidth(fUsedWidth);
+			fHeaders[5]->SetWidth(fFreeWidth);
+			fHeaders[6]->SetWidth(fPercentWidth);
+		}
 	}
 
 	for (int32 i = 0; i < count; i++) {
@@ -625,11 +636,20 @@ void DiskView::_RestoreSelection(dev_t selectedID)
 		return;
 
 	for (int32 i = 0; i < fDiskListView->CountItems(); i++) {
-		DiskListItem* item = dynamic_cast<DiskListItem*>(fDiskListView->ItemAt(i));
+		DiskListItem* item = static_cast<DiskListItem*>(fDiskListView->ItemAt(i));
 		if (item && item->DeviceID() == selectedID) {
 			fDiskListView->Select(i);
 			break;
 		}
+	}
+}
+
+void DiskView::_UpdateHeaderWidths()
+{
+	float widths[] = { fDeviceWidth, fMountWidth, fFSWidth, fTotalWidth, fUsedWidth, fFreeWidth, fPercentWidth };
+	size_t count = std::min(fHeaders.size(), sizeof(widths) / sizeof(widths[0]));
+	for (size_t i = 0; i < count; i++) {
+		fHeaders[i]->SetWidth(widths[i]);
 	}
 }
 

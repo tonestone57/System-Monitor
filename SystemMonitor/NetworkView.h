@@ -13,6 +13,7 @@
 
 class BListView;
 class BListItem;
+class ClickableHeaderView;
 class InterfaceListItem; // Forward declaration
 class ActivityGraphView;
 
@@ -73,6 +74,7 @@ private:
 	void UpdateData(BMessage* message);
 
 	BListView* fInterfaceListView;
+	std::vector<ClickableHeaderView*> fHeaders;
 	ActivityGraphView* fDownloadGraph;
 	ActivityGraphView* fUploadGraph;
 
@@ -115,6 +117,7 @@ private:
 
 	void _SortItems();
 	void _RestoreSelection(const BString& selectedName);
+	void _UpdateHeaderWidths();
 };
 
 #endif // NETWORKVIEW_H

@@ -86,11 +86,11 @@ void MemView::AttachedToWindow()
 	BView::AttachedToWindow();
 
 	// Set static values (Total Memory) once
-	system_info sysInfo;
-	if (get_system_info(&sysInfo) == B_OK) {
-		uint64 totalBytes = (uint64)sysInfo.max_pages * B_PAGE_SIZE;
+	uint64 used, total, physical;
+	GetMemoryUsage(used, total, physical);
+	if (total > 0) {
 		BString memStr;
-		::FormatBytes(memStr, totalBytes);
+		::FormatBytes(memStr, total);
 		fTotalMemValue->SetText(memStr.String());
 	} else {
 		fTotalMemValue->SetText(B_TRANSLATE("Error"));
@@ -110,10 +110,11 @@ void MemView::UpdateData()
 {
 	fLocker.Lock();
 
+	uint64 usedBytes, totalBytes, physical;
+	GetMemoryUsage(usedBytes, totalBytes, physical);
+
 	system_info sysInfo;
-	if (get_system_info(&sysInfo) == B_OK) {
-		uint64 totalBytes = (uint64)sysInfo.max_pages * B_PAGE_SIZE;
-		uint64 usedBytes = (uint64)sysInfo.used_pages * B_PAGE_SIZE;
+	if (totalBytes > 0 && get_system_info(&sysInfo) == B_OK) {
 		uint64 freeBytes = totalBytes - usedBytes;
 
 		uint64 cachedBytes = GetCachedMemoryBytes(sysInfo);

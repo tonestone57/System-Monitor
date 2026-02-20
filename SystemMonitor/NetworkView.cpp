@@ -263,6 +263,7 @@ NetworkView::NetworkView()
 		ClickableHeaderView* sv = new ClickableHeaderView(label, width, mode, this);
 		sv->SetAlignment(align);
 		headerView->AddChild(sv);
+		fHeaders.push_back(sv);
 	};
 
 	addHeader(B_TRANSLATE("Name"), fNameWidth, SORT_NET_BY_NAME);
@@ -398,6 +399,16 @@ void NetworkView::UpdateData(BMessage* message)
 		fRecvWidth = kBaseNetRecvWidth * scale;
 		fTxSpeedWidth = kBaseNetTxSpeedWidth * scale;
 		fRxSpeedWidth = kBaseNetRxSpeedWidth * scale;
+
+		if (fHeaders.size() >= 7) {
+			fHeaders[0]->SetWidth(fNameWidth);
+			fHeaders[1]->SetWidth(fTypeWidth);
+			fHeaders[2]->SetWidth(fAddrWidth);
+			fHeaders[3]->SetWidth(fSentWidth);
+			fHeaders[4]->SetWidth(fRecvWidth);
+			fHeaders[5]->SetWidth(fTxSpeedWidth);
+			fHeaders[6]->SetWidth(fRxSpeedWidth);
+		}
 	}
 
 	for (int32 i = 0; i < count; i++) {
@@ -623,14 +634,23 @@ void NetworkView::SetRefreshInterval(bigtime_t interval)
 
 void NetworkView::_RestoreSelection(const BString& selectedName)
 {
-	if (selectedName == "")
+	if (selectedName.IsEmpty())
 		return;
 
 	for (int32 i = 0; i < fInterfaceListView->CountItems(); i++) {
-		InterfaceListItem* item = dynamic_cast<InterfaceListItem*>(fInterfaceListView->ItemAt(i));
+		InterfaceListItem* item = static_cast<InterfaceListItem*>(fInterfaceListView->ItemAt(i));
 		if (item && item->Name() == selectedName) {
 			fInterfaceListView->Select(i);
 			break;
 		}
+	}
+}
+
+void NetworkView::_UpdateHeaderWidths()
+{
+	float widths[] = { fNameWidth, fTypeWidth, fAddrWidth, fSentWidth, fRecvWidth, fTxSpeedWidth, fRxSpeedWidth };
+	size_t count = std::min(fHeaders.size(), sizeof(widths) / sizeof(widths[0]));
+	for (size_t i = 0; i < count; i++) {
+		fHeaders[i]->SetWidth(widths[i]);
 	}
 }
