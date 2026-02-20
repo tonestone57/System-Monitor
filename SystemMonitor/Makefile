@@ -44,7 +44,7 @@ EXTRA_INCLUDES = /boot/system/develop/headers/os
 LDFLAGS =
 
 # Specify the level of optimization
-OPTIMIZE := FULL
+OPTIMIZE := NONE
 
 # Specify the level of localization
 LOCALES =
@@ -56,10 +56,10 @@ DEFINES =
 WARNINGS = ALL
 
 # Specify whether image symbols will be created
-SYMBOLS :=
+SYMBOLS := TRUE
 
 # Specify debug settings
-DEBUGGER := FALSE
+DEBUGGER := TRUE
 
 # Target-specific flags
 TARGET_CFLAGS =

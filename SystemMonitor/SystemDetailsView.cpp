@@ -274,13 +274,15 @@ BString SystemDetailsView::_GetRamUsage(system_info* sysInfo)
 
 	BString usedStr;
 	::FormatBytes(usedStr, used);
+	BString totalStr;
+	::FormatBytes(totalStr, total);
 
 	if (status == B_OK) {
-		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %s used (%s)",
-			"RAM: 326.5 MiB used (16%)"), usedStr.String(), data.String());
+		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %s / %s (%s)",
+			"RAM: 326.5 MiB / 2048 MiB (16%)"), usedStr.String(), totalStr.String(), data.String());
 	} else {
-		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %s used (%d%%)",
-			"RAM: 326.5 MiB used (16%)"), usedStr.String(), static_cast<int>(100 * usedMemoryPercent));
+		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %s / %s (%d%%)",
+			"RAM: 326.5 MiB / 2048 MiB (16%)"), usedStr.String(), totalStr.String(), static_cast<int>(100 * usedMemoryPercent));
 	}
 
 	return ramUsage;

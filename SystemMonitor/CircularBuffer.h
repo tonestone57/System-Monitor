@@ -57,8 +57,8 @@ public:
 			}
 
 			// Linearize data from other to newBuffer
-			int32 count = other.CountItems();
-			for (int32 i = 0; i < count; i++) {
+			uint32 count = other.CountItems();
+			for (uint32 i = 0; i < count; i++) {
 				Type* item = other.ItemAt(i);
 				if (item)
 					newBuffer[i] = *item;
@@ -138,14 +138,14 @@ public:
 		return fIn == 0;
 	}
 
-	int32 CountItems() const
+	uint32 CountItems() const
 	{
 		return fIn;
 	}
 
-	Type* ItemAt(int32 index) const
+	Type* ItemAt(uint32 index) const
 	{
-		if (index >= (int32)fIn || index < 0 || fBuffer == NULL || fSize == 0)
+		if (index >= fIn || fBuffer == NULL || fSize == 0)
 			return NULL;
 
 		return &fBuffer[(fFirst + index) % fSize];
@@ -158,17 +158,18 @@ public:
 
 		uint32 index;
 		if (fIn < fSize) {
-			index = fFirst + fIn++;
+			index = (fFirst + fIn) % fSize;
+			fIn++;
 		} else {
 			index = fFirst;
 			fFirst = (fFirst + 1) % fSize;
 		}
 
 		if (fBuffer != NULL)
-			fBuffer[index % fSize] = item;
+			fBuffer[index] = item;
 	}
 
-	size_t Size() const
+	uint32 Size() const
 	{
 		return fSize;
 	}

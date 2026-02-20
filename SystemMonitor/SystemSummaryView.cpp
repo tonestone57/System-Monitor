@@ -419,7 +419,9 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 		BString swapUsedStr, swapTotalStr;
 		::FormatBytes(swapUsedStr, swapUsed);
 		::FormatBytes(swapTotalStr, swapTotal);
-		swapStr.SetToFormat(B_TRANSLATE("%s / %s"), swapUsedStr.String(), swapTotalStr.String());
+		int swapPercent = swapTotal > 0 ? static_cast<int>(100.0 * swapUsed / swapTotal) : 0;
+		swapStr.SetToFormat(B_TRANSLATE("%s / %s (%d%%)"),
+			swapUsedStr.String(), swapTotalStr.String(), swapPercent);
 		reply.AddString("swap", swapStr);
 	}
 
