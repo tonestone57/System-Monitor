@@ -17,7 +17,7 @@ DataHistory::~DataHistory()
 void
 DataHistory::AddValue(bigtime_t time, int64 value)
 {
-	bool full = (size_t)fBuffer.CountItems() == fBuffer.Size();
+	bool full = static_cast<size_t>(fBuffer.CountItems()) == fBuffer.Size();
 	bigtime_t oldestTime = 0;
 	if (full) {
 		data_item* oldest = fBuffer.ItemAt(0);
@@ -82,7 +82,7 @@ DataHistory::ValueAt(bigtime_t time, int32* hintIndex)
 				int64 value = item->value;
 				// Prevent division by zero if multiple samples have the same timestamp
 				if (nextItem->time > item->time) {
-					value += int64(double(nextItem->value - value)
+					value += static_cast<int64>(static_cast<double>(nextItem->value - value)
 						/ (nextItem->time - item->time) * (time - item->time));
 				}
 				return value;
