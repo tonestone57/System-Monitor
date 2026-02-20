@@ -311,11 +311,13 @@ ActivityGraphView::_DrawHistory()
 					view->SetHighColor(drawColor);
 					view->SetPenSize(1.5);
 
-					view->BeginLineArray(steps - 1);
-					for (uint32 i = 0; i < steps - 1; i++) {
-						view->AddLine(points[i+1], points[i+2], drawColor);
+					if (steps > 1) {
+						view->BeginLineArray(steps - 1);
+						for (uint32 i = 0; i < steps - 1; i++) {
+							view->AddLine(points[i+1], points[i+2], drawColor);
+						}
+						view->EndLineArray();
 					}
-					view->EndLineArray();
 
 					fLastMin = min;
 					fLastRange = range;
@@ -418,11 +420,13 @@ ActivityGraphView::_DrawHistory()
 					view->SetDrawingMode(B_OP_COPY);
 					view->SetHighColor(drawColor);
 					view->SetPenSize(1.5);
-					view->BeginLineArray(count - 1);
-					for (int32 j = 0; j < count - 1; j++) {
-						view->AddLine(points[j+1], points[j+2], drawColor);
+					if (count > 1) {
+						view->BeginLineArray(count - 1);
+						for (int32 j = 0; j < count - 1; j++) {
+							view->AddLine(points[j+1], points[j+2], drawColor);
+						}
+						view->EndLineArray();
 					}
-					view->EndLineArray();
 				} catch (const std::bad_alloc&) {
 					// Ignore
 				}

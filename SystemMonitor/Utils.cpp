@@ -308,7 +308,7 @@ void GetPackageCount(BString& out)
 		sUserPkgs = countPackages("/boot/home/config/packages");
 		sLastCheck = now;
 	}
-	out.SetToFormat("%d (hpkg-system), %d (hpkg-user)", sSysPkgs, sUserPkgs);
+	out.SetToFormat(B_TRANSLATE("%d (hpkg-system), %d (hpkg-user)"), sSysPkgs, sUserPkgs);
 }
 
 BString GetLocalIPAddress()
@@ -362,6 +362,7 @@ BString GetBatteryCapacity()
 
 				if (!capacityStr.IsEmpty()) {
 					capacityStr << "%";
+					close(batFd);
 					return capacityStr;
 				}
 			}
@@ -504,7 +505,7 @@ BString GetDisplayInfo()
 BString GetRootDiskUsage()
 {
 	fs_info fs;
-	if (fs_stat_dev(dev_for_path("/"), &fs) == B_OK) {
+	if (fs_stat_dev(dev_for_path("/boot"), &fs) == B_OK) {
 		uint64 total = fs.total_blocks * fs.block_size;
 		uint64 free = fs.free_blocks * fs.block_size;
 		uint64 used = total - free;
