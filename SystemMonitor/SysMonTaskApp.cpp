@@ -58,7 +58,7 @@ public:
 		BStringView* copyView = new BStringView("copyright", "Copyright 2023 Haiku Archives");
 		copyView->SetAlignment(B_ALIGN_CENTER);
 
-		BButton* okButton = new BButton("ok", "OK", new BMessage(B_QUIT_REQUESTED));
+		BButton* okButton = new BButton("ok", B_TRANSLATE("OK"), new BMessage(B_QUIT_REQUESTED));
 
 		BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
 			.SetInsets(B_USE_DEFAULT_SPACING)

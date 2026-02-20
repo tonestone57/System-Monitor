@@ -161,7 +161,8 @@ A final comprehensive audit was performed to centralize logic, improve consisten
 - **Post-Audit Optimization & Fixes**:
   - **Leak Prevention**: Fixed a file descriptor leak in `Utils::GetBatteryCapacity` by ensuring the battery state file is always closed before returning.
   - **Logic Accuracy**: Updated `GetRootDiskUsage` to report on `/boot` instead of `/`, providing more relevant information to Haiku users.
-  - **Rendering Safety**: Added safety checks to `ActivityGraphView` line drawing to prevent issues with small view dimensions and verified loop bounds for exact data line rendering.
+  - **Rendering Safety**: Added safety checks to `ActivityGraphView` line drawing to prevent issues with small view dimensions and verified loop bounds for exact data line rendering. Clarified indexing logic in the source comments to address audit nitpicks regarding the 1-based data point array (index 0 is reserved for polygon fill alignment).
+  - **Repository Hygiene**: Cleaned up the `SystemMonitor/tests` directory by removing temporary testing source files and ensuring all built binaries are excluded from the repository.
 
 ## 9. Performance Optimization & Build Hardening
 
