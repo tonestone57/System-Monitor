@@ -24,7 +24,7 @@ GPUView::GPUView()
 void GPUView::CreateLayout()
 {
 	// Header
-	BStringView* gpuLabel = new BStringView("gpu_header", "GPU 0");
+	BStringView* gpuLabel = new BStringView("gpu_header", B_TRANSLATE("GPU 0"));
 	BFont headerFont(be_bold_font);
 	headerFont.SetSize(headerFont.Size() * 1.5);
 	gpuLabel->SetFont(&headerFont);

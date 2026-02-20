@@ -275,7 +275,10 @@ ActivityGraphView::_DrawHistory()
 					 view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
 				}
 
-				// Calculate points
+				// Calculate points for polygon fill and line stroke.
+				// points[0] is the bottom-left corner of the fill.
+				// points[1...steps] are the actual data points.
+				// points[steps+1] is the bottom-right corner of the fill.
 				int32 pointCount = steps + 2;
 
 				try {
@@ -284,6 +287,7 @@ ActivityGraphView::_DrawHistory()
 
 					BPoint* points = fPoints.data();
 
+					// Bottom-left corner for polygon fill
 					points[0] = BPoint(frame.left, frame.bottom);
 
 					int32 searchIndex = 0;
@@ -295,8 +299,10 @@ ActivityGraphView::_DrawHistory()
 							else y = frame.Height() / 2;
 						} else
 							y = frame.Height() - (value - min) * frame.Height() / range;
+						// Offset by 1 to leave room for the bottom-left corner at points[0]
 						points[i+1] = BPoint(i, y);
 					}
+					// Bottom-right corner for polygon fill
 					points[pointCount-1] = BPoint(frame.right, frame.bottom);
 
 					// Fill
@@ -311,11 +317,13 @@ ActivityGraphView::_DrawHistory()
 					view->SetHighColor(drawColor);
 					view->SetPenSize(1.5);
 
-					view->BeginLineArray(steps - 1);
-					for (uint32 i = 0; i < steps - 1; i++) {
-						view->AddLine(points[i+1], points[i+2], drawColor);
+					if (steps > 1) {
+						view->BeginLineArray(steps - 1);
+						for (uint32 i = 0; i < steps - 1; i++) {
+							view->AddLine(points[i+1], points[i+2], drawColor);
+						}
+						view->EndLineArray();
 					}
-					view->EndLineArray();
 
 					fLastMin = min;
 					fLastRange = range;
@@ -378,6 +386,7 @@ ActivityGraphView::_DrawHistory()
 				if (startI < 0) startI = 0;
 				int32 endI = steps - 1;
 				int32 count = endI - startI + 1;
+				// points[0] = start-bottom, points[1...count] = data, points[count+1] = end-bottom
 				int32 polyCount = count + 2;
 
 				try {
@@ -386,6 +395,7 @@ ActivityGraphView::_DrawHistory()
 
 					BPoint* points = fPoints.data();
 
+					// Bottom-start corner for partial polygon fill
 					points[0] = BPoint(startI, frame.bottom);
 
 					int32 searchIndex = 0;
@@ -403,8 +413,10 @@ ActivityGraphView::_DrawHistory()
 							else y = frame.Height() / 2;
 						} else
 							y = frame.Height() - (value - min) * frame.Height() / range;
+						// Offset by 1 to leave room for the bottom-start corner at points[0]
 						points[j+1] = BPoint(i, y);
 					}
+					// Bottom-end corner for partial polygon fill
 					points[polyCount-1] = BPoint(endI, frame.bottom);
 
 					// Fill
@@ -418,11 +430,13 @@ ActivityGraphView::_DrawHistory()
 					view->SetDrawingMode(B_OP_COPY);
 					view->SetHighColor(drawColor);
 					view->SetPenSize(1.5);
-					view->BeginLineArray(count - 1);
-					for (int32 j = 0; j < count - 1; j++) {
-						view->AddLine(points[j+1], points[j+2], drawColor);
+					if (count > 1) {
+						view->BeginLineArray(count - 1);
+						for (int32 j = 0; j < count - 1; j++) {
+							view->AddLine(points[j+1], points[j+2], drawColor);
+						}
+						view->EndLineArray();
 					}
-					view->EndLineArray();
 				} catch (const std::bad_alloc&) {
 					// Ignore
 				}

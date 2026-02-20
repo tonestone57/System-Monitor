@@ -42,7 +42,7 @@ void CPUView::CreateLayout()
 	fCpuCount = sysInfo.cpu_count;
 
 	// Header
-	BStringView* cpuLabel = new BStringView("cpu_header", "CPU");
+	BStringView* cpuLabel = new BStringView("cpu_header", B_TRANSLATE("CPU"));
 	BFont headerFont(be_bold_font);
 	headerFont.SetSize(headerFont.Size() * 1.5);
 	cpuLabel->SetFont(&headerFont);

@@ -408,7 +408,8 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 		BString usedStr, totalStr;
 		::FormatBytes(usedStr, used);
 		::FormatBytes(totalStr, total);
-		memStr << usedStr << " / " << totalStr << " (" << percent << "%), Cached: " << cachedStr;
+		memStr.SetToFormat(B_TRANSLATE("%s / %s (%d%%), Cached: %s"),
+			usedStr.String(), totalStr.String(), percent, cachedStr.String());
 		reply.AddString("memory", memStr);
 
 		uint64 swapUsed, swapTotal;
@@ -418,7 +419,7 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 		BString swapUsedStr, swapTotalStr;
 		::FormatBytes(swapUsedStr, swapUsed);
 		::FormatBytes(swapTotalStr, swapTotal);
-		swapStr << swapUsedStr << " / " << swapTotalStr;
+		swapStr.SetToFormat(B_TRANSLATE("%s / %s"), swapUsedStr.String(), swapTotalStr.String());
 		reply.AddString("swap", swapStr);
 	}
 
