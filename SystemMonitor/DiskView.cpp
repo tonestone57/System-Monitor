@@ -515,7 +515,7 @@ void DiskView::UpdateData(BMessage* message)
 	int32 selection = fDiskListView->CurrentSelection();
 	dev_t selectedID = -1;
 	if (selection >= 0) {
-		DiskListItem* item = dynamic_cast<DiskListItem*>(fDiskListView->ItemAt(selection));
+		DiskListItem* item = static_cast<DiskListItem*>(fDiskListView->ItemAt(selection));
 		if (item) selectedID = item->DeviceID();
 	}
 
@@ -619,7 +619,7 @@ void DiskView::_RestoreSelection(dev_t selectedID)
 		return;
 
 	for (int32 i = 0; i < fDiskListView->CountItems(); i++) {
-		DiskListItem* item = dynamic_cast<DiskListItem*>(fDiskListView->ItemAt(i));
+		DiskListItem* item = static_cast<DiskListItem*>(fDiskListView->ItemAt(i));
 		if (item && item->DeviceID() == selectedID) {
 			fDiskListView->Select(i);
 			break;

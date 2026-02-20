@@ -24,8 +24,7 @@ ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_wh
 	fLastRefresh(0),
 	fScrollOffset(0)
 {
-	fPoints.resize(2048); // Pre-allocate for typical screen widths to avoid reallocations
-	fPoints.reserve(4096); // Pre-allocate for typical screen widths (including 4K) to avoid reallocations
+	fPoints.reserve(2048); // Pre-allocate for typical screen widths to avoid reallocations
 	fHistory = new DataHistory(10 * 60000000LL, 1000000);
 }
 
@@ -205,7 +204,7 @@ ActivityGraphView::_DrawHistory()
 	BRect frame = view->Bounds();
 
 	if (fOffscreen->Lock()) {
-		uint32 steps = frame.IntegerWidth();
+		uint32 steps = static_cast<uint32>(frame.Width()) + 1;
 		if (steps > 0) {
 			bigtime_t now = system_time();
 			bigtime_t timeStep = fResolution;

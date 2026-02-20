@@ -522,7 +522,7 @@ void ProcessView::KillSelectedProcess() {
 	int32 selection = fProcessListView->CurrentSelection();
 	if (selection < 0) return;
 
-	ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
+	ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
 	if (!item) return;
 
 	team_id team = item->TeamID();
@@ -541,7 +541,7 @@ void ProcessView::KillSelectedProcess() {
 void ProcessView::SuspendSelectedProcess() {
 	int32 selection = fProcessListView->CurrentSelection();
 	if (selection < 0) return;
-	ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
+	ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
 	if (!item) return;
 	send_signal(item->TeamID(), SIGSTOP);
 }
@@ -549,7 +549,7 @@ void ProcessView::SuspendSelectedProcess() {
 void ProcessView::ResumeSelectedProcess() {
 	int32 selection = fProcessListView->CurrentSelection();
 	if (selection < 0) return;
-	ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
+	ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
 	if (!item) return;
 	send_signal(item->TeamID(), SIGCONT);
 }
@@ -557,7 +557,7 @@ void ProcessView::ResumeSelectedProcess() {
 void ProcessView::SetSelectedProcessPriority(int32 priority) {
 	int32 selection = fProcessListView->CurrentSelection();
 	if (selection < 0) return;
-	ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
+	ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
 	if (!item) return;
 
 	team_id team = item->TeamID();
@@ -595,7 +595,7 @@ void ProcessView::_RestoreSelection(team_id selectedID)
 		return;
 
 	for (int32 i = 0; i < fProcessListView->CountItems(); i++) {
-		ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(i));
+		ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(i));
 		if (item && item->TeamID() == selectedID) {
 			fProcessListView->Select(i);
 			break;
@@ -629,7 +629,7 @@ void ProcessView::FilterRows()
 	int32 selection = fProcessListView->CurrentSelection();
 	team_id selectedID = -1;
 	if (selection >= 0) {
-		ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
+		ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
 		if (item) selectedID = item->TeamID();
 	}
 
@@ -671,7 +671,7 @@ void ProcessView::Update(BMessage* message)
 	int32 selection = fProcessListView->CurrentSelection();
 	team_id selectedID = -1;
 	if (selection >= 0) {
-		ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
+		ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
 		if (item) selectedID = item->TeamID();
 	}
 
