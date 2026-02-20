@@ -5,6 +5,7 @@
 #include <Locker.h>
 #include <String.h>
 #include <unordered_map>
+#include <vector>
 #include <string>
 #include <set>
 #include <atomic>

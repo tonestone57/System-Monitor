@@ -6,6 +6,7 @@
 #include <String.h>
 #include <Volume.h>
 #include <unordered_map>
+#include <vector>
 #include <set>
 #include <atomic>
 #include <Font.h>
