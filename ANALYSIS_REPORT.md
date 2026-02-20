@@ -178,3 +178,20 @@ A final round of performance tuning and build system improvements was completed:
 
 - **Dependency Cleanup**:
   - Performed a code audit to remove redundant STL includes (e.g., `<map>`, `<set>`, `<string>`) after the transition to `unordered_map`, reducing header bloat.
+
+## 10. Audit Finalization & Consistency Sweep
+
+The following final refinements were applied to ensure architectural consistency and optimal UI performance:
+
+- **Visibility & Compilation Fixes**:
+  - Fixed a visibility issue in `SysMonTaskApp.cpp` by moving `SummaryView::UpdateData()` to the public section. This enables `PerformanceView` to correctly trigger summary graph updates, resolving a potential compilation blocker.
+
+- **Redundancy Removal & Optimization**:
+  - Removed `B_PULSE_NEEDED` and empty `Pulse()` implementations from `DiskView` and `NetworkView`. These views rely on background threads for data updates, making the periodic UI pulse redundant and eliminating unnecessary message loop overhead.
+  - Removed unused `listChanged` boolean flags in `UpdateData` methods for `DiskView` and `NetworkView`.
+
+- **Architectural Standardization**:
+  - Refactored the `NetworkView` destructor to delete items from its internal map instead of the list view. This aligns its resource management logic with the more robust patterns established in `DiskView` and `ProcessView`, preventing potential memory leaks or double-deletions.
+
+- **UI Formatting Consistency**:
+  - Standardized RAM reporting in `SystemDetailsView` by utilizing the global `FormatBytes` utility. This ensures unified unit formatting (KiB/MiB/GiB) across the entire application and eliminates hardcoded MiB conversion logic.
