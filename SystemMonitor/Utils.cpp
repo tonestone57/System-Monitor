@@ -93,6 +93,10 @@ void FormatBytes(BString& str, double bytes, int precision) {
 	str.SetToFormat(B_TRANSLATE("%.*f GiB"), precision, gb);
 }
 
+uint64 BytesToMiB(uint64 bytes) {
+	return (bytes + 1048575) / 1048576;
+}
+
 void GetMemoryUsage(uint64& used, uint64& total, uint64& physical) {
 	system_info info;
 	if (get_system_info(&info) == B_OK) {

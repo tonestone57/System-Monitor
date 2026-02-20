@@ -628,7 +628,7 @@ void DiskView::_RestoreSelection(dev_t selectedID)
 		return;
 
 	for (int32 i = 0; i < fDiskListView->CountItems(); i++) {
-		DiskListItem* item = static_cast<DiskListItem*>(fDiskListView->ItemAt(i));
+		DiskListItem* item = dynamic_cast<DiskListItem*>(fDiskListView->ItemAt(i));
 		if (item && item->DeviceID() == selectedID) {
 			fDiskListView->Select(i);
 			break;

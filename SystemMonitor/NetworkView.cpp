@@ -630,7 +630,7 @@ void NetworkView::_RestoreSelection(const BString& selectedName)
 		return;
 
 	for (int32 i = 0; i < fInterfaceListView->CountItems(); i++) {
-		InterfaceListItem* item = static_cast<InterfaceListItem*>(fInterfaceListView->ItemAt(i));
+		InterfaceListItem* item = dynamic_cast<InterfaceListItem*>(fInterfaceListView->ItemAt(i));
 		if (item && item->Name() == selectedName) {
 			fInterfaceListView->Select(i);
 			break;

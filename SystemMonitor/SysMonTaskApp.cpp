@@ -465,7 +465,7 @@ void MainWindow::LoadSettings() {
 	// Fallback to searching all children if KeyMenuBar is not yet set
 	BMenuBar* menuBar = KeyMenuBar();
 	if (!menuBar) {
-		menuBar = static_cast<BMenuBar*>(FindView("MenuBar"));
+		menuBar = dynamic_cast<BMenuBar*>(FindView("MenuBar"));
 	}
 
 	if (menuBar) {

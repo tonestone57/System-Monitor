@@ -595,7 +595,7 @@ void ProcessView::_RestoreSelection(team_id selectedID)
 		return;
 
 	for (int32 i = 0; i < fProcessListView->CountItems(); i++) {
-		ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(i));
+		ProcessListItem* item = dynamic_cast<ProcessListItem*>(fProcessListView->ItemAt(i));
 		if (item && item->TeamID() == selectedID) {
 			fProcessListView->Select(i);
 			break;

@@ -32,11 +32,6 @@
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "SystemDetailsView"
 
-static int pages_to_mib(uint64 pages)
-{
-	return static_cast<int>((pages * B_PAGE_SIZE + 1048575) / 1048576);
-}
-
 SystemDetailsView::SystemDetailsView()
 	: BView("SystemDetailsView", B_WILL_DRAW | B_PULSE_NEEDED),
 	  fVersionLabelView(NULL),
@@ -259,7 +254,7 @@ BString SystemDetailsView::_GetRamSize(system_info* sysInfo)
 
 	BString ramSize;
 	ramSize.SetToFormat(B_TRANSLATE_COMMENT("%d MiB Memory:",
-		"2048 MiB Memory:"), static_cast<int>(physical / 1048576));
+		"2048 MiB Memory:"), static_cast<int>(BytesToMiB(physical)));
 
 	return ramSize;
 }
@@ -276,10 +271,10 @@ BString SystemDetailsView::_GetRamUsage(system_info* sysInfo)
 
 	if (status == B_OK) {
 		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %d MiB used (%s)",
-			"RAM: 326 MiB used (16%)"), static_cast<int>(used / 1048576), data.String());
+			"RAM: 326 MiB used (16%)"), static_cast<int>(BytesToMiB(used)), data.String());
 	} else {
 		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %d MiB used (%d%%)",
-			"RAM: 326 MiB used (16%)"), static_cast<int>(used / 1048576), static_cast<int>(100 * usedMemoryPercent));
+			"RAM: 326 MiB used (16%)"), static_cast<int>(BytesToMiB(used)), static_cast<int>(100 * usedMemoryPercent));
 	}
 
 	return ramUsage;
