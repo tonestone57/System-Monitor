@@ -20,6 +20,8 @@
 #include <NetworkAddress.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <Messenger.h>
+#include <Window.h>
 
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
@@ -27,6 +29,25 @@
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Utils"
+
+ClickableHeaderView::ClickableHeaderView(const char* label, float width, int32 mode, BHandler* target)
+	: BStringView(NULL, label), fMode(mode), fTarget(target)
+{
+	SetExplicitMinSize(BSize(width, B_SIZE_UNSET));
+	SetExplicitMaxSize(BSize(width, B_SIZE_UNSET));
+	SetAlignment(B_ALIGN_LEFT);
+	SetFont(be_bold_font);
+	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+}
+
+void ClickableHeaderView::MouseDown(BPoint where) {
+	if (Window()) {
+		BMessenger target(fTarget);
+		BMessage msg(MSG_HEADER_CLICKED);
+		msg.AddInt32("mode", fMode);
+		target.SendMessage(&msg);
+	}
+}
 
 void FormatBytes(BString& str, uint64 bytes, int precision) {
 	FormatBytes(str, (double)bytes, precision);
@@ -230,24 +251,32 @@ BString GetGPUInfo()
 
 void GetPackageCount(BString& out)
 {
-	auto countPackages = [](const char* path) -> int {
-		BDirectory dir(path);
-		if (dir.InitCheck() != B_OK) return 0;
-		int count = 0;
-		BEntry entry;
-		while (dir.GetNextEntry(&entry) == B_OK) {
-			BPath p;
-			entry.GetPath(&p);
-			if (p.InitCheck() == B_OK) {
-				BString name(p.Leaf());
-				if (name.EndsWith(".hpkg")) count++;
+	static int sSysPkgs = -1;
+	static int sUserPkgs = -1;
+	static bigtime_t sLastCheck = 0;
+	bigtime_t now = system_time();
+
+	if (sSysPkgs == -1 || now - sLastCheck > 10000000LL) { // Every 10 seconds
+		auto countPackages = [](const char* path) -> int {
+			BDirectory dir(path);
+			if (dir.InitCheck() != B_OK) return 0;
+			int count = 0;
+			BEntry entry;
+			while (dir.GetNextEntry(&entry) == B_OK) {
+				BPath p;
+				entry.GetPath(&p);
+				if (p.InitCheck() == B_OK) {
+					BString name(p.Leaf());
+					if (name.EndsWith(".hpkg")) count++;
+				}
 			}
-		}
-		return count;
-	};
-	int sysPkgs = countPackages("/boot/system/packages");
-	int userPkgs = countPackages("/boot/home/config/packages");
-	out.SetToFormat("%d (hpkg-system), %d (hpkg-user)", sysPkgs, userPkgs);
+			return count;
+		};
+		sSysPkgs = countPackages("/boot/system/packages");
+		sUserPkgs = countPackages("/boot/home/config/packages");
+		sLastCheck = now;
+	}
+	out.SetToFormat("%d (hpkg-system), %d (hpkg-user)", sSysPkgs, sUserPkgs);
 }
 
 BString GetLocalIPAddress()
@@ -276,13 +305,16 @@ ip_found:
 
 BString GetBatteryCapacity()
 {
-	int batFd = open("/dev/power/acpi_battery/0/state", O_RDONLY);
-	if (batFd >= 0) {
-		char buffer[1024];
-		ssize_t bytesRead = read(batFd, buffer, sizeof(buffer) - 1);
-		close(batFd);
+	// Try to find any battery
+	for (int i = 0; i < 4; i++) {
+		BString path;
+		path.SetToFormat("/dev/power/acpi_battery/%d/state", i);
+		int batFd = open(path.String(), O_RDONLY);
+		if (batFd >= 0) {
+			char buffer[1024];
+			ssize_t bytesRead = read(batFd, buffer, sizeof(buffer) - 1);
 
-		if (bytesRead > 0) {
+			if (bytesRead > 0) {
 			buffer[bytesRead] = '\0';
 			BString state(buffer);
 			BString capacityStr;
@@ -301,6 +333,8 @@ BString GetBatteryCapacity()
 					return capacityStr;
 				}
 			}
+			}
+			close(batFd);
 		}
 	}
 	return BString(B_TRANSLATE("Unknown"));

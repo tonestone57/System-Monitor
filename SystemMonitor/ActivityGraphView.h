@@ -29,7 +29,7 @@ private:
 
 private:
 	rgb_color			fColor;
-    color_which         fSystemColor;
+	color_which		 fSystemColor;
 	BBitmap*			fOffscreen;
 	DataHistory*		fHistory;
 	bigtime_t			fResolution;
@@ -38,6 +38,10 @@ private:
 	bool				fManualScale;
 	int64				fManualMin;
 	int64				fManualMax;
+
+	int64				fLastMin;
+	int64				fLastRange;
+	bool				fLastRangeValid;
 
 	bigtime_t			fLastRefresh;
 	float				fScrollOffset;

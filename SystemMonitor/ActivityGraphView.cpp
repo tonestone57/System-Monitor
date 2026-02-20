@@ -12,14 +12,17 @@
 ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_which systemColor)
 	: BView(name, B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE),
 	fColor(color),
-    fSystemColor(systemColor),
+	fSystemColor(systemColor),
 	fOffscreen(NULL),
 	fResolution(1000000),
 	fManualScale(false),
 	fManualMin(0),
 	fManualMax(0),
-    fLastRefresh(0),
-    fScrollOffset(0)
+	fLastMin(0),
+	fLastRange(0),
+	fLastRangeValid(false),
+	fLastRefresh(0),
+	fScrollOffset(0)
 {
 	fPoints.resize(2048); // Pre-allocate for typical screen widths to avoid reallocations
 	fPoints.reserve(4096); // Pre-allocate for typical screen widths (including 4K) to avoid reallocations
@@ -207,30 +210,30 @@ ActivityGraphView::_DrawHistory()
 			bigtime_t now = system_time();
 			bigtime_t timeStep = fResolution;
 
-            bool fullRedraw = true;
-            int32 pixelsToScroll = 0;
+			bool fullRedraw = true;
+			int32 pixelsToScroll = 0;
 
-            if (fLastRefresh > 0) {
-                bigtime_t delta = now - fLastRefresh;
-                pixelsToScroll = delta / timeStep;
+			if (fLastRefresh > 0) {
+				bigtime_t delta = now - fLastRefresh;
+				pixelsToScroll = delta / timeStep;
 
-                if (pixelsToScroll < (int32)steps && pixelsToScroll >= 0) {
-                     if (pixelsToScroll == 0) {
-                         // Optimization: Do nothing if sub-pixel change
-                         fullRedraw = false;
-                     } else {
-                         fullRedraw = false;
-                     }
-                }
-            }
+				if (pixelsToScroll < (int32)steps && pixelsToScroll >= 0) {
+					 if (pixelsToScroll == 0) {
+						 // Optimization: Do nothing if sub-pixel change
+						 fullRedraw = false;
+					 } else {
+						 fullRedraw = false;
+					 }
+				}
+			}
 
-            rgb_color drawColor = fColor;
-            if (fSystemColor != (color_which)-1) {
-                drawColor = ui_color(fSystemColor);
-            }
+			rgb_color drawColor = fColor;
+			if (fSystemColor != (color_which)-1) {
+				drawColor = ui_color(fSystemColor);
+			}
 
-            rgb_color bg = ui_color(B_PANEL_BACKGROUND_COLOR);
-            rgb_color gridColor = tint_color(bg, B_DARKEN_1_TINT);
+			rgb_color bg = ui_color(B_PANEL_BACKGROUND_COLOR);
+			rgb_color gridColor = tint_color(bg, B_DARKEN_1_TINT);
 
 			int64 min, max;
 			if (fManualScale) {
@@ -242,170 +245,190 @@ ActivityGraphView::_DrawHistory()
 			}
 			int64 range = max - min;
 
-            if (fullRedraw) {
-                fScrollOffset = 0;
-                fLastRefresh = now;
+			// Force full redraw if scale changed
+			if (!fLastRangeValid || min != fLastMin || range != fLastRange) {
+				fullRedraw = true;
+			}
 
-                view->SetLowColor(bg);
-                view->FillRect(frame, B_SOLID_LOW);
+			if (fullRedraw) {
+				fScrollOffset = 0;
+				fLastRefresh = now;
 
-                // Draw Grid
-                view->SetDrawingMode(B_OP_COPY);
-                view->SetHighColor(gridColor);
-                view->SetPenSize(1.0);
+				view->SetLowColor(bg);
+				view->FillRect(frame, B_SOLID_LOW);
 
-                // Horizontal lines
-                for (int i = 1; i < 4; i++) {
-                    float y = frame.top + frame.Height() * i / 4;
-                    view->StrokeLine(BPoint(frame.left, y), BPoint(frame.right, y));
-                }
-                // Vertical lines
-                float gridSpacing = 60.0f * GetScaleFactor(view->Font());
-                for (float x = 0; x < frame.Width(); x += gridSpacing) {
-                     view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
-                }
+				// Draw Grid
+				view->SetDrawingMode(B_OP_COPY);
+				view->SetHighColor(gridColor);
+				view->SetPenSize(1.0);
 
-                // Calculate points
-                int32 pointCount = steps + 2;
+				// Horizontal lines
+				for (int i = 1; i < 4; i++) {
+					float y = frame.top + frame.Height() * i / 4;
+					view->StrokeLine(BPoint(frame.left, y), BPoint(frame.right, y));
+				}
+				// Vertical lines
+				BFont viewFont;
+				view->GetFont(&viewFont);
+				float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
+				for (float x = 0; x < frame.Width(); x += gridSpacing) {
+					 view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
+				}
 
-                try {
-                    if (fPoints.size() < (size_t)pointCount)
-                        fPoints.resize(pointCount);
+				// Calculate points
+				int32 pointCount = steps + 2;
 
-                    BPoint* points = fPoints.data();
+				try {
+					if (fPoints.size() < (size_t)pointCount)
+						fPoints.resize(pointCount);
 
-                    points[0] = BPoint(frame.left, frame.bottom);
+					BPoint* points = fPoints.data();
 
-                    int32 searchIndex = 0;
-                    for (uint32 i = 0; i < steps; i++) {
-                        int64 value = fHistory->ValueAt(now - (steps - 1 - i) * timeStep, &searchIndex);
-                        float y;
-                        if (range == 0) {
-                            if (min == 0) y = frame.Height();
-                            else y = frame.Height() / 2;
-                        } else
-                            y = frame.Height() - (value - min) * frame.Height() / range;
-                        points[i+1] = BPoint(i, y);
-                    }
-                    points[pointCount-1] = BPoint(frame.right, frame.bottom);
+					points[0] = BPoint(frame.left, frame.bottom);
 
-                    // Fill
-                    view->SetDrawingMode(B_OP_ALPHA);
-                    rgb_color fillColor = drawColor;
-                    fillColor.alpha = 100;
-                    view->SetHighColor(fillColor);
-                    view->FillPolygon(points, pointCount);
+					int32 searchIndex = 0;
+					for (uint32 i = 0; i < steps; i++) {
+						int64 value = fHistory->ValueAt(now - (steps - 1 - i) * timeStep, &searchIndex);
+						float y;
+						if (range == 0) {
+							if (min == 0) y = frame.Height();
+							else y = frame.Height() / 2;
+						} else
+							y = frame.Height() - (value - min) * frame.Height() / range;
+						points[i+1] = BPoint(i, y);
+					}
+					points[pointCount-1] = BPoint(frame.right, frame.bottom);
 
-                    // Stroke Line
-                    view->SetDrawingMode(B_OP_COPY);
-                    view->SetHighColor(drawColor);
-                    view->SetPenSize(1.5);
+					// Fill
+					view->SetDrawingMode(B_OP_ALPHA);
+					rgb_color fillColor = drawColor;
+					fillColor.alpha = 100;
+					view->SetHighColor(fillColor);
+					view->FillPolygon(points, pointCount);
 
-                    view->BeginLineArray(steps - 1);
-                    for (uint32 i = 0; i < steps - 1; i++) {
-                        view->AddLine(points[i+1], points[i+2], drawColor);
-                    }
-                    view->EndLineArray();
-                } catch (const std::bad_alloc&) {
-                    // Ignore update if memory is low
-                }
-            } else {
-                // Partial or sub-pixel Update
-                int32 redrawWidth = std::max((int32)1, pixelsToScroll);
+					// Stroke Line
+					view->SetDrawingMode(B_OP_COPY);
+					view->SetHighColor(drawColor);
+					view->SetPenSize(1.5);
 
-                if (pixelsToScroll > 0) {
-                    // Scroll
-                    BRect src(pixelsToScroll, 0, frame.right, frame.bottom);
-                    BRect dst(0, 0, frame.right - pixelsToScroll, frame.bottom);
-                    view->CopyBits(src, dst);
+					view->BeginLineArray(steps - 1);
+					for (uint32 i = 0; i < steps - 1; i++) {
+						view->AddLine(points[i+1], points[i+2], drawColor);
+					}
+					view->EndLineArray();
 
-                    float gridSpacing = 60.0f * GetScaleFactor(view->Font());
-                    fScrollOffset += pixelsToScroll;
-                    while (fScrollOffset >= gridSpacing)
-                        fScrollOffset -= gridSpacing;
-                    fLastRefresh += (bigtime_t)pixelsToScroll * timeStep;
-                }
+					fLastMin = min;
+					fLastRange = range;
+					fLastRangeValid = true;
+				} catch (const std::bad_alloc&) {
+					// Ignore update if memory is low
+				}
+			} else {
+				// Partial or sub-pixel Update
+				int32 redrawWidth = std::max((int32)1, pixelsToScroll);
 
-                // New Area (at least the last pixel)
-                BRect newArea(frame.right - redrawWidth, frame.top, frame.right, frame.bottom);
+				if (pixelsToScroll > 0) {
+					// Scroll
+					BRect src(pixelsToScroll, 0, frame.right, frame.bottom);
+					BRect dst(0, 0, frame.right - pixelsToScroll, frame.bottom);
+					view->CopyBits(src, dst);
 
-                view->SetLowColor(bg);
-                view->FillRect(newArea, B_SOLID_LOW);
+					BFont viewFont;
+					view->GetFont(&viewFont);
+					float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
+					fScrollOffset += pixelsToScroll;
+					while (fScrollOffset >= gridSpacing)
+						fScrollOffset -= gridSpacing;
+					fLastRefresh += (bigtime_t)pixelsToScroll * timeStep;
+				}
 
-                // Draw Grid (New Area)
-                view->SetDrawingMode(B_OP_COPY);
-                view->SetHighColor(gridColor);
-                view->SetPenSize(1.0);
+				// New Area (at least the last pixel)
+				BRect newArea(frame.right - redrawWidth, frame.top, frame.right, frame.bottom);
 
-                // Horizontal lines
-                for (int i = 1; i < 4; i++) {
-                    float y = frame.top + frame.Height() * i / 4;
-                    view->StrokeLine(BPoint(newArea.left, y), BPoint(newArea.right, y));
-                }
+				view->SetLowColor(bg);
+				view->FillRect(newArea, B_SOLID_LOW);
 
-                // Vertical lines
-                float gridSpacing = 60.0f * GetScaleFactor(view->Font());
-                int64 startK = (int64)ceilf((newArea.left + fScrollOffset) / gridSpacing);
-                for (int64 k = startK; ; k++) {
-                    float x = k * gridSpacing - fScrollOffset;
-                    if (x > newArea.right) break;
-                    view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
-                }
+				// Draw Grid (New Area)
+				view->SetDrawingMode(B_OP_COPY);
+				view->SetHighColor(gridColor);
+				view->SetPenSize(1.0);
 
-                // Clip drawing to new area to prevent overlap artifacts
-                BRegion clipRegion(newArea);
-                view->ConstrainClippingRegion(&clipRegion);
+				// Horizontal lines
+				for (int i = 1; i < 4; i++) {
+					float y = frame.top + frame.Height() * i / 4;
+					view->StrokeLine(BPoint(newArea.left, y), BPoint(newArea.right, y));
+				}
 
-                int32 startI = (int32)newArea.left - 1;
-                if (startI < 0) startI = 0;
-                int32 endI = steps - 1;
-                int32 count = endI - startI + 1;
-                int32 polyCount = count + 2;
+				// Vertical lines
+				BFont viewFont;
+				view->GetFont(&viewFont);
+				float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
+				int64 startK = (int64)ceilf((newArea.left + fScrollOffset) / gridSpacing);
+				for (int64 k = startK; ; k++) {
+					float x = k * gridSpacing - fScrollOffset;
+					if (x > newArea.right) break;
+					view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
+				}
 
-                try {
-                    if (fPoints.size() < (size_t)polyCount)
-                        fPoints.resize(polyCount);
+				// Clip drawing to new area to prevent overlap artifacts
+				BRegion clipRegion(newArea);
+				view->ConstrainClippingRegion(&clipRegion);
 
-                    BPoint* points = fPoints.data();
+				int32 startI = (int32)newArea.left - 1;
+				if (startI < 0) startI = 0;
+				int32 endI = steps - 1;
+				int32 count = endI - startI + 1;
+				int32 polyCount = count + 2;
 
-                    points[0] = BPoint(startI, frame.bottom);
+				try {
+					if (fPoints.size() < (size_t)polyCount)
+						fPoints.resize(polyCount);
 
-                    int32 searchIndex = 0;
-                    for (int32 j = 0; j < count; j++) {
-                        int32 i = startI + j;
-                        int64 value = fHistory->ValueAt(fLastRefresh - (steps - 1 - i) * timeStep, &searchIndex);
-                        float y;
-                        if (range == 0) {
-                            if (min == 0) y = frame.Height();
-                            else y = frame.Height() / 2;
-                        } else
-                            y = frame.Height() - (value - min) * frame.Height() / range;
-                        points[j+1] = BPoint(i, y);
-                    }
-                    points[polyCount-1] = BPoint(endI, frame.bottom);
+					BPoint* points = fPoints.data();
 
-                    // Fill
-                    view->SetDrawingMode(B_OP_ALPHA);
-                    rgb_color fillColor = drawColor;
-                    fillColor.alpha = 100;
-                    view->SetHighColor(fillColor);
-                    view->FillPolygon(points, polyCount);
+					points[0] = BPoint(startI, frame.bottom);
 
-                    // Stroke
-                    view->SetDrawingMode(B_OP_COPY);
-                    view->SetHighColor(drawColor);
-                    view->SetPenSize(1.5);
-                    view->BeginLineArray(count - 1);
-                    for (int32 j = 0; j < count - 1; j++) {
-                        view->AddLine(points[j+1], points[j+2], drawColor);
-                    }
-                    view->EndLineArray();
-                } catch (const std::bad_alloc&) {
-                    // Ignore
-                }
+					int32 searchIndex = 0;
+					for (int32 j = 0; j < count; j++) {
+						int32 i = startI + j;
+						// For the very last pixel, use 'now' for maximum smoothness
+						bigtime_t t;
+						if (i == (int32)steps - 1) t = now;
+						else t = fLastRefresh - (steps - 1 - i) * timeStep;
 
-                view->ConstrainClippingRegion(NULL); // Reset clipping
-            }
+						int64 value = fHistory->ValueAt(t, &searchIndex);
+						float y;
+						if (range == 0) {
+							if (min == 0) y = frame.Height();
+							else y = frame.Height() / 2;
+						} else
+							y = frame.Height() - (value - min) * frame.Height() / range;
+						points[j+1] = BPoint(i, y);
+					}
+					points[polyCount-1] = BPoint(endI, frame.bottom);
+
+					// Fill
+					view->SetDrawingMode(B_OP_ALPHA);
+					rgb_color fillColor = drawColor;
+					fillColor.alpha = 100;
+					view->SetHighColor(fillColor);
+					view->FillPolygon(points, polyCount);
+
+					// Stroke
+					view->SetDrawingMode(B_OP_COPY);
+					view->SetHighColor(drawColor);
+					view->SetPenSize(1.5);
+					view->BeginLineArray(count - 1);
+					for (int32 j = 0; j < count - 1; j++) {
+						view->AddLine(points[j+1], points[j+2], drawColor);
+					}
+					view->EndLineArray();
+				} catch (const std::bad_alloc&) {
+					// Ignore
+				}
+
+				view->ConstrainClippingRegion(NULL); // Reset clipping
+			}
 		}
 		view->Sync();
 		fOffscreen->Unlock();

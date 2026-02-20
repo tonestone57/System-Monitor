@@ -35,7 +35,7 @@
 static const uint32 kMsgUpdateInfo = 'UPDT';
 
 SystemSummaryView::SystemSummaryView()
-	: BView("SystemSummaryView", B_WILL_DRAW),
+	: BView("SystemSummaryView", B_WILL_DRAW | B_PULSE_NEEDED),
 	  fLogoTextView(NULL),
 	  fInfoTextView(NULL),
 	  fLoadThread(-1)
@@ -97,6 +97,13 @@ void SystemSummaryView::Show()
 	_StartLoadThread();
 }
 
+void SystemSummaryView::Pulse()
+{
+	if (!IsHidden()) {
+		_StartLoadThread();
+	}
+}
+
 void SystemSummaryView::_StartLoadThread()
 {
 	if (fLoadThread >= 0)
@@ -121,36 +128,36 @@ void SystemSummaryView::MessageReceived(BMessage* message)
 			// Set Logo (ASCII Art)
 			// Color Palette from Haiku: Yellow/Gold for leaf, Blue for stem?
 			// Fastfetch Haiku Logo:
-			//           MMMM
-			//           MMMM
-			//           MMMM
-			//           MMMM
-			//           MMMM       .ciO  /YMMMMM*
-			//           MMMM    .dMMMMMM  /MMMMM/`
-			//           ,iMM   /MMMMMMMMMMMMMMMM*
-			//  *`     -cMMMMMMMMMMMMMMMMMMM/` .MMM
-			//    MMMMMMMMM/` :MMM/  MMMM
-			//    MMMM         MMMM
-			//    MMMM         MMMM
-			//    """"         """"
+			//		   MMMM
+			//		   MMMM
+			//		   MMMM
+			//		   MMMM
+			//		   MMMM	   .ciO  /YMMMMM*
+			//		   MMMM	.dMMMMMM  /MMMMM/`
+			//		   ,iMM   /MMMMMMMMMMMMMMMM*
+			//  *`	 -cMMMMMMMMMMMMMMMMMMM/` .MMM
+			//	MMMMMMMMM/` :MMM/  MMMM
+			//	MMMM		 MMMM
+			//	MMMM		 MMMM
+			//	""""		 """"
 
 			// We need to construct this text and color it.
 			// Simplified approach: Set text, then apply colors.
 			// Logo is constant.
 			if (fLogoTextView->TextLength() == 0) {
 				BString logo;
-				logo << "          MMMM\n";
-				logo << "          MMMM\n";
-				logo << "          MMMM\n";
-				logo << "          MMMM\n";
-				logo << "          MMMM       .ciO | /YMMMMM*\"\n";
-				logo << "          MMMM    .cOMMMMM | /MMMMM/`\n"; // Modified slightly to match screenshot curve
-				logo << "          ,iMM | /MMMMMMMMMMMMMMMM*\n";
-				logo << " `*      -cMMMMMMMMMMMMMMMMMMM/` .MMM\n";
+				logo << "		  MMMM\n";
+				logo << "		  MMMM\n";
+				logo << "		  MMMM\n";
+				logo << "		  MMMM\n";
+				logo << "		  MMMM	   .ciO | /YMMMMM*\"\n";
+				logo << "		  MMMM	.cOMMMMM | /MMMMM/`\n"; // Modified slightly to match screenshot curve
+				logo << "		  ,iMM | /MMMMMMMMMMMMMMMM*\n";
+				logo << " `*	  -cMMMMMMMMMMMMMMMMMMM/` .MMM\n";
 				logo << "   MMMMMMMMMM/` :MMM/  MMMM\n";
-				logo << "   MMMM         MMMM\n";
-				logo << "   MMMM         MMMM\n";
-				logo << "   \"\"\"\"         \"\"\"\"\n";
+				logo << "   MMMM		 MMMM\n";
+				logo << "   MMMM		 MMMM\n";
+				logo << "   \"\"\"\"		 \"\"\"\"\n";
 
 				fLogoTextView->SetText(logo.String());
 
@@ -168,18 +175,18 @@ void SystemSummaryView::MessageReceived(BMessage* message)
 				// Manual highlighting of leaf parts based on line content
 				// Lines 5-8 contain the leaf
 				const char* lines[] = {
-					"          MMMM\n",
-					"          MMMM\n",
-					"          MMMM\n",
-					"          MMMM\n",
-					"          MMMM       .ciO | /YMMMMM*\"\n",
-					"          MMMM    .cOMMMMM | /MMMMM/`\n",
-					"          ,iMM | /MMMMMMMMMMMMMMMM*\n",
-					" `*      -cMMMMMMMMMMMMMMMMMMM/` .MMM\n",
+					"		  MMMM\n",
+					"		  MMMM\n",
+					"		  MMMM\n",
+					"		  MMMM\n",
+					"		  MMMM	   .ciO | /YMMMMM*\"\n",
+					"		  MMMM	.cOMMMMM | /MMMMM/`\n",
+					"		  ,iMM | /MMMMMMMMMMMMMMMM*\n",
+					" `*	  -cMMMMMMMMMMMMMMMMMMM/` .MMM\n",
 					"   MMMMMMMMMM/` :MMM/  MMMM\n",
-					"   MMMM         MMMM\n",
-					"   MMMM         MMMM\n",
-					"   \"\"\"\"         \"\"\"\"\n",
+					"   MMMM		 MMMM\n",
+					"   MMMM		 MMMM\n",
+					"   \"\"\"\"		 \"\"\"\"\n",
 					NULL
 				};
 
@@ -296,11 +303,11 @@ void SystemSummaryView::MessageReceived(BMessage* message)
 			//  Blk Red Grn Yel Blu Mag Cyn Wht ...
 			int32 blockStart = currentText.FindFirst("███");
 			if (blockStart >= 0) {
-				rgb_color c1 = {0, 0, 0, 255};       // Black
-				rgb_color c2 = {255, 0, 0, 255};     // Red
-				rgb_color c3 = {0, 255, 0, 255};     // Green
+				rgb_color c1 = {0, 0, 0, 255};	   // Black
+				rgb_color c2 = {255, 0, 0, 255};	 // Red
+				rgb_color c3 = {0, 255, 0, 255};	 // Green
 				rgb_color c4 = {255, 255, 0, 255};   // Yellow
-				rgb_color c5 = {0, 0, 255, 255};     // Blue
+				rgb_color c5 = {0, 0, 255, 255};	 // Blue
 				rgb_color c6 = {255, 0, 255, 255};   // Magenta
 
 				auto colorBlock = [&](int index, rgb_color c) {
