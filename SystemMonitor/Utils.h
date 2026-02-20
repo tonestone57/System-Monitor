@@ -11,12 +11,12 @@ const uint32 MSG_HEADER_CLICKED = 'head';
 
 class ClickableHeaderView : public BStringView {
 public:
-    ClickableHeaderView(const char* label, float width, int32 mode, BHandler* target);
-    virtual void MouseDown(BPoint where);
+	ClickableHeaderView(const char* label, float width, int32 mode, BHandler* target);
+	virtual void MouseDown(BPoint where);
 
 private:
-    int32 fMode;
-    BHandler* fTarget;
+	int32 fMode;
+	BHandler* fTarget;
 };
 
 void FormatBytes(BString& out, uint64 bytes, int precision = 2);

@@ -19,6 +19,7 @@ public:
 	virtual void AttachedToWindow();
 	virtual void MessageReceived(BMessage* message);
 	virtual void Show();
+	virtual void Pulse();
 
 private:
 	void CreateLayout();

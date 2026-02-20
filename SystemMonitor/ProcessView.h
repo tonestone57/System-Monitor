@@ -22,23 +22,23 @@ class BListItem;
 #include <kernel/OS.h>
 
 enum ProcessState {
-    PROCESS_STATE_RUNNING,
-    PROCESS_STATE_READY,
-    PROCESS_STATE_SLEEPING,
-    PROCESS_STATE_UNKNOWN
+	PROCESS_STATE_RUNNING,
+	PROCESS_STATE_READY,
+	PROCESS_STATE_SLEEPING,
+	PROCESS_STATE_UNKNOWN
 };
 
 struct ProcessInfo {
-    team_id id;
-    char name[B_OS_NAME_LENGTH];
-    char userName[B_OS_NAME_LENGTH];
-    char args[64];
-    ProcessState state; // Stores process state as enum
-    uint32 threadCount;
-    uint32 areaCount;
-    uid_t userID;
-    uint64 memoryUsageBytes;
-    float cpuUsage;
+	team_id id;
+	char name[B_OS_NAME_LENGTH];
+	char userName[B_OS_NAME_LENGTH];
+	char args[64];
+	ProcessState state; // Stores process state as enum
+	uint32 threadCount;
+	uint32 areaCount;
+	uid_t userID;
+	uint64 memoryUsageBytes;
+	float cpuUsage;
 };
 
 
@@ -47,120 +47,120 @@ const uint32 MSG_SEARCH_UPDATED = 'srch';
 const uint32 MSG_HEADER_CLICKED = 'head';
 
 enum ProcessSortMode {
-    SORT_BY_PID,
-    SORT_BY_NAME,
-    SORT_BY_CPU,
-    SORT_BY_MEM,
-    SORT_BY_THREADS,
-    SORT_BY_STATE,
-    SORT_BY_USER
+	SORT_BY_PID,
+	SORT_BY_NAME,
+	SORT_BY_CPU,
+	SORT_BY_MEM,
+	SORT_BY_THREADS,
+	SORT_BY_STATE,
+	SORT_BY_USER
 };
 
 class ProcessListItem; // Forward declaration
 
 class ProcessView : public BView {
 public:
-    ProcessView();
-    virtual ~ProcessView();
-    
-    virtual void AttachedToWindow();
-    virtual void DetachedFromWindow();
-    virtual void MessageReceived(BMessage* message);
-    virtual void KeyDown(const char* bytes, int32 numBytes);
-    virtual void Hide();
-    virtual void Show();
+	ProcessView();
+	virtual ~ProcessView();
 
-    void SaveState(BMessage& state);
-    void LoadState(const BMessage& state);
-    void SetRefreshInterval(bigtime_t interval);
+	virtual void AttachedToWindow();
+	virtual void DetachedFromWindow();
+	virtual void MessageReceived(BMessage* message);
+	virtual void KeyDown(const char* bytes, int32 numBytes);
+	virtual void Hide();
+	virtual void Show();
 
-    float PIDWidth() const { return fPIDWidth; }
-    float NameWidth() const { return fNameWidth; }
-    float StateWidth() const { return fStateWidth; }
-    float CPUWidth() const { return fCPUWidth; }
-    float MemWidth() const { return fMemWidth; }
-    float ThreadsWidth() const { return fThreadsWidth; }
-    float UserWidth() const { return fUserWidth; }
+	void SaveState(BMessage& state);
+	void LoadState(const BMessage& state);
+	void SetRefreshInterval(bigtime_t interval);
+
+	float PIDWidth() const { return fPIDWidth; }
+	float NameWidth() const { return fNameWidth; }
+	float StateWidth() const { return fStateWidth; }
+	float CPUWidth() const { return fCPUWidth; }
+	float MemWidth() const { return fMemWidth; }
+	float ThreadsWidth() const { return fThreadsWidth; }
+	float UserWidth() const { return fUserWidth; }
 
 private:
-    static int32 UpdateThread(void* data);
-    void Update(BMessage* message);
-    void FilterRows();
-    void _SortItems();
-    void _RestoreSelection(team_id selectedID);
-    bool _MatchesFilter(const ProcessInfo& info, const char* searchText);
+	static int32 UpdateThread(void* data);
+	void Update(BMessage* message);
+	void FilterRows();
+	void _SortItems();
+	void _RestoreSelection(team_id selectedID);
+	bool _MatchesFilter(const ProcessInfo& info, const char* searchText);
 
-    void KillSelectedProcess();
-    void SuspendSelectedProcess();
-    void ResumeSelectedProcess();
-    void SetSelectedProcessPriority(int32 priority);
-    void ShowContextMenu(BPoint screenPoint);
-    BString GetUserName(uid_t uid, std::vector<char>& buffer);
+	void KillSelectedProcess();
+	void SuspendSelectedProcess();
+	void ResumeSelectedProcess();
+	void SetSelectedProcessPriority(int32 priority);
+	void ShowContextMenu(BPoint screenPoint);
+	BString GetUserName(uid_t uid, std::vector<char>& buffer);
 
-    BListView* fProcessListView;
-    BPopUpMenu* fContextMenu;
-    BTextControl* fSearchControl;
+	BListView* fProcessListView;
+	BPopUpMenu* fContextMenu;
+	BTextControl* fSearchControl;
 
-    struct ThreadState {
-        bigtime_t time;
-        int32 generation;
-    };
+	struct ThreadState {
+		bigtime_t time;
+		int32 generation;
+	};
 
-    struct CachedTeamInfo {
-        char name[B_OS_NAME_LENGTH];
-        char userName[B_OS_NAME_LENGTH];
-        char args[64];
-        uid_t uid;
-        int32 generation;
+	struct CachedTeamInfo {
+		char name[B_OS_NAME_LENGTH];
+		char userName[B_OS_NAME_LENGTH];
+		char args[64];
+		uid_t uid;
+		int32 generation;
 
-        uint64 memoryUsage;
-        int32 cachedAreaCount;
-        int32 memoryGeneration;
-        bigtime_t cpuTime;
-        thread_id lastRunningThread;
-    };
+		uint64 memoryUsage;
+		int32 cachedAreaCount;
+		int32 memoryGeneration;
+		bigtime_t cpuTime;
+		thread_id lastRunningThread;
+	};
 
-    struct CachedUser {
-        BString name;
-        int32 generation;
-    };
-    
-    std::unordered_map<thread_id, ThreadState> fThreadTimeMap;
-    std::unordered_map<team_id, CachedTeamInfo> fCachedTeamInfo;
-    std::unordered_map<team_id, ProcessListItem*> fTeamItemMap;
-    std::unordered_set<ProcessListItem*> fVisibleItems;
+	struct CachedUser {
+		BString name;
+		int32 generation;
+	};
 
-    // Optimization members
-    BString fStrRunning;
-    BString fStrReady;
-    BString fStrSleeping;
+	std::unordered_map<thread_id, ThreadState> fThreadTimeMap;
+	std::unordered_map<team_id, CachedTeamInfo> fCachedTeamInfo;
+	std::unordered_map<team_id, ProcessListItem*> fTeamItemMap;
+	std::unordered_set<ProcessListItem*> fVisibleItems;
 
-    // Buffers for filtering to avoid reallocation
-    BString fFilterName; // Buffer for name filtering
-    BString fFilterID;   // Buffer for ID filtering
-    BString fFilterArgs; // Buffer for args filtering
+	// Optimization members
+	BString fStrRunning;
+	BString fStrReady;
+	BString fStrSleeping;
 
-    std::unordered_map<uid_t, CachedUser> fUserNameCache;
-    bigtime_t fLastSystemTime;
-    std::atomic<bigtime_t> fRefreshInterval;
-    
-    thread_id fUpdateThread;
-    sem_id fQuitSem;
-    std::atomic<bool> fTerminated;
-    std::atomic<bool> fIsHidden;
+	// Buffers for filtering to avoid reallocation
+	BString fFilterName; // Buffer for name filtering
+	BString fFilterID;   // Buffer for ID filtering
+	BString fFilterArgs; // Buffer for args filtering
 
-    ProcessSortMode fSortMode;
-    BFont fCachedFont;
-    int32 fCurrentGeneration;
-    int32 fListGeneration;
+	std::unordered_map<uid_t, CachedUser> fUserNameCache;
+	bigtime_t fLastSystemTime;
+	std::atomic<bigtime_t> fRefreshInterval;
 
-    float fPIDWidth;
-    float fNameWidth;
-    float fStateWidth;
-    float fCPUWidth;
-    float fMemWidth;
-    float fThreadsWidth;
-    float fUserWidth;
+	thread_id fUpdateThread;
+	sem_id fQuitSem;
+	std::atomic<bool> fTerminated;
+	std::atomic<bool> fIsHidden;
+
+	ProcessSortMode fSortMode;
+	BFont fCachedFont;
+	int32 fCurrentGeneration;
+	int32 fListGeneration;
+
+	float fPIDWidth;
+	float fNameWidth;
+	float fStateWidth;
+	float fCPUWidth;
+	float fMemWidth;
+	float fThreadsWidth;
+	float fUserWidth;
 };
 
 #endif // PROCESSVIEW_H

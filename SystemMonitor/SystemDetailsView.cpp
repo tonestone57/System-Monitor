@@ -156,6 +156,9 @@ void SystemDetailsView::AttachedToWindow()
 
 void SystemDetailsView::Pulse()
 {
+	if (IsHidden())
+		return;
+
 	system_info sysInfo;
 	get_system_info(&sysInfo);
 

@@ -12,47 +12,47 @@ class BBox;
 
 class CPUView : public BView {
 public:
-    CPUView();
-    virtual ~CPUView();
-    
-    virtual void AttachedToWindow();
-    virtual void Pulse();
-    virtual void Draw(BRect updateRect);
+	CPUView();
+	virtual ~CPUView();
 
-    float GetCurrentUsage();
-    void SetRefreshInterval(bigtime_t interval);
-    void UpdateData();
+	virtual void AttachedToWindow();
+	virtual void Pulse();
+	virtual void Draw(BRect updateRect);
+
+	float GetCurrentUsage();
+	void SetRefreshInterval(bigtime_t interval);
+	void UpdateData();
 
 private:
-    void CreateLayout();
-    void GetCPUUsage(bigtime_t now, float& overallUsage);
-    
-    BStringView* fOverallUsageValue;
-    BStringView* fModelName;
-    std::vector<ActivityGraphView*> fCoreGraphs;
+	void CreateLayout();
+	void GetCPUUsage(bigtime_t now, float& overallUsage);
 
-    BStringView* fSpeedValue;
-    BStringView* fProcessesValue;
-    BStringView* fThreadsValue;
-    BStringView* fUptimeValue;
-    
-    std::vector<bigtime_t> fPreviousActiveTime;
-    std::vector<cpu_info> fCpuInfos;
-    uint32 fCpuCount;
-    system_info fPreviousSysInfo;
-    
-    std::vector<float> fPerCoreUsage;
-    
-    BLocker fLocker;
-    bigtime_t fPreviousTimeSnapshot;
-    float fCurrentUsage;
+	BStringView* fOverallUsageValue;
+	BStringView* fModelName;
+	std::vector<ActivityGraphView*> fCoreGraphs;
 
-    int32 fLastUsedTeams;
-    int32 fLastUsedThreads;
-    BString fCachedProcesses;
-    BString fCachedThreads;
+	BStringView* fSpeedValue;
+	BStringView* fProcessesValue;
+	BStringView* fThreadsValue;
+	BStringView* fUptimeValue;
 
-    BNumberFormat fNumberFormat;
+	std::vector<bigtime_t> fPreviousActiveTime;
+	std::vector<cpu_info> fCpuInfos;
+	uint32 fCpuCount;
+	system_info fPreviousSysInfo;
+
+	std::vector<float> fPerCoreUsage;
+
+	BLocker fLocker;
+	bigtime_t fPreviousTimeSnapshot;
+	float fCurrentUsage;
+
+	int32 fLastUsedTeams;
+	int32 fLastUsedThreads;
+	BString fCachedProcesses;
+	BString fCachedThreads;
+
+	BNumberFormat fNumberFormat;
 };
 
 #endif // CPUVIEW_H

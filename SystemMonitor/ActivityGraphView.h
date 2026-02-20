@@ -29,7 +29,7 @@ private:
 
 private:
 	rgb_color			fColor;
-    color_which         fSystemColor;
+	color_which		 fSystemColor;
 	BBitmap*			fOffscreen;
 	DataHistory*		fHistory;
 	bigtime_t			fResolution;

@@ -143,6 +143,13 @@ A final comprehensive audit was performed to centralize logic, improve consisten
   - Implemented full interactive column sorting for `DiskView` and `NetworkView`.
   - Centralized `ClickableHeaderView` into `Utils` to reduce code duplication.
   - Added font-responsive column width recalculation to all list-based views (`ProcessView`, `DiskView`, `NetworkView`) to ensure the UI remains correct when system font sizes change.
+  - Added real-time updates to `SystemSummaryView` via the `Pulse()` mechanism.
+  - Optimized `SystemDetailsView` and `SystemSummaryView` to skip updates when hidden, saving CPU.
+
+- **Performance Optimizations**:
+  - Implemented a caching mechanism for package counts in `Utils::GetPackageCount` to avoid frequent directory scans.
+  - Optimized process name extraction in `ProcessView::UpdateThread` using `strrchr` instead of the more heavyweight `BPath`.
+  - Improved battery detection to enumerate multiple potential battery slots.
 
 - **Unified Selection Logic**:
   - Standardized list selection restoration across `DiskView`, `NetworkView`, and `ProcessView` by extracting the logic into private `_RestoreSelection` helpers. This ensures that the user's current selection is preserved reliably during periodic data updates.
