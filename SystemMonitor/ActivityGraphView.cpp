@@ -202,7 +202,7 @@ ActivityGraphView::_DrawHistory()
 	BRect frame = view->Bounds();
 
 	if (fOffscreen->Lock()) {
-		uint32 steps = frame.IntegerWidth();
+		uint32 steps = static_cast<uint32>(frame.Width()) + 1;
 		if (steps > 0) {
 			bigtime_t now = system_time();
 			bigtime_t timeStep = fResolution;

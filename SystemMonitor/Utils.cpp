@@ -137,7 +137,7 @@ BString FormatHertz(uint64 hertz) {
 	} else if (mhz >= 1.0) {
 		str.SetToFormat(B_TRANSLATE("%.0f MHz"), mhz);
 	} else if (khz >= 1.0) {
-		str.SetToFormat(B_TRANSLATE("%.0f KHz"), khz);
+		str.SetToFormat(B_TRANSLATE("%.0f kHz"), khz);
 	} else {
 		str.SetToFormat(B_TRANSLATE("%" B_PRIu64 " Hz"), hertz);
 	}
