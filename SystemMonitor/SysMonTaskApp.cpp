@@ -111,6 +111,15 @@ public:
 		if (fNetGraph) fNetGraph->SetRefreshInterval(interval);
 	}
 
+	void UpdateData() {
+		if (fStats) {
+			const bigtime_t now = system_time();
+			fCpuGraph->AddValue(now, fStats->cpuUsage * 10);
+			fMemGraph->AddValue(now, fStats->memoryUsage * 10);
+			fNetGraph->AddValue(now, fStats->uploadSpeed + fStats->downloadSpeed);
+		}
+	}
+
 private:
 	BView* _CreateCard(const char* label, BView* content) {
 		BBox* card = new BBox(B_FANCY_BORDER, NULL);
@@ -124,15 +133,6 @@ private:
 			.AddStrut(5)
 			.Add(content);
 		return card;
-	}
-
-	void UpdateData() {
-		if (fStats) {
-			const bigtime_t now = system_time();
-			fCpuGraph->AddValue(now, fStats->cpuUsage * 10);
-			fMemGraph->AddValue(now, fStats->memoryUsage * 10);
-			fNetGraph->AddValue(now, fStats->uploadSpeed + fStats->downloadSpeed);
-		}
 	}
 
 private:

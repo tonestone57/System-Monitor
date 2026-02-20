@@ -252,9 +252,12 @@ BString SystemDetailsView::_GetRamSize(system_info* sysInfo)
 	uint64 used, total, physical;
 	GetMemoryUsage(used, total, physical);
 
+	BString physicalStr;
+	::FormatBytes(physicalStr, physical);
+
 	BString ramSize;
-	ramSize.SetToFormat(B_TRANSLATE_COMMENT("%d MiB Memory:",
-		"2048 MiB Memory:"), static_cast<int>(BytesToMiB(physical)));
+	ramSize.SetToFormat(B_TRANSLATE_COMMENT("%s Memory:",
+		"2048 MiB Memory:"), physicalStr.String());
 
 	return ramSize;
 }
@@ -269,12 +272,15 @@ BString SystemDetailsView::_GetRamUsage(system_info* sysInfo)
 	double usedMemoryPercent = total > 0 ? static_cast<double>(used) / total : 0.0;
 	status_t status = fNumberFormat.FormatPercent(data, usedMemoryPercent);
 
+	BString usedStr;
+	::FormatBytes(usedStr, used);
+
 	if (status == B_OK) {
-		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %d MiB used (%s)",
-			"RAM: 326 MiB used (16%)"), static_cast<int>(BytesToMiB(used)), data.String());
+		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %s used (%s)",
+			"RAM: 326.5 MiB used (16%)"), usedStr.String(), data.String());
 	} else {
-		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %d MiB used (%d%%)",
-			"RAM: 326 MiB used (16%)"), static_cast<int>(BytesToMiB(used)), static_cast<int>(100 * usedMemoryPercent));
+		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %s used (%d%%)",
+			"RAM: 326.5 MiB used (16%)"), usedStr.String(), static_cast<int>(100 * usedMemoryPercent));
 	}
 
 	return ramUsage;

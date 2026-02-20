@@ -223,7 +223,7 @@ public:
 
 
 NetworkView::NetworkView()
-	: BView("NetworkView", B_WILL_DRAW | B_PULSE_NEEDED),
+	: BView("NetworkView", B_WILL_DRAW),
 	fDownloadGraph(NULL),
 	fUploadGraph(NULL),
 	fUploadSpeed(0.0f),
@@ -305,10 +305,10 @@ NetworkView::~NetworkView()
 		wait_for_thread(fUpdateThread, &dummy);
 	}
 
-	for (int32 i = 0; i < fInterfaceListView->CountItems(); i++) {
-		delete fInterfaceListView->ItemAt(i);
-	}
 	fInterfaceListView->MakeEmpty();
+	for (auto& pair : fInterfaceItemMap) {
+		delete pair.second;
+	}
 	fInterfaceItemMap.clear();
 }
 
@@ -356,11 +356,6 @@ void NetworkView::MessageReceived(BMessage* message)
 	}
 }
 
-void NetworkView::Pulse()
-{
-	// No-op: UpdateThread handles timing
-}
-
 void NetworkView::UpdateData(BMessage* message)
 {
 	fLocker.Lock();
@@ -381,8 +376,6 @@ void NetworkView::UpdateData(BMessage* message)
 	int32 count = 0;
 	type_code type;
 	message->GetInfo("net_info", &type, &count);
-
-	bool listChanged = false;
 
 	// Get Font once
 	BFont font;
@@ -458,7 +451,6 @@ void NetworkView::UpdateData(BMessage* message)
 				item = new InterfaceListItem(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes, &font, this);
 				fInterfaceListView->AddItem(item);
 				result.first->second = item;
-				listChanged = true;
 			} else {
 				item = result.first->second;
 				item->Update(name, typeStr, addressStr, currentSent, currentReceived, sendSpeedBytes, recvSpeedBytes, &font, fontChanged);
@@ -480,7 +472,6 @@ void NetworkView::UpdateData(BMessage* message)
 			fInterfaceListView->RemoveItem(item);
 			delete item;
 			it = fInterfaceItemMap.erase(it);
-			listChanged = true;
 		} else {
 			++it;
 		}
