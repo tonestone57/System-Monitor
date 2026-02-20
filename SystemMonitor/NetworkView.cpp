@@ -161,58 +161,58 @@ private:
 
 public:
 	static int CompareName(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *(const InterfaceListItem**)first;
-		const InterfaceListItem* item2 = *(const InterfaceListItem**)second;
+		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
+		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
 		return strcasecmp(item1->fName.String(), item2->fName.String());
 	}
 
 	static int CompareType(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *(const InterfaceListItem**)first;
-		const InterfaceListItem* item2 = *(const InterfaceListItem**)second;
+		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
+		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
 		return strcasecmp(item1->fType.String(), item2->fType.String());
 	}
 
 	static int CompareAddr(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *(const InterfaceListItem**)first;
-		const InterfaceListItem* item2 = *(const InterfaceListItem**)second;
+		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
+		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
 		return strcasecmp(item1->fAddr.String(), item2->fAddr.String());
 	}
 
 	static int CompareSent(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *(const InterfaceListItem**)first;
-		const InterfaceListItem* item2 = *(const InterfaceListItem**)second;
+		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
+		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
 		if (item1->fSent > item2->fSent) return -1;
 		if (item1->fSent < item2->fSent) return 1;
 		return 0;
 	}
 
 	static int CompareRecv(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *(const InterfaceListItem**)first;
-		const InterfaceListItem* item2 = *(const InterfaceListItem**)second;
+		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
+		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
 		if (item1->fRecv > item2->fRecv) return -1;
 		if (item1->fRecv < item2->fRecv) return 1;
 		return 0;
 	}
 
 	static int CompareTxSpeed(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *(const InterfaceListItem**)first;
-		const InterfaceListItem* item2 = *(const InterfaceListItem**)second;
+		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
+		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
 		if (item1->fTxSpeed > item2->fTxSpeed) return -1;
 		if (item1->fTxSpeed < item2->fTxSpeed) return 1;
 		return 0;
 	}
 
 	static int CompareRxSpeed(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *(const InterfaceListItem**)first;
-		const InterfaceListItem* item2 = *(const InterfaceListItem**)second;
+		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
+		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
 		if (item1->fRxSpeed > item2->fRxSpeed) return -1;
 		if (item1->fRxSpeed < item2->fRxSpeed) return 1;
 		return 0;
 	}
 
 	static int CompareSpeed(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *(const InterfaceListItem**)first;
-		const InterfaceListItem* item2 = *(const InterfaceListItem**)second;
+		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
+		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
 		uint64 s1 = item1->fTxSpeed + item1->fRxSpeed;
 		uint64 s2 = item2->fTxSpeed + item2->fRxSpeed;
 		if (s1 > s2) return -1;
@@ -400,21 +400,13 @@ void NetworkView::UpdateData(BMessage* message)
 		fTxSpeedWidth = kBaseNetTxSpeedWidth * scale;
 		fRxSpeedWidth = kBaseNetRxSpeedWidth * scale;
 
-		if (fHeaders.size() >= 7) {
-			fHeaders[0]->SetWidth(fNameWidth);
-			fHeaders[1]->SetWidth(fTypeWidth);
-			fHeaders[2]->SetWidth(fAddrWidth);
-			fHeaders[3]->SetWidth(fSentWidth);
-			fHeaders[4]->SetWidth(fRecvWidth);
-			fHeaders[5]->SetWidth(fTxSpeedWidth);
-			fHeaders[6]->SetWidth(fRxSpeedWidth);
-		}
+		UpdateHeaderWidths(fHeaders, { fNameWidth, fTypeWidth, fAddrWidth, fSentWidth, fRecvWidth, fTxSpeedWidth, fRxSpeedWidth });
 	}
 
 	for (int32 i = 0; i < count; i++) {
 		const NetworkInfo* info;
 		ssize_t size;
-		if (message->FindData("net_info", B_RAW_TYPE, i, (const void**)&info, &size) == B_OK) {
+		if (message->FindData("net_info", B_RAW_TYPE, i, reinterpret_cast<const void**>(&info), &size) == B_OK) {
 
 			BString name(info->name);
 
@@ -643,14 +635,5 @@ void NetworkView::_RestoreSelection(const BString& selectedName)
 			fInterfaceListView->Select(i);
 			break;
 		}
-	}
-}
-
-void NetworkView::_UpdateHeaderWidths()
-{
-	float widths[] = { fNameWidth, fTypeWidth, fAddrWidth, fSentWidth, fRecvWidth, fTxSpeedWidth, fRxSpeedWidth };
-	size_t count = std::min(fHeaders.size(), sizeof(widths) / sizeof(widths[0]));
-	for (size_t i = 0; i < count; i++) {
-		fHeaders[i]->SetWidth(widths[i]);
 	}
 }

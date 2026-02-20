@@ -125,7 +125,7 @@ void MemView::UpdateData()
 			::FormatBytes(fCachedUsedStr, usedBytes);
 			if (totalBytes > 0) {
 				BString percentStr;
-				fNumberFormat.FormatPercent(percentStr, (double)usedBytes / totalBytes);
+				fNumberFormat.FormatPercent(percentStr, static_cast<double>(usedBytes) / totalBytes);
 				fCachedUsedStr << " (" << percentStr << ")";
 			}
 			fUsedMemValue->SetText(fCachedUsedStr.String());
@@ -144,12 +144,12 @@ void MemView::UpdateData()
 		}
 
 		if (totalBytes > 0) {
-			float usedPercent = (float)usedBytes / totalBytes * 100.0f;
+			float usedPercent = static_cast<float>(usedBytes) / totalBytes * 100.0f;
 			if (usedPercent < 0.0f) usedPercent = 0.0f;
 			if (usedPercent > 100.0f) usedPercent = 100.0f;
 			fCurrentUsage = usedPercent;
 
-			float cachePercent = (float)cachedBytes / totalBytes * 100.0f;
+			float cachePercent = static_cast<float>(cachedBytes) / totalBytes * 100.0f;
 			if (cachePercent < 0.0f) cachePercent = 0.0f;
 			if (cachePercent > 100.0f) cachePercent = 100.0f;
 			fCacheGraphView->AddValue(system_time(), cachePercent * 10);

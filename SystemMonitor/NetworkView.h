@@ -117,7 +117,6 @@ private:
 
 	void _SortItems();
 	void _RestoreSelection(const BString& selectedName);
-	void _UpdateHeaderWidths();
 };
 
 #endif // NETWORKVIEW_H

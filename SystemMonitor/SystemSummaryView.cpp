@@ -385,7 +385,7 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	font_style style;
 	be_plain_font->GetFamilyAndStyle(&family, &style);
 	BString font;
-	font << family << " " << style << " (" << (int)be_plain_font->Size() << "pt)";
+	font << family << " " << style << " (" << static_cast<int>(be_plain_font->Size()) << "pt)";
 	reply.AddString("font", font);
 
 	// 10. CPU
@@ -404,7 +404,7 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 		::FormatBytes(cachedStr, cached);
 
 		BString memStr;
-		int percent = (int)(100.0 * used / total);
+		int percent = static_cast<int>(100.0 * used / total);
 		BString usedStr, totalStr;
 		::FormatBytes(usedStr, used);
 		::FormatBytes(totalStr, total);

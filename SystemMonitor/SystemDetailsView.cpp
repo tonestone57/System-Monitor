@@ -34,7 +34,7 @@
 
 static int pages_to_mib(uint64 pages)
 {
-	return (int)((pages * B_PAGE_SIZE + 1048575) / 1048576);
+	return static_cast<int>((pages * B_PAGE_SIZE + 1048575) / 1048576);
 }
 
 SystemDetailsView::SystemDetailsView()
@@ -105,7 +105,7 @@ SystemDetailsView::SystemDetailsView()
 	const float inset = offset;
 
 	SetLayout(new BGroupLayout(B_VERTICAL, 0));
-	BLayoutBuilder::Group<>((BGroupLayout*)GetLayout())
+	BLayoutBuilder::Group<>(static_cast<BGroupLayout*>(GetLayout()))
 		.Add(new BScrollView("scroll_details", BLayoutBuilder::Group<>(B_VERTICAL)
 			// Version:
 			.Add(fVersionLabelView)
@@ -259,7 +259,7 @@ BString SystemDetailsView::_GetRamSize(system_info* sysInfo)
 
 	BString ramSize;
 	ramSize.SetToFormat(B_TRANSLATE_COMMENT("%d MiB Memory:",
-		"2048 MiB Memory:"), (int)(physical / 1048576));
+		"2048 MiB Memory:"), static_cast<int>(physical / 1048576));
 
 	return ramSize;
 }
@@ -271,15 +271,15 @@ BString SystemDetailsView::_GetRamUsage(system_info* sysInfo)
 
 	BString ramUsage;
 	BString data;
-	double usedMemoryPercent = total > 0 ? (double)used / total : 0.0;
+	double usedMemoryPercent = total > 0 ? static_cast<double>(used) / total : 0.0;
 	status_t status = fNumberFormat.FormatPercent(data, usedMemoryPercent);
 
 	if (status == B_OK) {
 		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %d MiB used (%s)",
-			"RAM: 326 MiB used (16%)"), (int)(used / 1048576), data.String());
+			"RAM: 326 MiB used (16%)"), static_cast<int>(used / 1048576), data.String());
 	} else {
 		ramUsage.SetToFormat(B_TRANSLATE_COMMENT("RAM: %d MiB used (%d%%)",
-			"RAM: 326 MiB used (16%)"), (int)(used / 1048576), (int)(100 * usedMemoryPercent));
+			"RAM: 326 MiB used (16%)"), static_cast<int>(used / 1048576), static_cast<int>(100 * usedMemoryPercent));
 	}
 
 	return ramUsage;
@@ -296,7 +296,7 @@ BString SystemDetailsView::_GetSwapUsage(system_info* sysInfo)
 
 	int percent = 0;
 	if (swapTotal > 0)
-		percent = (int)(100.0 * swapUsed / swapTotal);
+		percent = static_cast<int>(100.0 * swapUsed / swapTotal);
 
 	BString swapUsage;
 	swapUsage.SetToFormat(B_TRANSLATE("Swap: %s / %s (%d%%)"),

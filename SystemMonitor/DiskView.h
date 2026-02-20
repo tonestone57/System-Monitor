@@ -93,7 +93,6 @@ private:
 
 	void _SortItems();
 	void _RestoreSelection(dev_t selectedID);
-	void _UpdateHeaderWidths();
 	void _ScanVolumes();
 	std::unordered_map<dev_t, DiskInfo> fVolumeCache;
 };

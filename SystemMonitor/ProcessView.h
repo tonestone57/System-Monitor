@@ -89,7 +89,6 @@ private:
 	void FilterRows();
 	void _SortItems();
 	void _RestoreSelection(team_id selectedID);
-	void _UpdateHeaderWidths();
 	bool _MatchesFilter(const ProcessInfo& info, const char* searchText);
 
 	void KillSelectedProcess();

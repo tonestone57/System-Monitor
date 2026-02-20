@@ -4,6 +4,8 @@
 #include <String.h>
 #include <SupportDefs.h>
 #include <StringView.h>
+#include <vector>
+#include <initializer_list>
 
 class BFont;
 
@@ -22,6 +24,7 @@ private:
 
 void FormatBytes(BString& out, uint64 bytes, int precision = 2);
 void FormatBytes(BString& out, double bytes, int precision = 2);
+void UpdateHeaderWidths(const std::vector<ClickableHeaderView*>& headers, std::initializer_list<float> widths);
 void GetMemoryUsage(uint64& used, uint64& total, uint64& physical);
 void GetSwapUsage(uint64& used, uint64& total);
 uint64 GetCachedMemoryBytes(const system_info& sysInfo);
