@@ -57,7 +57,7 @@ DataHistory::ValueAt(bigtime_t time, int32* hintIndex)
 	if (hintIndex != NULL && *hintIndex >= 0)
 		left = *hintIndex;
 
-	int32 right = fBuffer.CountItems() - 1;
+	int32 right = (int32)fBuffer.CountItems() - 1;
 	data_item* item = NULL;
 
 	while (left <= right) {
@@ -161,8 +161,8 @@ DataHistory::_ResetDeques()
 	fMinDeque.clear();
 	fMaxDeque.clear();
 
-	int32 count = fBuffer.CountItems();
-	for (int32 i = 0; i < count; i++) {
+	uint32 count = fBuffer.CountItems();
+	for (uint32 i = 0; i < count; i++) {
 		data_item* item = fBuffer.ItemAt(i);
 		if (item == NULL) continue;
 
