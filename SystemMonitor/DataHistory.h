@@ -8,6 +8,7 @@
 struct data_item {
 	bigtime_t	time;
 	int64		value;
+	uint64		seq;
 };
 
 class DataHistory {
@@ -33,6 +34,7 @@ private:
 	std::deque<data_item> fMinDeque;
 	std::deque<data_item> fMaxDeque;
 	bigtime_t			fRefreshInterval;
+	uint64				fNextSeq;
 };
 
 #endif // DATAHISTORY_H

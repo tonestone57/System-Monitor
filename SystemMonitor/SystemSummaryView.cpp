@@ -38,7 +38,8 @@ SystemSummaryView::SystemSummaryView()
 	: BView("SystemSummaryView", B_WILL_DRAW | B_PULSE_NEEDED),
 	  fLogoTextView(NULL),
 	  fInfoTextView(NULL),
-	  fLoadThread(-1)
+	  fLoadThread(-1),
+	  fThreadRunning(false)
 {
 	SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
 	CreateLayout();
@@ -106,16 +107,20 @@ void SystemSummaryView::Pulse()
 
 void SystemSummaryView::_StartLoadThread()
 {
-	if (fLoadThread >= 0)
+	// Use atomic flag: prevents a new thread if one is already running,
+	// even if the previous thread's ID has been recycled.
+	bool expected = false;
+	if (!fThreadRunning.compare_exchange_strong(expected, true))
 		return;
 
-	// Spawn thread to load data
 	BMessenger* messenger = new BMessenger(this);
-	fLoadThread = spawn_thread(_LoadDataThread, "sysinfo_loader", B_NORMAL_PRIORITY, messenger);
+	fLoadThread = spawn_thread(_LoadDataThread, "sysinfo_loader",
+		B_NORMAL_PRIORITY, messenger);
 	if (fLoadThread >= 0) {
 		resume_thread(fLoadThread);
 	} else {
 		delete messenger;
+		fThreadRunning = false;
 	}
 }
 
@@ -124,6 +129,7 @@ void SystemSummaryView::MessageReceived(BMessage* message)
 	switch (message->what) {
 		case kMsgUpdateInfo: {
 			fLoadThread = -1;
+			fThreadRunning = false;
 
 			// Set Logo (ASCII Art)
 			// Color Palette from Haiku: Yellow/Gold for leaf, Blue for stem?

@@ -4,7 +4,8 @@
 DataHistory::DataHistory(bigtime_t memorize, bigtime_t interval)
 	:
 	fBuffer(memorize > 0 && interval > 0 ? memorize / interval : 100),
-	fRefreshInterval(interval)
+	fRefreshInterval(interval),
+	fNextSeq(0)
 {
 }
 
@@ -18,14 +19,14 @@ void
 DataHistory::AddValue(bigtime_t time, int64 value)
 {
 	bool full = static_cast<size_t>(fBuffer.CountItems()) == fBuffer.Size();
-	bigtime_t oldestTime = 0;
+	uint64 oldestSeq = 0;
 	if (full) {
 		data_item* oldest = fBuffer.ItemAt(0);
 		if (oldest != NULL)
-			oldestTime = oldest->time;
+			oldestSeq = oldest->seq;
 	}
 
-	data_item item = {time, value};
+	data_item item = {time, value, fNextSeq++};
 	fBuffer.AddItem(item);
 
 	// Maintain Min Deque (increasing)
@@ -41,10 +42,10 @@ DataHistory::AddValue(bigtime_t time, int64 value)
 	fMaxDeque.push_back(item);
 
 	if (full) {
-		if (!fMinDeque.empty() && fMinDeque.front().time == oldestTime)
+		if (!fMinDeque.empty() && fMinDeque.front().seq == oldestSeq)
 			fMinDeque.pop_front();
 
-		if (!fMaxDeque.empty() && fMaxDeque.front().time == oldestTime)
+		if (!fMaxDeque.empty() && fMaxDeque.front().seq == oldestSeq)
 			fMaxDeque.pop_front();
 	}
 }
@@ -150,6 +151,14 @@ DataHistory::SetRefreshInterval(bigtime_t interval)
 
 	if (fBuffer.SetSize(newSize) == B_OK) {
 		fRefreshInterval = interval;
+		// Re-stamp sequence numbers after resize so deque eviction remains correct
+		uint32 count = fBuffer.CountItems();
+		fNextSeq = count;
+		for (uint32 i = 0; i < count; i++) {
+			data_item* item = fBuffer.ItemAt(i);
+			if (item != NULL)
+				item->seq = i;
+		}
 		_ResetDeques();
 	}
 }

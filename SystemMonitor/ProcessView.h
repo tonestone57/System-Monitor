@@ -45,7 +45,6 @@ struct ProcessInfo {
 
 const uint32 MSG_PROCESS_DATA_UPDATE = 'pdup';
 const uint32 MSG_SEARCH_UPDATED = 'srch';
-const uint32 MSG_HEADER_CLICKED = 'head';
 
 enum ProcessSortMode {
 	SORT_BY_PID,

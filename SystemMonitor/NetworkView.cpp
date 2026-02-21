@@ -13,6 +13,7 @@
 #include <cstring>
 #include <net/if.h>
 #include "ActivityGraphView.h"
+#include "InterfaceListItem.h"
 #include <Messenger.h>
 #include <Catalog.h>
 #include <ScrollView.h>
@@ -28,199 +29,6 @@ const float kBaseNetRecvWidth = 90;
 const float kBaseNetTxSpeedWidth = 90;
 const float kBaseNetRxSpeedWidth = 90;
 
-class InterfaceListItem : public BListItem {
-public:
-	InterfaceListItem(const BString& name, const BString& type, const BString& addr,
-					  uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed, const BFont* font, NetworkView* view)
-		: BListItem(), fGeneration(0), fView(view)
-	{
-		Update(name, type, addr, sent, recv, txSpeed, rxSpeed, font, true);
-	}
-
-	void SetGeneration(int32 generation) { fGeneration = generation; }
-	int32 Generation() const { return fGeneration; }
-	const BString& Name() const { return fName; }
-
-	void Update(const BString& name, const BString& type, const BString& addr,
-					  uint64 sent, uint64 recv, uint64 txSpeed, uint64 rxSpeed, const BFont* font, bool force = false)
-	{
-		bool nameChanged = force || fName != name;
-		bool typeChanged = force || fType != type;
-		bool addrChanged = force || fAddr != addr;
-		bool sentChanged = force || fSent != sent;
-		bool recvChanged = force || fRecv != recv;
-		bool txSpeedChanged = force || fTxSpeed != txSpeed;
-		bool rxSpeedChanged = force || fRxSpeed != rxSpeed;
-
-		fName = name;
-		fType = type;
-		fAddr = addr;
-		fSent = sent;
-		fRecv = recv;
-		fTxSpeed = txSpeed;
-		fRxSpeed = rxSpeed;
-
-		if (sentChanged)
-			::FormatBytes(fCachedSent, fSent);
-		if (recvChanged)
-			::FormatBytes(fCachedRecv, fRecv);
-		if (txSpeedChanged)
-			fCachedTxSpeed = FormatSpeed(fTxSpeed, 1000000);
-		if (rxSpeedChanged)
-			fCachedRxSpeed = FormatSpeed(fRxSpeed, 1000000);
-
-		if (nameChanged) {
-			if (font && fView) {
-				fTruncatedName = fName;
-				font->TruncateString(&fTruncatedName, B_TRUNCATE_END, fView->NameWidth() - 10);
-			} else
-				fTruncatedName = fName;
-		}
-
-		if (typeChanged) {
-			if (font && fView) {
-				fTruncatedType = fType;
-				font->TruncateString(&fTruncatedType, B_TRUNCATE_END, fView->TypeWidth() - 10);
-			} else
-				fTruncatedType = fType;
-		}
-
-		if (addrChanged) {
-			if (font && fView) {
-				fTruncatedAddr = fAddr;
-				font->TruncateString(&fTruncatedAddr, B_TRUNCATE_END, fView->AddrWidth() - 10);
-			} else
-				fTruncatedAddr = fAddr;
-		}
-	}
-
-	virtual void DrawItem(BView* owner, BRect itemRect, bool complete = false) {
-		if (!fView) return;
-		if (IsSelected() || complete) {
-			rgb_color color;
-			if (IsSelected()) color = ui_color(B_LIST_SELECTED_BACKGROUND_COLOR);
-			else color = ui_color(B_LIST_BACKGROUND_COLOR);
-			owner->SetHighColor(color);
-			owner->FillRect(itemRect);
-		}
-
-		rgb_color textColor;
-		if (IsSelected()) textColor = ui_color(B_LIST_SELECTED_ITEM_TEXT_COLOR);
-		else textColor = ui_color(B_LIST_ITEM_TEXT_COLOR);
-		owner->SetHighColor(textColor);
-
-		BFont font;
-		owner->GetFont(&font);
-		font_height fh;
-		font.GetHeight(&fh);
-
-		float x = itemRect.left + 5;
-		float y = itemRect.bottom - fh.descent;
-
-		auto drawRight = [&](const BString& str, float width) {
-			 float w = owner->StringWidth(str.String());
-			 owner->DrawString(str.String(), BPoint(x + width - w - 5, y));
-			 x += width;
-		};
-
-		owner->DrawString(fTruncatedName.String(), BPoint(x, y));
-		x += fView->NameWidth();
-
-		owner->DrawString(fTruncatedType.String(), BPoint(x, y));
-		x += fView->TypeWidth();
-
-		owner->DrawString(fTruncatedAddr.String(), BPoint(x, y));
-		x += fView->AddrWidth();
-
-		drawRight(fCachedSent, fView->SentWidth());
-		drawRight(fCachedRecv, fView->RecvWidth());
-
-		drawRight(fCachedTxSpeed, fView->TxSpeedWidth());
-		drawRight(fCachedRxSpeed, fView->RxSpeedWidth());
-	}
-
-private:
-	BString fName;
-	BString fType;
-	BString fAddr;
-	uint64 fSent;
-	uint64 fRecv;
-	uint64 fTxSpeed;
-	uint64 fRxSpeed;
-
-	BString fCachedSent;
-	BString fCachedRecv;
-	BString fCachedTxSpeed;
-	BString fCachedRxSpeed;
-
-	BString fTruncatedName;
-	BString fTruncatedType;
-	BString fTruncatedAddr;
-	int32 fGeneration;
-	NetworkView* fView;
-
-public:
-	static int CompareName(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
-		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
-		return strcasecmp(item1->fName.String(), item2->fName.String());
-	}
-
-	static int CompareType(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
-		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
-		return strcasecmp(item1->fType.String(), item2->fType.String());
-	}
-
-	static int CompareAddr(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
-		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
-		return strcasecmp(item1->fAddr.String(), item2->fAddr.String());
-	}
-
-	static int CompareSent(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
-		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
-		if (item1->fSent > item2->fSent) return -1;
-		if (item1->fSent < item2->fSent) return 1;
-		return 0;
-	}
-
-	static int CompareRecv(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
-		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
-		if (item1->fRecv > item2->fRecv) return -1;
-		if (item1->fRecv < item2->fRecv) return 1;
-		return 0;
-	}
-
-	static int CompareTxSpeed(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
-		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
-		if (item1->fTxSpeed > item2->fTxSpeed) return -1;
-		if (item1->fTxSpeed < item2->fTxSpeed) return 1;
-		return 0;
-	}
-
-	static int CompareRxSpeed(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
-		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
-		if (item1->fRxSpeed > item2->fRxSpeed) return -1;
-		if (item1->fRxSpeed < item2->fRxSpeed) return 1;
-		return 0;
-	}
-
-	static int CompareSpeed(const void* first, const void* second) {
-		const InterfaceListItem* item1 = *static_cast<const InterfaceListItem* const*>(first);
-		const InterfaceListItem* item2 = *static_cast<const InterfaceListItem* const*>(second);
-		uint64 s1 = item1->fTxSpeed + item1->fRxSpeed;
-		uint64 s2 = item2->fTxSpeed + item2->fRxSpeed;
-		if (s1 > s2) return -1;
-		if (s1 < s2) return 1;
-		return 0;
-	}
-};
-
 
 NetworkView::NetworkView()
 	: BView("NetworkView", B_WILL_DRAW),
@@ -228,6 +36,7 @@ NetworkView::NetworkView()
 	fUploadGraph(NULL),
 	fUploadSpeed(0.0f),
 	fDownloadSpeed(0.0f),
+	fLastTotalUpdateTime(0),
 	fUpdateThread(-1),
 	fScanSem(-1),
 	fTerminated(false),
@@ -461,7 +270,7 @@ void NetworkView::UpdateData(BMessage* message)
 
 	// Prune dead interfaces from the map
 	for (auto it = fPreviousStatsMap.begin(); it != fPreviousStatsMap.end();) {
-		if (it->first != "__total__" && it->second.generation != fListGeneration)
+		if (it->second.generation != fListGeneration)
 			it = fPreviousStatsMap.erase(it);
 		else
 			++it;
@@ -485,7 +294,7 @@ void NetworkView::UpdateData(BMessage* message)
 
 	// Update graphs
 	if (fUploadGraph && fDownloadGraph) {
-		bigtime_t dt = currentTime - fPreviousStatsMap["__total__"].lastUpdateTime;
+		bigtime_t dt = currentTime - fLastTotalUpdateTime;
 		if (dt <= 0)
 			dt = 1000000;
 
@@ -494,7 +303,7 @@ void NetworkView::UpdateData(BMessage* message)
 
 		fUploadGraph->AddValue(currentTime, fUploadSpeed);
 		fDownloadGraph->AddValue(currentTime, fDownloadSpeed);
-		fPreviousStatsMap["__total__"].lastUpdateTime = currentTime;
+		fLastTotalUpdateTime = currentTime;
 	}
 
 	fLocker.Unlock();

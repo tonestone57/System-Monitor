@@ -12,6 +12,7 @@ APP_MIME_SIG = application/x-vnd.HaikuSysMonTask
 # Source files
 SRCS = \
 	SysMonTaskApp.cpp \
+	PerformanceView.cpp \
 	CPUView.cpp \
 	MemView.cpp \
 	DiskView.cpp \

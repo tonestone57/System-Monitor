@@ -4,8 +4,6 @@
 #include <View.h>
 #include <StringView.h>
 #include <String.h>
-#include <vector>
-#include "ActivityGraphView.h"
 
 class GPUView : public BView {
 public:
@@ -26,9 +24,7 @@ private:
 	BStringView* fDriverVersionValue;
 	BStringView* fMemorySizeValue;
 	BStringView* fResolutionValue;
-	BStringView* fUtilizationValue;
-
-	std::vector<ActivityGraphView*> fGpuGraphs;
+	BStringView* fUtilizationValue; // kept for layout, hidden
 
 	int32 fCachedWidth;
 	int32 fCachedHeight;

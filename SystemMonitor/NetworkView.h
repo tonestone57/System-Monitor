@@ -93,6 +93,7 @@ private:
 
 	std::unordered_map<BString, InterfaceStatsRecord, BStringHash> fPreviousStatsMap;
 	std::unordered_map<BString, InterfaceListItem*, BStringHash> fInterfaceItemMap;
+	bigtime_t fLastTotalUpdateTime;
 	float fUploadSpeed;
 	float fDownloadSpeed;
 

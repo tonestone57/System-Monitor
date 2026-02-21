@@ -32,46 +32,33 @@ void GPUView::CreateLayout()
 	fCardNameValue = new BStringView("card_name", B_TRANSLATE("Unknown GPU"));
 	fCardNameValue->SetAlignment(B_ALIGN_RIGHT);
 
-	// Graph Grid (4 graphs)
-	BGridLayout* graphGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
-	const char* titles[] = {B_TRANSLATE("3D"), B_TRANSLATE("Copy"),
-		B_TRANSLATE("Video Encode"), B_TRANSLATE("Video Decode")};
+	// Not-supported notice (shown in place of graphs)
+	BStringView* noticeView = new BStringView("gpu_notice",
+		B_TRANSLATE("Real-time GPU utilization monitoring is not supported on this system."));
+	noticeView->SetAlignment(B_ALIGN_CENTER);
+	BFont noteFont(be_plain_font);
+	noteFont.SetSize(noteFont.Size() * 0.9f);
+	noticeView->SetFont(&noteFont);
 
-	for (int i = 0; i < 4; i++) {
-		BView* container = new BView("graph_container", B_WILL_DRAW);
-		container->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
-
-		ActivityGraphView* graph = new ActivityGraphView("gpu_graph", {0, 0, 0, 0}, B_FAILURE_COLOR);
-		graph->SetExplicitMinSize(BSize(100, 60));
-		fGpuGraphs.push_back(graph);
-
-		BLayoutBuilder::Group<>(container, B_VERTICAL, 0)
-			.Add(new BStringView(NULL, titles[i]))
-			.Add(graph)
-			.End();
-
-		graphGrid->AddView(container, i % 2, i / 2);
-	}
-
-	// Info Grid
+	// Info Grid (static info only — no utilization row)
 	BGridLayout* infoGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
 	infoGrid->SetInsets(0, B_USE_DEFAULT_SPACING, 0, 0);
 
-	infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Utilization")), 0, 0);
-	fUtilizationValue = new BStringView("util_val", "0%");
-	infoGrid->AddView(fUtilizationValue, 0, 1);
-
-	infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("GPU Memory")), 1, 0);
+	infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("GPU Memory")), 0, 0);
 	fMemorySizeValue = new BStringView("mem_val", B_TRANSLATE("N/A"));
-	infoGrid->AddView(fMemorySizeValue, 1, 1);
+	infoGrid->AddView(fMemorySizeValue, 0, 1);
 
-	infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Driver Version")), 0, 2);
+	infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Driver Version")), 1, 0);
 	fDriverVersionValue = new BStringView("driver_val", B_TRANSLATE("N/A"));
-	infoGrid->AddView(fDriverVersionValue, 0, 3);
+	infoGrid->AddView(fDriverVersionValue, 1, 1);
 
-	infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Resolution")), 1, 2);
+	infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Resolution")), 0, 2);
 	fResolutionValue = new BStringView("res_val", B_TRANSLATE("N/A"));
-	infoGrid->AddView(fResolutionValue, 1, 3);
+	infoGrid->AddView(fResolutionValue, 0, 3);
+
+	// Utilization placeholder (unused, kept for ABI compatibility)
+	fUtilizationValue = new BStringView("util_val", "");
+	fUtilizationValue->Hide();
 
 	infoGrid->SetColumnWeight(0, 1.0f);
 	infoGrid->SetColumnWeight(1, 1.0f);
@@ -83,7 +70,9 @@ void GPUView::CreateLayout()
 			.AddGlue()
 			.Add(fCardNameValue)
 		.End()
-		.Add(graphGrid)
+		.AddStrut(B_USE_DEFAULT_SPACING)
+		.Add(noticeView)
+		.AddStrut(B_USE_DEFAULT_SPACING)
 		.Add(infoGrid)
 		.AddGlue();
 }
@@ -93,14 +82,8 @@ void GPUView::Pulse() {
 
 	UpdateData();
 
-	// Placeholder: Haiku currently lacks a generic API for GPU utilization.
-	// Graphs and values are injected with 0 until driver support is available.
-	bigtime_t now = system_time();
-	for (auto* graph : fGpuGraphs) {
-		graph->AddValue(now, 0);
-	}
-	if (fUtilizationValue)
-		fUtilizationValue->SetText("0%");
+	// Haiku currently lacks a generic API for GPU utilization.
+	// Graphs remain hidden until driver support is available.
 }
 
 GPUView::~GPUView()
@@ -115,12 +98,9 @@ void GPUView::AttachedToWindow()
 	UpdateData();
 }
 
-void GPUView::SetRefreshInterval(bigtime_t interval)
+void GPUView::SetRefreshInterval(bigtime_t /*interval*/)
 {
-	for (auto* graph : fGpuGraphs) {
-		if (graph)
-			graph->SetRefreshInterval(interval);
-	}
+	// No graphs to update
 }
 
 void GPUView::_UpdateStaticInfo()

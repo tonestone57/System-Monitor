@@ -6,6 +6,7 @@
 #include <String.h>
 #include <kernel/OS.h>
 #include <Messenger.h>
+#include <atomic>
 
 class BBox;
 class BTextView;
@@ -28,7 +29,8 @@ private:
 
 	BTextView* fLogoTextView;
 	BTextView* fInfoTextView;
-	thread_id fLoadThread;
+	thread_id  fLoadThread;
+	std::atomic<bool> fThreadRunning;
 };
 
 #endif // SYSTEM_SUMMARY_VIEW_H
