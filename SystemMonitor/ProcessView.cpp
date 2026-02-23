@@ -289,7 +289,7 @@ BString ProcessView::GetUserName(uid_t uid, std::vector<char>& buffer) {
 		name << uid;
 	}
 
-	fUserNameCache[uid] = CachedUser{name, fCurrentGeneration};
+	fUserNameCache.emplace(uid, CachedUser{name, fCurrentGeneration});
 	return name;
 }
 
@@ -513,15 +513,14 @@ void ProcessView::Update(BMessage* message)
 			}
 		} else {
 			item = result.first->second;
-			bool wasVisible = fVisibleItems.find(item) != fVisibleItems.end();
 			item->Update(info, stateStr, &font, fontChanged);
 
-			if (match && !wasVisible) {
-				fProcessListView->AddItem(item);
-				fVisibleItems.insert(item);
-			} else if (!match && wasVisible) {
-				fProcessListView->RemoveItem(item);
-				fVisibleItems.erase(item);
+			if (match) {
+				if (fVisibleItems.insert(item).second)
+					fProcessListView->AddItem(item);
+			} else {
+				if (fVisibleItems.erase(item) > 0)
+					fProcessListView->RemoveItem(item);
 			}
 		}
 		item->SetGeneration(fListGeneration);
@@ -531,9 +530,8 @@ void ProcessView::Update(BMessage* message)
 	for (auto it = fTeamItemMap.begin(); it != fTeamItemMap.end();) {
 		if (it->second->Generation() != fListGeneration) {
 			ProcessListItem* item = it->second;
-			if (fVisibleItems.find(item) != fVisibleItems.end()) {
+			if (fVisibleItems.erase(item) > 0) {
 				fProcessListView->RemoveItem(item);
-				fVisibleItems.erase(item);
 			}
 			delete item;
 			it = fTeamItemMap.erase(it);
@@ -594,14 +592,14 @@ int32 ProcessView::UpdateThread(void* data)
 			bool memoryNeedsUpdate = true;
 			auto it = view->fCachedTeamInfo.find(teamInfo.team);
 			if (it != view->fCachedTeamInfo.end()) {
-				if (teamInfo.uid == it->second.uid
-					&& strncmp(teamInfo.args, it->second.args, 64) == 0) {
+				cachedInfo = &it->second;
+				if (teamInfo.uid == cachedInfo->uid
+					&& strncmp(teamInfo.args, cachedInfo->args, 64) == 0) {
 					cached = true;
-					cachedInfo = &it->second;
-					strlcpy(currentProc.name, it->second.name, B_OS_NAME_LENGTH);
-					strlcpy(currentProc.userName, it->second.userName, B_OS_NAME_LENGTH);
-					strlcpy(currentProc.args, it->second.args, sizeof(currentProc.args));
-					it->second.generation = view->fCurrentGeneration;
+					strlcpy(currentProc.name, cachedInfo->name, B_OS_NAME_LENGTH);
+					strlcpy(currentProc.userName, cachedInfo->userName, B_OS_NAME_LENGTH);
+					strlcpy(currentProc.args, cachedInfo->args, sizeof(currentProc.args));
+					cachedInfo->generation = view->fCurrentGeneration;
 
 					// Update user generation even if process is cached
 					auto userIt = view->fUserNameCache.find(teamInfo.uid);
@@ -609,10 +607,10 @@ int32 ProcessView::UpdateThread(void* data)
 						userIt->second.generation = view->fCurrentGeneration;
 
 					// Optimize memory calculation
-					if (it->second.cachedAreaCount == teamInfo.area_count
-						&& (view->fCurrentGeneration - it->second.memoryGeneration < kMemoryCacheGenerations)) {
+					if (cachedInfo->cachedAreaCount == teamInfo.area_count
+						&& (view->fCurrentGeneration - cachedInfo->memoryGeneration < kMemoryCacheGenerations)) {
 						memoryNeedsUpdate = false;
-						currentProc.memoryUsageBytes = it->second.memoryUsage;
+						currentProc.memoryUsageBytes = cachedInfo->memoryUsage;
 					}
 				}
 			}
@@ -649,8 +647,13 @@ int32 ProcessView::UpdateThread(void* data)
 				info.memoryGeneration = 0;
 				info.cpuTime = 0;
 				info.lastRunningThread = -1;
-				view->fCachedTeamInfo[teamInfo.team] = info;
-				cachedInfo = &view->fCachedTeamInfo[teamInfo.team];
+
+				if (cachedInfo != nullptr) {
+					*cachedInfo = info;
+				} else {
+					auto result = view->fCachedTeamInfo.emplace(teamInfo.team, info);
+					cachedInfo = &result.first->second;
+				}
 			}
 
 			currentProc.threadCount = teamInfo.thread_count;
@@ -670,18 +673,17 @@ int32 ProcessView::UpdateThread(void* data)
 					if (tInfo.state == B_THREAD_RUNNING) isRunning = true;
 					if (tInfo.state == B_THREAD_READY) isReady = true;
 
-					auto it = view->fThreadTimeMap.find(tInfo.thread);
-					if (it != view->fThreadTimeMap.end()) {
-						bigtime_t threadTimeDelta = threadTime - it->second.time;
+					auto result = view->fThreadTimeMap.emplace(tInfo.thread,
+						ThreadState{threadTime, view->fCurrentGeneration});
+					if (!result.second) {
+						bigtime_t threadTimeDelta = threadTime - result.first->second.time;
 						if (threadTimeDelta < 0) threadTimeDelta = 0;
 
 						if (strstr(tInfo.name, "idle thread") == NULL) {
 							teamActiveTimeDelta += threadTimeDelta;
 						}
-						it->second.time = threadTime;
-						it->second.generation = view->fCurrentGeneration;
-					} else {
-						view->fThreadTimeMap.emplace(tInfo.thread, ThreadState{threadTime, view->fCurrentGeneration});
+						result.first->second.time = threadTime;
+						result.first->second.generation = view->fCurrentGeneration;
 					}
 				}
 			} else { // Regular teams: use bulk API and optimized state check
@@ -739,11 +741,10 @@ int32 ProcessView::UpdateThread(void* data)
 				}
 
 				// Update cache
-				auto it = view->fCachedTeamInfo.find(teamInfo.team);
-				if (it != view->fCachedTeamInfo.end()) {
-					it->second.memoryUsage = currentProc.memoryUsageBytes;
-					it->second.cachedAreaCount = teamInfo.area_count;
-					it->second.memoryGeneration = view->fCurrentGeneration;
+				if (cachedInfo != nullptr) {
+					cachedInfo->memoryUsage = currentProc.memoryUsageBytes;
+					cachedInfo->cachedAreaCount = teamInfo.area_count;
+					cachedInfo->memoryGeneration = view->fCurrentGeneration;
 				}
 			}
 
