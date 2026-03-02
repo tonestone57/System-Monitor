@@ -22,6 +22,7 @@
 #include <sys/utsname.h>
 #include <Catalog.h>
 #include <vector>
+#include <cstring>
 #include <NetworkRoster.h>
 #include <NetworkInterface.h>
 #include <NetworkAddress.h>
@@ -198,30 +199,44 @@ void SystemSummaryView::MessageReceived(BMessage* message)
 
 				int32 offset = 0;
 				for (int i = 0; lines[i]; i++) {
-					BString line(lines[i]);
+					const char* line = lines[i];
+					int32 lineLen = static_cast<int32>(strlen(line));
+
 					// Coloring logic based on line index and content pattern
 					if (i == 4) { // .ciO...
-						int32 leafStart = line.FindFirst(".ciO");
-						if (leafStart >= 0) fLogoTextView->SetFontAndColor(offset + leafStart, offset + line.Length() - 1, NULL, 0, &gold);
+						const char* leafStartPtr = strstr(line, ".ciO");
+						if (leafStartPtr != NULL) {
+							int32 leafStart = static_cast<int32>(leafStartPtr - line);
+							fLogoTextView->SetFontAndColor(offset + leafStart, offset + lineLen - 1, NULL, 0, &gold);
+						}
 					} else if (i == 5) { // .cOMMM...
-						int32 leafStart = line.FindFirst(".cOMMM");
-						if (leafStart >= 0) fLogoTextView->SetFontAndColor(offset + leafStart, offset + line.Length() - 1, NULL, 0, &gold);
+						const char* leafStartPtr = strstr(line, ".cOMMM");
+						if (leafStartPtr != NULL) {
+							int32 leafStart = static_cast<int32>(leafStartPtr - line);
+							fLogoTextView->SetFontAndColor(offset + leafStart, offset + lineLen - 1, NULL, 0, &gold);
+						}
 					} else if (i == 6) { // | /MMM... (after ,iMM)
-						int32 leafStart = line.FindFirst("|");
-						if (leafStart >= 0) fLogoTextView->SetFontAndColor(offset + leafStart, offset + line.Length() - 1, NULL, 0, &gold);
+						const char* leafStartPtr = strstr(line, "|");
+						if (leafStartPtr != NULL) {
+							int32 leafStart = static_cast<int32>(leafStartPtr - line);
+							fLogoTextView->SetFontAndColor(offset + leafStart, offset + lineLen - 1, NULL, 0, &gold);
+						}
 					} else if (i == 7) { // `* -cMM...
 						// Whole line except last .MMM? Actually the whole left part is leaf-like here.
-						fLogoTextView->SetFontAndColor(offset, offset + line.Length() - 1, NULL, 0, &gold);
+						fLogoTextView->SetFontAndColor(offset, offset + lineLen - 1, NULL, 0, &gold);
 					} else if (i == 8) { // ... :MMM/
 						 // The :MMM/ part
-						 int32 leafStart = line.FindFirst(":");
-						 if (leafStart >= 0) {
-							 int32 leafEnd = line.FindFirst("  ", leafStart);
-							 if (leafEnd < 0) leafEnd = line.Length() - 1;
+						 const char* leafStartPtr = strstr(line, ":");
+						 if (leafStartPtr != NULL) {
+							 int32 leafStart = static_cast<int32>(leafStartPtr - line);
+							 const char* leafEndPtr = strstr(leafStartPtr, "  ");
+							 int32 leafEnd = (leafEndPtr != NULL)
+								 ? static_cast<int32>(leafEndPtr - line)
+								 : lineLen - 1;
 							 fLogoTextView->SetFontAndColor(offset + leafStart, offset + leafEnd, NULL, 0, &gold);
 						 }
 					}
-					offset += line.Length();
+					offset += lineLen;
 				}
 			}
 
