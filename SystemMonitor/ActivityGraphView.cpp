@@ -87,7 +87,8 @@ ActivityGraphView::FrameResized(float width, float /*height*/)
 	if (fPoints.capacity() < needed) {
 		fPoints.reserve(std::max(needed, fPoints.capacity() * 2));
 	}
-	fPoints.resize(needed);
+	if (fPoints.size() < static_cast<size_t>(needed))
+		fPoints.resize(needed);
 }
 
 
@@ -273,9 +274,10 @@ ActivityGraphView::_DrawHistory()
 				int32 pointCount = steps + 2;
 
 				try {
-					if (fPoints.capacity() < (size_t)pointCount)
+					if (fPoints.capacity() < static_cast<size_t>(pointCount))
 						fPoints.reserve(pointCount + 64);
-					fPoints.resize(pointCount);
+					if (fPoints.size() < static_cast<size_t>(pointCount))
+						fPoints.resize(pointCount);
 
 					BPoint* points = fPoints.data();
 
@@ -382,9 +384,10 @@ ActivityGraphView::_DrawHistory()
 				int32 polyCount = count + 2;
 
 				try {
-					if (fPoints.capacity() < (size_t)polyCount)
+					if (fPoints.capacity() < static_cast<size_t>(polyCount))
 						fPoints.reserve(polyCount + 64);
-					fPoints.resize(polyCount);
+					if (fPoints.size() < static_cast<size_t>(polyCount))
+						fPoints.resize(polyCount);
 
 					BPoint* points = fPoints.data();
 
