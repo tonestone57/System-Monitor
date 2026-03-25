@@ -128,7 +128,6 @@ private:
 	std::unordered_map<thread_id, ThreadState> fThreadTimeMap;
 	std::unordered_map<team_id, CachedTeamInfo> fCachedTeamInfo;
 	std::unordered_map<team_id, ProcessListItem*> fTeamItemMap;
-	std::unordered_set<ProcessListItem*> fVisibleItems;
 
 	// Optimization members
 	BString fStrRunning;
