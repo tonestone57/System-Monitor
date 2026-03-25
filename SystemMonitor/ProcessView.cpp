@@ -575,9 +575,7 @@ int32 ProcessView::UpdateThread(void* data)
 		if (systemTimeDelta <= 0) systemTimeDelta = 1;
 		view->fLastSystemTime = currentSystemTime;
 
-		system_info sysInfo;
-		get_system_info(&sysInfo);
-		float totalPossibleCoreTime = sysInfo.cpu_count * systemTimeDelta;
+		float totalPossibleCoreTime = GetCoreCount() * systemTimeDelta;
 		if (totalPossibleCoreTime <= 0) totalPossibleCoreTime = 1.0f;
 
 		int32 cookie = 0;
