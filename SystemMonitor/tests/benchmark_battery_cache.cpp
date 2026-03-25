@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <string>
 #include <vector>
+#include <cstdio>
 
 class BString {
 public:
