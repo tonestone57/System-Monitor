@@ -221,6 +221,17 @@ BString GetCPUBrandString()
 	return sCachedBrand;
 }
 
+int32 GetCoreCount()
+{
+	static int32 sCoreCount = []() -> int32 {
+		system_info sysInfo;
+		if (get_system_info(&sysInfo) == B_OK)
+			return static_cast<int32>(sysInfo.cpu_count);
+		return 1;
+	}();
+	return sCoreCount;
+}
+
 BString GetOSVersion()
 {
 	static BString sCachedVersion;

@@ -36,6 +36,7 @@ float GetScaleFactor(const BFont* font);
 
 uint64 GetCpuFrequency();
 BString GetCPUBrandString();
+int32 GetCoreCount();
 
 BString GetOSVersion();
 BString GetABIVersion();
