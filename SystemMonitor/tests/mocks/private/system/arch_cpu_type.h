@@ -1,0 +1,3 @@
+#ifndef MOCK_PRIVATE_ARCH_CPU_TYPE_H
+#define MOCK_PRIVATE_ARCH_CPU_TYPE_H
+#endif
