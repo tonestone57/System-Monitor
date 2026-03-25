@@ -6,3 +6,5 @@ benchmark_thread_scanning
 benchmark_vector_resize_with_reserve
 test_circular_buffer
 test_utils
+benchmark_disk_poll
+test_data_history
