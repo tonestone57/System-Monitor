@@ -363,7 +363,9 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	struct passwd* pw = getpwuid(getuid());
 	char hostname[256];
 	if (gethostname(hostname, sizeof(hostname)) != 0)
-		strcpy(hostname, B_TRANSLATE("unknown"));
+		strlcpy(hostname, B_TRANSLATE("unknown"), sizeof(hostname));
+	else
+		hostname[sizeof(hostname) - 1] = '\0';
 
 	BString userHost;
 	userHost << (pw && pw->pw_name ? pw->pw_name : "user") << "@" << hostname;
