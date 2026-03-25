@@ -47,9 +47,16 @@ int main() {
     // Test BytesToMiB
     assert(BytesToMiB(0) == 0);
     assert(BytesToMiB(1) == 1);
-    assert(BytesToMiB(1048576) == 1);
-    assert(BytesToMiB(1048577) == 2);
-    assert(BytesToMiB(1024 * 1024 * 2) == 2);
+
+    // Test 1 MiB boundary (1048576 bytes)
+    assert(BytesToMiB(1048575) == 1); // 1 byte below exactly 1 MiB
+    assert(BytesToMiB(1048576) == 1); // Exactly 1 MiB
+    assert(BytesToMiB(1048577) == 2); // 1 byte above exactly 1 MiB
+
+    // Test 2 MiB boundary (2097152 bytes)
+    assert(BytesToMiB(1024 * 1024 * 2 - 1) == 2); // 1 byte below exactly 2 MiB
+    assert(BytesToMiB(1024 * 1024 * 2) == 2);     // Exactly 2 MiB
+    assert(BytesToMiB(1024 * 1024 * 2 + 1) == 3); // 1 byte above exactly 2 MiB
 
     // Test GetScaleFactor
     BFont font;
