@@ -440,7 +440,7 @@ BString GetCPUFeatures()
 	if (sFeaturesCached) return sCachedFeatures;
 
 #if defined(__i386__) || defined(__x86_64__)
-		BString features;
+	BString features;
 	unsigned int eax, ebx, ecx, edx;
 
 	if (__get_cpuid(1, &eax, &ebx, &ecx, &edx) == 1) {
