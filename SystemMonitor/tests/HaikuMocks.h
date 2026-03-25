@@ -123,6 +123,7 @@ struct system_info {
     int page_size;
     uint32 cpu_clock_speed;
     uint32 cpu_type;
+    uint32 cpu_count;
     char kernel_version[256];
 };
 
@@ -138,6 +139,7 @@ inline int get_system_info(system_info* info) {
         info->page_size = 4096;
         info->cpu_clock_speed = 0;
         info->cpu_type = 0;
+        info->cpu_count = 1;
         info->kernel_version[0] = '\0';
     }
     return B_OK;
