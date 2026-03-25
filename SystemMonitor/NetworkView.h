@@ -92,7 +92,7 @@ private:
 	};
 
 	std::unordered_map<BString, InterfaceStatsRecord, BStringHash> fPreviousStatsMap;
-	std::unordered_map<BString, InterfaceListItem*, BStringHash> fInterfaceItemMap;
+	std::unordered_map<BString, InterfaceListItem*, BStringHash> fInterfaceItemMap; // Maps interface name to list item for O(1) lookup
 	bigtime_t fLastTotalUpdateTime;
 	float fUploadSpeed;
 	float fDownloadSpeed;

@@ -429,11 +429,18 @@ void NetworkView::_RestoreSelection(const BString& selectedName)
 	if (selectedName.IsEmpty())
 		return;
 
+	// O(1) lookup to find the target item, avoiding O(N) string comparisons.
+	// We still do an O(N) pointer comparison loop to find the BListView index,
+	// but pointer comparisons are virtually instantaneous compared to string ops.
 	auto it = fInterfaceItemMap.find(selectedName);
 	if (it != fInterfaceItemMap.end()) {
-		int32 index = fInterfaceListView->IndexOf(it->second);
-		if (index >= 0) {
-			fInterfaceListView->Select(index);
+		InterfaceListItem* target = it->second;
+		int32 count = fInterfaceListView->CountItems();
+		for (int32 i = 0; i < count; i++) {
+			if (static_cast<InterfaceListItem*>(fInterfaceListView->ItemAt(i)) == target) {
+				fInterfaceListView->Select(i);
+				break;
+			}
 		}
 	}
 }
