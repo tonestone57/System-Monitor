@@ -2,7 +2,7 @@
 CXX = g++
 CXXFLAGS = -O3 -std=c++11 -Wall
 
-TARGETS = benchmark_process_map benchmark_thread_scanning benchmark_vector_resize_with_reserve benchmark_active_skip benchmark_activity_draw benchmark_activity_valueat
+TARGETS = benchmark_process_map benchmark_thread_scanning benchmark_vector_resize_with_reserve benchmark_active_skip benchmark_activity_draw benchmark_activity_valueat test_circular_buffer test_utils
 
 all: $(TARGETS)
 
@@ -23,6 +23,12 @@ benchmark_vector_resize_with_reserve: benchmark_vector_resize_with_reserve.cpp
 
 benchmark_active_skip: benchmark_active_skip.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
+
+test_circular_buffer: test_circular_buffer.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+test_utils: test_utils.cpp
+	$(CXX) $(CXXFLAGS) -I. -Imocks -o $@ $< ../Utils.cpp
 
 clean:
 	rm -f $(TARGETS)

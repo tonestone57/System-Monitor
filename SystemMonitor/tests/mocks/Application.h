@@ -1,0 +1,3 @@
+#ifndef MOCK_APPLICATION_H
+#define MOCK_APPLICATION_H
+#endif

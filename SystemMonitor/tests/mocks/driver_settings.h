@@ -1,0 +1,3 @@
+#ifndef MOCK_DRIVER_SETTINGS_H
+#define MOCK_DRIVER_SETTINGS_H
+#endif

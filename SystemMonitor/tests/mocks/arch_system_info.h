@@ -1,0 +1,3 @@
+#ifndef MOCK_ARCH_SYSTEM_INFO_H
+#define MOCK_ARCH_SYSTEM_INFO_H
+#endif

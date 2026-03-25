@@ -4,3 +4,5 @@ benchmark_activity_valueat
 benchmark_process_map
 benchmark_thread_scanning
 benchmark_vector_resize_with_reserve
+test_circular_buffer
+test_utils
