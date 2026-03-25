@@ -1,8 +1,8 @@
 
 CXX = g++
-CXXFLAGS = -O3 -std=c++11 -Wall
+CXXFLAGS = -O3 -std=c++11 -Wall -I. -Imocks
 
-TARGETS = benchmark_process_map benchmark_thread_scanning benchmark_vector_resize_with_reserve benchmark_active_skip benchmark_activity_draw benchmark_activity_valueat
+TARGETS = benchmark_process_map benchmark_thread_scanning benchmark_vector_resize_with_reserve benchmark_active_skip benchmark_activity_draw benchmark_activity_valueat test_data_history
 
 all: $(TARGETS)
 
@@ -22,6 +22,9 @@ benchmark_vector_resize_with_reserve: benchmark_vector_resize_with_reserve.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
 benchmark_active_skip: benchmark_active_skip.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+test_data_history: test_data_history.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
 clean:
