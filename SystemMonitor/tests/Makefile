@@ -2,9 +2,12 @@
 CXX = g++
 CXXFLAGS = -O3 -std=c++11 -Wall
 
-TARGETS = benchmark_process_map benchmark_thread_scanning benchmark_vector_resize_with_reserve benchmark_active_skip benchmark_activity_draw
+TARGETS = benchmark_process_map benchmark_thread_scanning benchmark_vector_resize_with_reserve benchmark_active_skip benchmark_activity_draw benchmark_activity_valueat
 
 all: $(TARGETS)
+
+benchmark_activity_valueat: benchmark_activity_valueat.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
 
 benchmark_activity_draw: benchmark_activity_draw.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
