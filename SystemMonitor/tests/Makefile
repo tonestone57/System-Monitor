@@ -1,13 +1,13 @@
 
 CXX = g++
-CXXFLAGS = -O3 -std=c++11 -Wall -I. -I./mocks
+CXXFLAGS = -O3 -std=c++11 -Wall -I.
 
 TARGETS = benchmark_process_map benchmark_thread_scanning benchmark_vector_resize_with_reserve benchmark_active_skip benchmark_activity_draw benchmark_activity_valueat test_data_history
 
 all: $(TARGETS)
 
 test_data_history: test_data_history.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $<
+	$(CXX) $(CXXFLAGS) -I./mocks -o $@ $<
 
 benchmark_activity_valueat: benchmark_activity_valueat.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
