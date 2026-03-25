@@ -2,7 +2,7 @@
 CXX = g++
 CXXFLAGS = -O3 -std=c++11 -Wall
 
-TARGETS = benchmark_process_map benchmark_thread_scanning benchmark_vector_resize_with_reserve benchmark_active_skip benchmark_activity_draw benchmark_activity_valueat
+TARGETS = benchmark_disk_poll benchmark_process_map benchmark_thread_scanning benchmark_vector_resize_with_reserve benchmark_active_skip benchmark_activity_draw benchmark_activity_valueat
 
 all: $(TARGETS)
 
@@ -26,3 +26,6 @@ benchmark_active_skip: benchmark_active_skip.cpp
 
 clean:
 	rm -f $(TARGETS)
+
+benchmark_disk_poll: benchmark_disk_poll.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<

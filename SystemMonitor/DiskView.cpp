@@ -271,51 +271,67 @@ int32 DiskView::UpdateThread(void* data)
 
 		BMessage updateMsg(kMsgDiskDataUpdate);
 
-		std::vector<DiskInfo> volumesToPoll;
+		std::vector<dev_t> volumesToPoll;
 		if (view->fLocker.Lock()) {
+			volumesToPoll.reserve(view->fVolumeCache.size());
 			for (auto const& pair : view->fVolumeCache) {
-				 volumesToPoll.push_back(pair.second);
+				 volumesToPoll.push_back(pair.first);
 			}
 			view->fLocker.Unlock();
 		}
 
-		for (auto& info : volumesToPoll) {
+		struct DiskUpdate {
+			dev_t deviceID;
+			uint64 totalSize;
+			uint64 freeSize;
+			BString deviceName;
+			bool valid;
+		};
+		std::vector<DiskUpdate> updates;
+		updates.reserve(volumesToPoll.size());
+
+		for (auto dev : volumesToPoll) {
 			 fs_info fsInfo;
-			 if (fs_stat_dev(info.deviceID, &fsInfo) != B_OK) {
-				 info.totalSize = 0; // Mark as invalid
-				 continue;
-			 }
-
-			 // Update dynamic info
-			 info.totalSize = static_cast<uint64>(fsInfo.total_blocks) * fsInfo.block_size;
-			 info.freeSize = static_cast<uint64>(fsInfo.free_blocks) * fsInfo.block_size;
-
-			 // Update name dynamically
-			 if (strlen(fsInfo.volume_name) > 0) {
-				 info.deviceName = fsInfo.volume_name;
+			 DiskUpdate update;
+			 update.deviceID = dev;
+			 if (fs_stat_dev(dev, &fsInfo) != B_OK) {
+				 update.valid = false;
 			 } else {
-				 info.deviceName = fsInfo.device_name;
+				 update.valid = true;
+				 update.totalSize = static_cast<uint64>(fsInfo.total_blocks) * fsInfo.block_size;
+				 update.freeSize = static_cast<uint64>(fsInfo.free_blocks) * fsInfo.block_size;
+				 if (strlen(fsInfo.volume_name) > 0) {
+					 update.deviceName = fsInfo.volume_name;
+				 } else {
+					 update.deviceName = fsInfo.device_name;
+				 }
 			 }
+			 updates.push_back(update);
 		}
 
 		if (view->fLocker.Lock()) {
-			for (const auto& info : volumesToPoll) {
-				 if (info.totalSize == 0) continue;
+			for (const auto& update : updates) {
+				 if (!update.valid) continue;
 
 				 // Update cache
-				 if (view->fVolumeCache.count(info.deviceID)) {
-					 view->fVolumeCache[info.deviceID] = info;
+				 auto it = view->fVolumeCache.find(update.deviceID);
+				 if (it != view->fVolumeCache.end()) {
+					 it->second.totalSize = update.totalSize;
+					 it->second.freeSize = update.freeSize;
+					 it->second.deviceName = update.deviceName;
+
+					 const DiskInfo& info = it->second;
+
+					 BMessage volMsg;
+					 volMsg.AddInt32("device_id", info.deviceID);
+					 volMsg.AddString("device_name", info.deviceName);
+					 volMsg.AddString("mount_point", info.mountPoint);
+					 volMsg.AddString("fs_type", info.fileSystemType);
+					 volMsg.AddUInt64("total_size", info.totalSize);
+					 volMsg.AddUInt64("free_size", info.freeSize);
+
+					 updateMsg.AddMessage("volume", &volMsg);
 				 }
-
-				 BMessage volMsg;
-				 volMsg.AddInt32("device_id", info.deviceID);
-				 volMsg.AddString("device_name", info.deviceName);
-				 volMsg.AddString("mount_point", info.mountPoint);
-				 volMsg.AddString("fs_type", info.fileSystemType);
-				 volMsg.AddUInt64("total_size", info.totalSize);
-				 volMsg.AddUInt64("free_size", info.freeSize);
-
-				 updateMsg.AddMessage("volume", &volMsg);
 			}
 			view->fLocker.Unlock();
 		}
