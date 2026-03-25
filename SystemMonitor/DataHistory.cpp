@@ -59,7 +59,46 @@ DataHistory::ValueAt(bigtime_t time, int32* hintIndex)
 		left = *hintIndex;
 
 	int32 right = (int32)fBuffer.CountItems() - 1;
-	data_item* item = NULL;
+	if (left > right)
+		return 0;
+
+	// Fast path: sequentially progressing time is often in the same or next interval
+	data_item* item = fBuffer.ItemAt(left);
+	if (item != NULL && item->time <= time) {
+		data_item* nextItem = fBuffer.ItemAt(left + 1);
+		if (nextItem == NULL || nextItem->time > time) {
+			// Found in the current interval [left, left+1)
+			if (nextItem == NULL)
+				return item->value;
+
+			int64 value = item->value;
+			if (nextItem->time > item->time) {
+				value += static_cast<int64>(static_cast<double>(nextItem->value - value)
+					/ (nextItem->time - item->time) * (time - item->time));
+			}
+			return value;
+		} else {
+			// Might be in the very next interval [left+1, left+2)
+			int32 nextIndex = left + 1;
+			item = nextItem;
+			nextItem = fBuffer.ItemAt(nextIndex + 1);
+
+			if (nextItem == NULL || nextItem->time > time) {
+				if (hintIndex != NULL)
+					*hintIndex = nextIndex;
+
+				if (nextItem == NULL)
+					return item->value;
+
+				int64 value = item->value;
+				if (nextItem->time > item->time) {
+					value += static_cast<int64>(static_cast<double>(nextItem->value - value)
+						/ (nextItem->time - item->time) * (time - item->time));
+				}
+				return value;
+			}
+		}
+	}
 
 	while (left <= right) {
 		int32 index = (left + right) / 2;
