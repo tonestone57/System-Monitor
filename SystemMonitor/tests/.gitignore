@@ -8,3 +8,4 @@ test_circular_buffer
 test_utils
 benchmark_disk_poll
 test_data_history
+test_format_bytes
