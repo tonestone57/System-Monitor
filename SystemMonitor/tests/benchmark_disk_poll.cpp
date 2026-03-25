@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <chrono>
 #include <string>
+#include <sys/types.h>
 
 // Mock classes
 class BString {
