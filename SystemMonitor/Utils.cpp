@@ -336,18 +336,15 @@ ip_found:
 	return ip;
 }
 
-BString GetBatteryCapacity()
-{
-	// Try to find any battery
-	for (int i = 0; i < 4; i++) {
-		BString path;
-		path.SetToFormat("/dev/power/acpi_battery/%d/state", i);
-		int batFd = open(path.String(), O_RDONLY);
-		if (batFd >= 0) {
-			char buffer[1024];
-			ssize_t bytesRead = read(batFd, buffer, sizeof(buffer) - 1);
+static BString ReadBatteryCapacity(int index) {
+	BString path;
+	path.SetToFormat("/dev/power/acpi_battery/%d/state", index);
+	int batFd = open(path.String(), O_RDONLY);
+	if (batFd >= 0) {
+		char buffer[1024];
+		ssize_t bytesRead = read(batFd, buffer, sizeof(buffer) - 1);
 
-			if (bytesRead > 0) {
+		if (bytesRead > 0) {
 			buffer[bytesRead] = '\0';
 			BString state(buffer);
 			BString capacityStr;
@@ -367,8 +364,32 @@ BString GetBatteryCapacity()
 					return capacityStr;
 				}
 			}
-			}
-			close(batFd);
+		}
+		close(batFd);
+	}
+	return BString();
+}
+
+BString GetBatteryCapacity()
+{
+	static int sCachedBatteryIndex = -1;
+
+	// Try cached battery index first
+	if (sCachedBatteryIndex >= 0) {
+		BString capacityStr = ReadBatteryCapacity(sCachedBatteryIndex);
+		if (!capacityStr.IsEmpty()) {
+			return capacityStr;
+		}
+		// If cached index fails to open or read successfully, reset and fall through to scan
+		sCachedBatteryIndex = -1;
+	}
+
+	// Try to find any battery
+	for (int i = 0; i < 4; i++) {
+		BString capacityStr = ReadBatteryCapacity(i);
+		if (!capacityStr.IsEmpty()) {
+			sCachedBatteryIndex = i; // Cache this index for next time
+			return capacityStr;
 		}
 	}
 	return BString(B_TRANSLATE("Unknown"));
