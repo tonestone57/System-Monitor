@@ -429,11 +429,11 @@ void NetworkView::_RestoreSelection(const BString& selectedName)
 	if (selectedName.IsEmpty())
 		return;
 
-	for (int32 i = 0; i < fInterfaceListView->CountItems(); i++) {
-		InterfaceListItem* item = static_cast<InterfaceListItem*>(fInterfaceListView->ItemAt(i));
-		if (item && item->Name() == selectedName) {
-			fInterfaceListView->Select(i);
-			break;
+	auto it = fInterfaceItemMap.find(selectedName);
+	if (it != fInterfaceItemMap.end()) {
+		int32 index = fInterfaceListView->IndexOf(it->second);
+		if (index >= 0) {
+			fInterfaceListView->Select(index);
 		}
 	}
 }
