@@ -377,11 +377,11 @@ void ProcessView::_RestoreSelection(team_id selectedID)
 	if (selectedID == -1)
 		return;
 
-	for (int32 i = 0; i < fProcessListView->CountItems(); i++) {
-		ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(i));
-		if (item && item->TeamID() == selectedID) {
-			fProcessListView->Select(i);
-			break;
+	auto it = fTeamItemMap.find(selectedID);
+	if (it != fTeamItemMap.end()) {
+		int32 index = fProcessListView->IndexOf(it->second);
+		if (index >= 0) {
+			fProcessListView->Select(index);
 		}
 	}
 }
