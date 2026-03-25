@@ -373,6 +373,7 @@ static BString ReadBatteryCapacity(int index) {
 BString GetBatteryCapacity()
 {
 	static int sCachedBatteryIndex = -1;
+	int failedIndex = -1;
 
 	// Try cached battery index first
 	if (sCachedBatteryIndex >= 0) {
@@ -381,11 +382,13 @@ BString GetBatteryCapacity()
 			return capacityStr;
 		}
 		// If cached index fails to open or read successfully, reset and fall through to scan
+		failedIndex = sCachedBatteryIndex;
 		sCachedBatteryIndex = -1;
 	}
 
 	// Try to find any battery
 	for (int i = 0; i < 4; i++) {
+		if (i == failedIndex) continue; // Skip the index we already know failed
 		BString capacityStr = ReadBatteryCapacity(i);
 		if (!capacityStr.IsEmpty()) {
 			sCachedBatteryIndex = i; // Cache this index for next time
