@@ -2,7 +2,7 @@
 CXX = g++
 CXXFLAGS = -O3 -std=c++11 -Wall -I. -Imocks
 
-TARGETS = benchmark_disk_poll benchmark_process_map benchmark_thread_scanning benchmark_vector_resize_with_reserve benchmark_active_skip benchmark_activity_draw benchmark_activity_valueat test_circular_buffer test_utils test_data_history test_format_bytes benchmark_battery_cache benchmark_process_view_visibility benchmark_process_filter
+TARGETS = benchmark_disk_poll benchmark_process_map benchmark_thread_scanning benchmark_vector_resize_with_reserve benchmark_active_skip benchmark_activity_draw benchmark_activity_valueat test_circular_buffer test_utils test_data_history test_format_bytes benchmark_battery_cache benchmark_process_view_visibility benchmark_process_filter test_cpu_usage
 
 all: $(TARGETS)
 
@@ -56,3 +56,6 @@ clean:
 
 benchmark_process_filter: benchmark_process_filter.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
+
+test_cpu_usage: test_cpu_usage.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $^

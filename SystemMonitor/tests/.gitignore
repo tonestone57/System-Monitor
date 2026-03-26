@@ -9,3 +9,4 @@ test_utils
 benchmark_disk_poll
 test_data_history
 test_format_bytes
+test_cpu_usage

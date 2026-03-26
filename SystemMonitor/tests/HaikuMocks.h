@@ -5,14 +5,17 @@
 #include <cstdint>
 #include <cstdarg>
 #include <vector>
+#include <inttypes.h>
 
 typedef uint64_t uint64;
 typedef uint32_t uint32;
 typedef int32_t int32;
 typedef int64_t bigtime_t;
+typedef uint8_t uint8;
 
 #define B_TRANSLATE(x) x
 #define B_OK 0
+#define B_ERROR -1
 #define B_MAIN_SCREEN_ID 0
 #define IFF_LOOPBACK 1
 #define IFF_UP 2
@@ -23,6 +26,19 @@ typedef int64_t bigtime_t;
 #define B_PANEL_BACKGROUND_COLOR 1
 #define B_SIZE_UNSET -1
 #define B_ALIGN_LEFT 0
+#define B_ALIGN_RIGHT 1
+#define B_WILL_DRAW 1
+#define B_PULSE_NEEDED 2
+#define B_NAVIGATION_BASE_COLOR (color_which)1
+
+typedef struct {
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+    uint8_t alpha;
+} rgb_color;
+
+typedef int32 color_which;
 
 class BString {
 public:
@@ -87,10 +103,12 @@ public:
 
     bool operator==(const BString& other) const { return str == other.str; }
     bool operator==(const char* other) const { return str == other; }
+    bool operator!=(const char* other) const { return str != other; }
 };
 
-#define B_PRIu64 "llu"
-#define B_PRId64 "lld"
+#define B_PRIu64 PRIu64
+#define B_PRId32 PRId32
+#define B_PRId64 PRId64
 #define B_HAIKU_ABI_NAME "mock_abi"
 
 class BHandler {
@@ -98,16 +116,32 @@ public:
     virtual ~BHandler() {}
 };
 
-class BWindow {};
+class BWindow {
+public:
+    void Lock() {}
+    void Unlock() {}
+};
 
 class BPoint {
 public:
+    BPoint() : x(0), y(0) {}
+    BPoint(float x, float y) : x(x), y(y) {}
     float x, y;
+};
+
+class BRect {
+public:
+    BRect() : left(0), top(0), right(0), bottom(0) {}
+    BRect(float l, float t, float r, float b) : left(l), top(t), right(r), bottom(b) {}
+    float Width() const { return right - left; }
+    float Height() const { return bottom - top; }
+    float left, top, right, bottom;
 };
 
 class BSize {
 public:
-    BSize(float w, float h) {}
+    BSize(float w, float h) : width(w), height(h) {}
+    float width, height;
 };
 
 inline int ui_color(int) { return 0; }
@@ -124,6 +158,8 @@ struct system_info {
     uint32 cpu_clock_speed;
     uint32 cpu_type;
     uint32 cpu_count;
+    uint32 used_teams;
+    uint32 used_threads;
     char kernel_version[256];
 };
 
@@ -150,12 +186,20 @@ inline int get_system_info(system_info* info) {
         info->cpu_clock_speed = 0;
         info->cpu_type = 0;
         info->cpu_count = MockCpuCount();
+        info->used_teams = 0;
+        info->used_threads = 0;
         info->kernel_version[0] = '\0';
     }
     return MockSystemInfoResult();
 }
 
 inline bigtime_t system_time() { return 0; }
+
+struct cpu_info {
+    bigtime_t active_time;
+};
+
+int get_cpu_info(uint32 first, uint32 count, cpu_info* info);
 
 struct cpu_topology_node_info {
     int type;
@@ -198,14 +242,39 @@ public:
 
 class BFont {
 public:
+    BFont() {}
+    BFont(const BFont&) {}
+    BFont(const BFont* b) {}
     float Size() const { return 12.0f; }
+    void SetSize(float s) {}
 };
 extern BFont* be_bold_font;
 
 class BMessage {
 public:
+    BMessage() {}
     BMessage(int) {}
     int AddInt32(const char*, int) { return 0; }
+};
+
+class BLocker {
+public:
+    void Lock() {}
+    void Unlock() {}
+};
+
+class BAutolock {
+public:
+    BAutolock(BLocker&) {}
+    BAutolock(BLocker*) {}
+    bool IsLocked() { return true; }
+};
+
+class BNumberFormat {
+public:
+    void FormatPercent(BString& out, float value) {
+        out.SetToFormat("%.1f%%", value * 100.0f);
+    }
 };
 
 class BNetworkAddress {
