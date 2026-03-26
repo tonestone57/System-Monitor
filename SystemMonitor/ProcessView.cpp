@@ -418,16 +418,19 @@ void ProcessView::FilterRows()
 	// BListView doesn't support hiding items easily.
 	// We have to remove them from the list but keep them in fTeamItemMap.
 
-	fProcessListView->MakeEmpty(); // Clear visualization (pointers only)
-
 	for (auto& pair : fTeamItemMap) {
 		ProcessListItem* item = pair.second;
 
 		if (_MatchesFilter(item->Info(), searchText)) {
-			fProcessListView->AddItem(item);
-			item->SetVisible(true);
+			if (!item->IsVisible()) {
+				item->SetVisible(true);
+				fProcessListView->AddItem(item);
+			}
 		} else {
-			item->SetVisible(false);
+			if (item->IsVisible()) {
+				item->SetVisible(false);
+				fProcessListView->RemoveItem(item);
+			}
 		}
 	}
 
