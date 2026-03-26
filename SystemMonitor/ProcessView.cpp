@@ -502,7 +502,7 @@ void ProcessView::Update(BMessage* message)
 		bool match = _MatchesFilter(info, searchText);
 
 		ProcessListItem* item;
-		auto result = fTeamItemMap.emplace(info.id, nullptr);
+		auto result = fTeamItemMap.try_emplace(info.id, nullptr);
 		if (result.second) {
 			item = new ProcessListItem(info, stateStr, &font, this);
 			result.first->second = item;
