@@ -29,6 +29,7 @@ public:
             data = buf.data();
         }
     }
+    const char* String() const { return data.c_str(); }
     int IFindFirst(const char* str) const {
         if (!str || !*str) return 0;
         const char* res = strcasestr(data.c_str(), str);
@@ -57,18 +58,20 @@ public:
 	BString fFilterArgs;
 
 	bool _MatchesFilter_Old(const ProcessInfo& info, const char* searchText) {
-		if (searchText == NULL || strlen(searchText) == 0)
+		if (searchText == NULL || searchText[0] == '\0')
 			return true;
 
-		fFilterName.SetTo(info.name);
-		fFilterID.SetToFormat("%" B_PRId32, info.id);
-		fFilterArgs.SetTo(info.args);
-
-		if (fFilterName.IFindFirst(searchText) != B_ERROR
-			|| fFilterID.IFindFirst(searchText) != B_ERROR
-			|| fFilterArgs.IFindFirst(searchText) != B_ERROR) {
+		if (strcasestr(info.name, searchText) != NULL)
 			return true;
-		}
+
+		if (strcasestr(info.args, searchText) != NULL)
+			return true;
+
+		BString idStr;
+		idStr.SetToFormat("%" B_PRId32, info.id);
+		if (strcasestr(idStr.String(), searchText) != NULL)
+			return true;
+
 		return false;
 	}
 
@@ -82,9 +85,9 @@ public:
 		if (strcasestr(info.args, searchText) != NULL)
 			return true;
 
-		BString idStr;
-		idStr.SetToFormat("%" B_PRId32, info.id);
-		if (strcasestr(idStr.data.c_str(), searchText) != NULL)
+		char idStr[32];
+		snprintf(idStr, sizeof(idStr), "%" B_PRId32, info.id);
+		if (strcasestr(idStr, searchText) != NULL)
 			return true;
 
 		return false;

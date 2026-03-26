@@ -395,9 +395,9 @@ bool ProcessView::_MatchesFilter(const ProcessInfo& info, const char* searchText
 	if (strcasestr(info.args, searchText) != NULL)
 		return true;
 
-	BString idStr;
-	idStr.SetToFormat("%" B_PRId32, info.id);
-	if (strcasestr(idStr.String(), searchText) != NULL)
+	char idStr[32];
+	snprintf(idStr, sizeof(idStr), "%" B_PRId32, info.id);
+	if (strcasestr(idStr, searchText) != NULL)
 		return true;
 
 	return false;
