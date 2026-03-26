@@ -7,6 +7,12 @@
 
 BFont* be_bold_font = nullptr;
 
+void test_get_core_count() {
+    MockCpuCount() = 4;
+    MockSystemInfoResult() = B_OK;
+    assert(GetCoreCount() == 4);
+}
+
 int main() {
     std::cout << "Testing Utils.cpp..." << std::endl;
 
@@ -78,6 +84,8 @@ int main() {
     assert(FormatSpeed(0, 1000000) == "0 B/s");
     assert(FormatSpeed(1024, 1000000) == "1.00 KiB/s");
     assert(FormatSpeed(1024, 500000) == "2.00 KiB/s");
+
+    test_get_core_count();
 
     std::cout << "All Utils tests passed!" << std::endl;
     return 0;

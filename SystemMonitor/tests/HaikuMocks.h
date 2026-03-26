@@ -127,6 +127,16 @@ struct system_info {
     char kernel_version[256];
 };
 
+inline int& MockCpuCount() {
+    static int val = 1;
+    return val;
+}
+
+inline int& MockSystemInfoResult() {
+    static int val = B_OK;
+    return val;
+}
+
 inline int get_system_info(system_info* info) {
     if(info) {
         info->max_pages = 0;
@@ -139,10 +149,10 @@ inline int get_system_info(system_info* info) {
         info->page_size = 4096;
         info->cpu_clock_speed = 0;
         info->cpu_type = 0;
-        info->cpu_count = 1;
+        info->cpu_count = MockCpuCount();
         info->kernel_version[0] = '\0';
     }
-    return B_OK;
+    return MockSystemInfoResult();
 }
 
 inline bigtime_t system_time() { return 0; }
