@@ -1,16 +1,12 @@
 #ifndef MOCK_STRING_VIEW_H
 #define MOCK_STRING_VIEW_H
 #include "../HaikuMocks.h"
-class BStringView {
+#include "View.h"
+class BStringView : public BView {
 public:
-    BStringView() {}
-    BStringView(const char*, const char*) {}
-    void SetViewColor(int) {}
-    BWindow* Window() { return nullptr; }
-    void SetExplicitMinSize(BSize) {}
-    void SetExplicitMaxSize(BSize) {}
-    void InvalidateLayout() {}
+    BStringView(const char* name, const char* text) : BView(name, 0) {}
     void SetAlignment(int) {}
     void SetFont(const BFont*) {}
+    void SetText(const char*) {}
 };
 #endif
