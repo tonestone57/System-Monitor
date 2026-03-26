@@ -120,7 +120,7 @@ status_t get_next_team_info(int32_t *cookie, team_info *info) {
     if (*cookie >= (int32_t)gTeams.size()) return B_ERROR;
     const auto& t = gTeams[*cookie];
     info->team = t.id;
-    strncpy(info->name, t.name.c_str(), B_OS_NAME_LENGTH);
+    snprintf(info->name, B_OS_NAME_LENGTH, "%s", t.name.c_str());
     info->thread_count = t.threads.size();
     info->area_count = 1;
     info->uid = 0;
