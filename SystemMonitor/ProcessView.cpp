@@ -51,11 +51,10 @@ const int32 kMemoryCacheGenerations = 10;
 
 
 
+#include <cinttypes>
+
 ProcessView::ProcessView()
 	: BView("ProcessView", B_WILL_DRAW),
-	  fFilterName(""),
-	  fFilterID(""),
-	  fFilterArgs(""),
 	  fLastSystemTime(0),
 	  fRefreshInterval(1000000),
 	  fUpdateThread(B_ERROR),
@@ -387,18 +386,20 @@ void ProcessView::_RestoreSelection(team_id selectedID)
 
 bool ProcessView::_MatchesFilter(const ProcessInfo& info, const char* searchText)
 {
-	if (searchText == NULL || strlen(searchText) == 0)
+	if (searchText == NULL || searchText[0] == '\0')
 		return true;
 
-	fFilterName.SetTo(info.name);
-	fFilterID.SetToFormat("%" B_PRId32, info.id);
-	fFilterArgs.SetTo(info.args);
-
-	if (fFilterName.IFindFirst(searchText) != B_ERROR
-		|| fFilterID.IFindFirst(searchText) != B_ERROR
-		|| fFilterArgs.IFindFirst(searchText) != B_ERROR) {
+	if (strcasestr(info.name, searchText) != NULL)
 		return true;
-	}
+
+	if (strcasestr(info.args, searchText) != NULL)
+		return true;
+
+	char idStr[32];
+	snprintf(idStr, sizeof(idStr), "%" B_PRId32, info.id);
+	if (strcasestr(idStr, searchText) != NULL)
+		return true;
+
 	return false;
 }
 

@@ -129,11 +129,6 @@ private:
 	BString fStrReady;
 	BString fStrSleeping;
 
-	// Buffers for filtering to avoid reallocation
-	BString fFilterName; // Buffer for name filtering
-	BString fFilterID;   // Buffer for ID filtering
-	BString fFilterArgs; // Buffer for args filtering
-
 	std::unordered_map<uid_t, BString> fUserNameCache;
 	std::vector<ClickableHeaderView*> fHeaders;
 	bigtime_t fLastSystemTime;
