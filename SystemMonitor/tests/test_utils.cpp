@@ -1,11 +1,47 @@
 #include <cassert>
 #include <iostream>
 #include <string>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "HaikuMocks.h"
 #include "../Utils.h"
 
 BFont* be_bold_font = nullptr;
+
+void test_get_core_count() {
+    // GetCoreCount uses a static IIFE lambda to cache the result, so we must test it in separate processes
+    pid_t pid = fork();
+    if (pid == 0) {
+        MockCpuCount() = 4;
+        MockSystemInfoResult() = B_OK;
+        assert(GetCoreCount() == 4);
+
+        // Reset global mock states (even though process exits, it's good practice)
+        MockCpuCount() = 1;
+        MockSystemInfoResult() = B_OK;
+        exit(0);
+    } else {
+        int status;
+        waitpid(pid, &status, 0);
+        assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    }
+
+    pid = fork();
+    if (pid == 0) {
+        MockSystemInfoResult() = -1;
+        assert(GetCoreCount() == 1);
+
+        // Reset global mock states
+        MockCpuCount() = 1;
+        MockSystemInfoResult() = B_OK;
+        exit(0);
+    } else {
+        int status;
+        waitpid(pid, &status, 0);
+        assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    }
+}
 
 int main() {
     std::cout << "Testing Utils.cpp..." << std::endl;
@@ -78,6 +114,8 @@ int main() {
     assert(FormatSpeed(0, 1000000) == "0 B/s");
     assert(FormatSpeed(1024, 1000000) == "1.00 KiB/s");
     assert(FormatSpeed(1024, 500000) == "2.00 KiB/s");
+
+    test_get_core_count();
 
     std::cout << "All Utils tests passed!" << std::endl;
     return 0;
