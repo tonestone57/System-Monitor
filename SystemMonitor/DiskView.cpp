@@ -274,7 +274,7 @@ int32 DiskView::UpdateThread(void* data)
 		std::vector<dev_t> volumesToPoll;
 		if (view->fLocker.Lock()) {
 			volumesToPoll.reserve(view->fVolumeCache.size());
-			for (auto const& pair : view->fVolumeCache) {
+			for (const auto& pair : view->fVolumeCache) {
 				 volumesToPoll.push_back(pair.first);
 			}
 			view->fLocker.Unlock();
