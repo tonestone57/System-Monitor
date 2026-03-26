@@ -16,12 +16,18 @@ public:
     BString(const char* str) : data(str ? str : "") {}
     void SetTo(const char* str) { data = str ? str : ""; }
     void SetToFormat(const char* fmt, ...) {
-        char buf[256];
         va_list args;
         va_start(args, fmt);
-        vsnprintf(buf, sizeof(buf), fmt, args);
+        int len = vsnprintf(nullptr, 0, fmt, args);
         va_end(args);
-        data = buf;
+
+        if (len >= 0) {
+            std::vector<char> buf(len + 1);
+            va_start(args, fmt);
+            vsnprintf(buf.data(), buf.size(), fmt, args);
+            va_end(args);
+            data = buf.data();
+        }
     }
     int IFindFirst(const char* str) const {
         if (!str || !*str) return 0;
@@ -76,9 +82,9 @@ public:
 		if (strcasestr(info.args, searchText) != NULL)
 			return true;
 
-		char idStr[32];
-		snprintf(idStr, sizeof(idStr), "%" B_PRId32, info.id);
-		if (strcasestr(idStr, searchText) != NULL)
+		BString idStr;
+		idStr.SetToFormat("%" B_PRId32, info.id);
+		if (strcasestr(idStr.data.c_str(), searchText) != NULL)
 			return true;
 
 		return false;

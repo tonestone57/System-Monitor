@@ -5,14 +5,24 @@
 #include <string>
 #include <vector>
 #include <cstdio>
+#include <cstdarg>
 
 class BString {
 public:
     std::string s;
-    void SetToFormat(const char* fmt, int i) {
-        char buf[256];
-        snprintf(buf, sizeof(buf), fmt, i);
-        s = buf;
+    void SetToFormat(const char* fmt, ...) {
+        va_list args;
+        va_start(args, fmt);
+        int len = vsnprintf(nullptr, 0, fmt, args);
+        va_end(args);
+
+        if (len >= 0) {
+            std::vector<char> buf(len + 1);
+            va_start(args, fmt);
+            vsnprintf(buf.data(), buf.size(), fmt, args);
+            va_end(args);
+            s = buf.data();
+        }
     }
     const char* String() const { return s.c_str(); }
 };
