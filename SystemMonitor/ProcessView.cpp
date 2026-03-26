@@ -275,8 +275,7 @@ void ProcessView::Show()
 BString ProcessView::GetUserName(uid_t uid, std::vector<char>& buffer) {
 	auto it = fUserNameCache.find(uid);
 	if (it != fUserNameCache.end()) {
-		it->second.generation = fCurrentGeneration;
-		return it->second.name;
+		return it->second;
 	}
 
 	struct passwd pwd;
@@ -289,7 +288,7 @@ BString ProcessView::GetUserName(uid_t uid, std::vector<char>& buffer) {
 		name << uid;
 	}
 
-	fUserNameCache.emplace(uid, CachedUser{name, fCurrentGeneration});
+	fUserNameCache.emplace(uid, name);
 	return name;
 }
 
@@ -599,11 +598,6 @@ int32 ProcessView::UpdateThread(void* data)
 					strlcpy(currentProc.args, cachedInfo->args, sizeof(currentProc.args));
 					cachedInfo->generation = view->fCurrentGeneration;
 
-					// Update user generation even if process is cached
-					auto userIt = view->fUserNameCache.find(teamInfo.uid);
-					if (userIt != view->fUserNameCache.end())
-						userIt->second.generation = view->fCurrentGeneration;
-
 					// Optimize memory calculation
 					if (cachedInfo->cachedAreaCount == teamInfo.area_count
 						&& (view->fCurrentGeneration - cachedInfo->memoryGeneration < kMemoryCacheGenerations)) {
@@ -759,13 +753,6 @@ int32 ProcessView::UpdateThread(void* data)
 		for (auto it = view->fCachedTeamInfo.begin(); it != view->fCachedTeamInfo.end();) {
 			if (it->second.generation != view->fCurrentGeneration)
 				it = view->fCachedTeamInfo.erase(it);
-			else
-				++it;
-		}
-
-		for (auto it = view->fUserNameCache.begin(); it != view->fUserNameCache.end();) {
-			if (it->second.generation != view->fCurrentGeneration)
-				it = view->fUserNameCache.erase(it);
 			else
 				++it;
 		}

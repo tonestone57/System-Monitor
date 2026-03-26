@@ -120,11 +120,6 @@ private:
 		thread_id lastRunningThread;
 	};
 
-	struct CachedUser {
-		BString name;
-		int32 generation;
-	};
-
 	std::unordered_map<thread_id, ThreadState> fThreadTimeMap;
 	std::unordered_map<team_id, CachedTeamInfo> fCachedTeamInfo;
 	std::unordered_map<team_id, ProcessListItem*> fTeamItemMap;
@@ -140,7 +135,7 @@ private:
 	BString fFilterID;   // Buffer for ID filtering
 	BString fFilterArgs; // Buffer for args filtering
 
-	std::unordered_map<uid_t, CachedUser> fUserNameCache;
+	std::unordered_map<uid_t, BString> fUserNameCache;
 	std::vector<ClickableHeaderView*> fHeaders;
 	bigtime_t fLastSystemTime;
 	std::atomic<bigtime_t> fRefreshInterval;
