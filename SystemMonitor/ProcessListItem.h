@@ -14,13 +14,16 @@ class ProcessListItem : public BListItem {
 public:
 	ProcessListItem(const ProcessInfo& info, const char* stateStr,
 		const BFont* font, ProcessView* view)
-		: BListItem(), fGeneration(0), fView(view)
+		: BListItem(), fGeneration(0), fView(view), fIsVisible(false)
 	{
 		Update(info, stateStr, font, true);
 	}
 
 	void SetGeneration(int32 generation) { fGeneration = generation; }
 	int32 Generation() const { return fGeneration; }
+
+	bool IsVisible() const { return fIsVisible; }
+	void SetVisible(bool visible) { fIsVisible = visible; }
 
 	void Update(const ProcessInfo& info, const char* stateStr,
 		const BFont* font, bool force = false)
@@ -161,6 +164,7 @@ private:
 	BString		fTruncatedUser;
 	int32		fGeneration;
 	ProcessView* fView;
+	bool		fIsVisible;
 };
 
 #endif // PROCESSLISTITEM_H

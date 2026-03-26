@@ -147,7 +147,6 @@ ProcessView::~ProcessView()
 	delete fContextMenu;
 
 	fProcessListView->MakeEmpty(); // Just clears pointers
-	fVisibleItems.clear();
 	for (auto& pair : fTeamItemMap) {
 		delete pair.second;
 	}
@@ -419,14 +418,15 @@ void ProcessView::FilterRows()
 	// We have to remove them from the list but keep them in fTeamItemMap.
 
 	fProcessListView->MakeEmpty(); // Clear visualization (pointers only)
-	fVisibleItems.clear();
 
 	for (auto& pair : fTeamItemMap) {
 		ProcessListItem* item = pair.second;
 
 		if (_MatchesFilter(item->Info(), searchText)) {
 			fProcessListView->AddItem(item);
-			fVisibleItems.insert(item);
+			item->SetVisible(true);
+		} else {
+			item->SetVisible(false);
 		}
 	}
 
@@ -508,18 +508,22 @@ void ProcessView::Update(BMessage* message)
 
 			if (match) {
 				fProcessListView->AddItem(item);
-				fVisibleItems.insert(item);
+				item->SetVisible(true);
 			}
 		} else {
 			item = result.first->second;
 			item->Update(info, stateStr, &font, fontChanged);
 
 			if (match) {
-				if (fVisibleItems.insert(item).second)
+				if (!item->IsVisible()) {
+					item->SetVisible(true);
 					fProcessListView->AddItem(item);
+				}
 			} else {
-				if (fVisibleItems.erase(item) > 0)
+				if (item->IsVisible()) {
+					item->SetVisible(false);
 					fProcessListView->RemoveItem(item);
+				}
 			}
 		}
 		item->SetGeneration(fListGeneration);
@@ -529,7 +533,7 @@ void ProcessView::Update(BMessage* message)
 	for (auto it = fTeamItemMap.begin(); it != fTeamItemMap.end();) {
 		if (it->second->Generation() != fListGeneration) {
 			ProcessListItem* item = it->second;
-			if (fVisibleItems.erase(item) > 0) {
+			if (item->IsVisible()) {
 				fProcessListView->RemoveItem(item);
 			}
 			delete item;
