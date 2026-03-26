@@ -564,6 +564,8 @@ int32 ProcessView::UpdateThread(void* data)
 	if (bufSize == -1) bufSize = 16384;
 	std::vector<char> pwdBuffer(bufSize);
 
+	const int32 coreCount = GetCoreCount();
+
 	while (!view->fTerminated) {
 		if (view->fIsHidden) {
 			status_t err = acquire_sem_etc(view->fQuitSem, 1, B_RELATIVE_TIMEOUT, view->fRefreshInterval);
@@ -579,7 +581,7 @@ int32 ProcessView::UpdateThread(void* data)
 		if (systemTimeDelta <= 0) systemTimeDelta = 1;
 		view->fLastSystemTime = currentSystemTime;
 
-		float totalPossibleCoreTime = GetCoreCount() * systemTimeDelta;
+		float totalPossibleCoreTime = coreCount * systemTimeDelta;
 		if (totalPossibleCoreTime <= 0) totalPossibleCoreTime = 1.0f;
 
 		int32 cookie = 0;
