@@ -118,10 +118,9 @@ void GPUView::_UpdateStaticInfo()
 		::FormatBytes(memStr, deviceInfo.memory);
 		fMemorySizeValue->SetText(memStr.String());
 
-		char versionStr[32];
-		snprintf(versionStr, sizeof(versionStr), "%u",
-				 static_cast<unsigned int>(deviceInfo.version));
-		fDriverVersionValue->SetText(versionStr);
+		BString versionStr;
+		versionStr.SetToFormat("%u", static_cast<unsigned int>(deviceInfo.version));
+		fDriverVersionValue->SetText(versionStr.String());
 
 	} else {
 		fCardNameValue->SetText(B_TRANSLATE("Unknown"));
