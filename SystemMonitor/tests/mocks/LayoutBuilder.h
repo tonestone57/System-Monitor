@@ -5,7 +5,6 @@
 
 #define B_VERTICAL 1
 #define B_HORIZONTAL 2
-#define B_USE_DEFAULT_SPACING 0
 
 class BLayoutBuilder {
 public:

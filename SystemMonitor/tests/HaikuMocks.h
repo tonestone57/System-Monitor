@@ -12,6 +12,10 @@ typedef uint32_t uint32;
 typedef int32_t int32;
 typedef int64_t bigtime_t;
 typedef uint8_t uint8;
+typedef int32 team_id;
+typedef int32 thread_id;
+typedef int32 sem_id;
+typedef int32 status_t;
 
 #define B_TRANSLATE(x) x
 #define B_OK 0
@@ -30,6 +34,22 @@ typedef uint8_t uint8;
 #define B_WILL_DRAW 1
 #define B_PULSE_NEEDED 2
 #define B_NAVIGATION_BASE_COLOR (color_which)1
+#define B_TRUNCATE_MIDDLE 1
+#define B_TRUNCATE_END 2
+#define B_LIST_SELECTED_BACKGROUND_COLOR 2
+#define B_LIST_BACKGROUND_COLOR 3
+#define B_LIST_SELECTED_ITEM_TEXT_COLOR 4
+#define B_LIST_ITEM_TEXT_COLOR 5
+#define B_CONTROL_TEXT_COLOR 6
+#define B_SINGLE_SELECTION_LIST 1
+#define B_NAVIGABLE 4
+#define B_FILE_NAME_LENGTH 256
+#define B_NORMAL_PRIORITY 10
+#define B_RELATIVE_TIMEOUT 1
+#define B_TIMED_OUT 1
+#define B_INTERRUPTED 2
+#define B_USE_DEFAULT_SPACING 1
+#define B_SIZE_UNLIMITED 10000
 
 typedef struct {
     uint8_t red;
@@ -105,7 +125,10 @@ public:
     bool operator==(const BString& other) const { return str == other.str; }
     bool operator==(const char* other) const { return str == other; }
     bool operator!=(const char* other) const { return str != other; }
+    bool operator!=(const BString& other) const { return str != other.str; }
 };
+
+inline rgb_color ui_color(int) { return {0, 0, 0, 255}; }
 
 #define B_PRIu64 PRIu64
 #define B_PRId32 PRId32
@@ -145,7 +168,6 @@ public:
     float width, height;
 };
 
-inline int ui_color(int) { return 0; }
 
 struct system_info {
     uint32 max_pages;
@@ -241,6 +263,20 @@ public:
     int GetMode(display_mode* mode) { return 0; }
 };
 
+struct font_height {
+    float ascent;
+    float descent;
+    float leading;
+};
+
+inline void MockGetFontHeight(font_height* fh) {
+    if (fh) {
+        fh->ascent = 10.0f;
+        fh->descent = 2.0f;
+        fh->leading = 1.0f;
+    }
+}
+
 class BFont {
 public:
     BFont() {}
@@ -248,6 +284,9 @@ public:
     BFont(const BFont* b) {}
     float Size() const { return 12.0f; }
     void SetSize(float s) {}
+    void TruncateString(BString* inOut, uint32 mode, float width) const {}
+    void GetFontHeight(font_height* fh) const { MockGetFontHeight(fh); }
+    bool operator!=(const BFont& other) const { return false; }
 };
 extern BFont* be_bold_font;
 

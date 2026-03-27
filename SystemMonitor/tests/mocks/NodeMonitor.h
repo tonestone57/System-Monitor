@@ -1,0 +1,8 @@
+#ifndef MOCK_NODE_MONITOR_H
+#define MOCK_NODE_MONITOR_H
+
+#define B_NODE_MONITOR 0
+#define B_DEVICE_MOUNTED 0
+#define B_DEVICE_UNMOUNTED 0
+
+#endif
