@@ -27,3 +27,4 @@ benchmark_activity_valueat
 test_circular_buffer
 test_utils
 test_data_history
+test_disk_list_item
