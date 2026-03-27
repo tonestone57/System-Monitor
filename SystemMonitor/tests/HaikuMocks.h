@@ -196,13 +196,28 @@ inline int& MockSystemInfoResult() {
     return val;
 }
 
+inline uint32& MockMaxPages() {
+    static uint32 val = 0;
+    return val;
+}
+
+inline uint32& MockUsedPages() {
+    static uint32 val = 0;
+    return val;
+}
+
+inline uint32& MockIgnoredPages() {
+    static uint32 val = 0;
+    return val;
+}
+
 inline int get_system_info(system_info* info) {
     if(info) {
-        info->max_pages = 0;
-        info->used_pages = 0;
+        info->max_pages = MockMaxPages();
+        info->used_pages = MockUsedPages();
         info->cached_pages = 0;
         info->block_cache_pages = 0;
-        info->ignored_pages = 0;
+        info->ignored_pages = MockIgnoredPages();
         info->max_swap_pages = 0;
         info->used_swap_pages = 0;
         info->page_size = 4096;
