@@ -44,6 +44,7 @@ typedef int32 status_t;
 #define B_SINGLE_SELECTION_LIST 1
 #define B_NAVIGABLE 4
 #define B_FILE_NAME_LENGTH 256
+#define B_OS_NAME_LENGTH 32
 #define B_NORMAL_PRIORITY 10
 #define B_RELATIVE_TIMEOUT 1
 #define B_TIMED_OUT 1
@@ -133,6 +134,7 @@ inline rgb_color ui_color(int) { return {0, 0, 0, 255}; }
 #define B_PRIu64 PRIu64
 #define B_PRId32 PRId32
 #define B_PRId64 PRId64
+#define B_PRIu32 PRIu32
 #define B_HAIKU_ABI_NAME "mock_abi"
 
 class BHandler {
