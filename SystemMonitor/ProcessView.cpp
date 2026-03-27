@@ -53,6 +53,24 @@ const int32 kMemoryCacheGenerations = 10;
 
 #include <cinttypes>
 
+class ProcessListView : public BListView {
+public:
+	ProcessListView(const char* name)
+		: BListView(name) {}
+
+	virtual void MouseDown(BPoint where) {
+		BListView::MouseDown(where);
+		int32 buttons;
+		if (Window()->CurrentMessage()->FindInt32("buttons", &buttons) == B_OK) {
+			if (buttons & B_SECONDARY_MOUSE_BUTTON) {
+				BMessage msg(MSG_SHOW_CONTEXT_MENU);
+				msg.AddPoint("screen_where", ConvertToScreen(where));
+				Window()->PostMessage(&msg, Target());
+			}
+		}
+	}
+};
+
 ProcessView::ProcessView()
 	: BView("ProcessView", B_WILL_DRAW),
 	  fLastSystemTime(0),

@@ -115,7 +115,7 @@ void GPUView::_UpdateStaticInfo()
 	if (screen.GetDeviceInfo(&deviceInfo) == B_OK) {
 		fCardNameValue->SetText(deviceInfo.name);
 		BString memStr;
-		::FormatBytes(memStr, deviceInfo.memory);
+		::FormatBytes(memStr, (uint64)deviceInfo.memory);
 		fMemorySizeValue->SetText(memStr.String());
 
 		BString versionStr;
