@@ -77,6 +77,7 @@ public:
     BString& operator<<(double d) { str += std::to_string(d); return *this; }
 
     BString& Append(const char* s) { str += s; return *this; }
+    BString& Append(char c, int32 count) { str.append(count, c); return *this; }
 
     void Truncate(int newLen, bool lazy = true) {
         if (newLen < (int)str.length()) str.resize(newLen);

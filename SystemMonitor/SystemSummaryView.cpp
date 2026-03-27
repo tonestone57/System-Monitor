@@ -248,7 +248,7 @@ void SystemSummaryView::MessageReceived(BMessage* message)
 			// Build string first
 			BString userHost = message->FindString("user_host");
 			BString separator;
-			for (int i=0; i<userHost.Length(); i++) separator << "-";
+			separator.Append('-', userHost.Length());
 
 			infoText << userHost << "\n" << separator << "\n";
 
