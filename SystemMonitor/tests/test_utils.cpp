@@ -43,6 +43,34 @@ void test_get_core_count() {
     }
 }
 
+void test_get_memory_usage() {
+    uint64 used = 0, total = 0, physical = 0;
+
+    // Test when get_system_info fails
+    MockSystemInfoResult() = B_ERROR;
+    GetMemoryUsage(used, total, physical);
+    assert(used == 0);
+    assert(total == 0);
+    assert(physical == 0);
+
+    // Test when get_system_info succeeds
+    MockSystemInfoResult() = B_OK;
+    MockMaxPages() = 1000;
+    MockUsedPages() = 500;
+    MockIgnoredPages() = 100;
+
+    GetMemoryUsage(used, total, physical);
+    assert(total == 1000 * B_PAGE_SIZE);
+    assert(used == 500 * B_PAGE_SIZE);
+    assert(physical == (1000 + 100) * B_PAGE_SIZE);
+
+    // Reset global mock states
+    MockSystemInfoResult() = B_OK;
+    MockMaxPages() = 0;
+    MockUsedPages() = 0;
+    MockIgnoredPages() = 0;
+}
+
 void test_get_locale() {
     // Test default case (both LC_ALL and LANG unset)
     pid_t pid = fork();
@@ -214,6 +242,7 @@ int main() {
 
     test_get_core_count();
     test_get_locale();
+    test_get_memory_usage();
 
     std::cout << "All Utils tests passed!" << std::endl;
     return 0;
