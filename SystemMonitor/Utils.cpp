@@ -114,7 +114,13 @@ void GetSwapUsage(uint64& used, uint64& total) {
 	system_info info;
 	if (get_system_info(&info) == B_OK) {
 		total = static_cast<uint64>(info.max_swap_pages) * B_PAGE_SIZE;
+#ifdef __HAIKU__
+		used = static_cast<uint64>(info.max_swap_pages - info.free_swap_pages) * B_PAGE_SIZE;
+#else
+		// For the Linux mock testing environment where free_swap_pages is omitted
+		// and replaced with used_swap_pages
 		used = static_cast<uint64>(info.used_swap_pages) * B_PAGE_SIZE;
+#endif
 	} else {
 		total = 0;
 		used = 0;
