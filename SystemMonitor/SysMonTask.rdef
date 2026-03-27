@@ -7,7 +7,7 @@ resource app_version {
     major  = 1,
     middle = 0,
     minor  = 0,
-    variety = B_APP_VARIETY_FINAL,
+    variety = B_APP_FINAL,
     internal = 0,
     short_info = "System Monitor",
     long_info = "Haiku System Monitor v1.0.0"
