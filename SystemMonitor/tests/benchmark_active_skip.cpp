@@ -220,7 +220,6 @@ void RunBenchmark(bool useSkipScan, bool useLastRunningThread, bool useActiveSki
 
             // OPTIMIZATION 1: Skip scan if idle
             bool skipScan = false;
-            bool isRunning = false;
 
             if (useSkipScan && cached && teamActiveTimeDelta == 0) {
                 skipScan = true;
@@ -229,7 +228,6 @@ void RunBenchmark(bool useSkipScan, bool useLastRunningThread, bool useActiveSki
             // OPTIMIZATION 3 (NEW): Skip scan if active
             if (!skipScan && useActiveSkip && cached && teamActiveTimeDelta > 0) {
                 skipScan = true;
-                isRunning = true;
             }
 
             // OPTIMIZATION 2: Check last running thread
@@ -239,23 +237,19 @@ void RunBenchmark(bool useSkipScan, bool useLastRunningThread, bool useActiveSki
                      && lastInfo.team == teamInfo.team
                      && lastInfo.state == B_THREAD_RUNNING) {
                      skipScan = true; // Found running, skipping scan!
-                     isRunning = true;
                  }
             }
 
             if (!skipScan) {
                 int32_t tCookie = 0;
                 thread_info tInfo;
-                bool isReady = false;
                 while (get_next_thread_info(teamInfo.team, &tCookie, &tInfo) == B_OK) {
                     if (tInfo.state == B_THREAD_RUNNING) {
-                        isRunning = true;
                         if (useLastRunningThread) {
                             cachedInfo->lastRunningThread = tInfo.thread;
                         }
                         break;
                     }
-                    if (tInfo.state == B_THREAD_READY) isReady = true;
                 }
             }
         }

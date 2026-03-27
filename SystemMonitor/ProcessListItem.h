@@ -12,6 +12,7 @@
 
 class ProcessListItem : public BListItem {
 public:
+	using BListItem::Update;
 	ProcessListItem(const ProcessInfo& info, const char* stateStr,
 		const BFont* font, ProcessView* view)
 		: BListItem(), fGeneration(0), fView(view), fIsVisible(false)

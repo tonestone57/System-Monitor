@@ -12,6 +12,7 @@
 
 class InterfaceListItem : public BListItem {
 public:
+	using BListItem::Update;
 	InterfaceListItem(const BString& name, const BString& type,
 		const BString& addr, uint64 sent, uint64 recv,
 		uint64 txSpeed, uint64 rxSpeed,
