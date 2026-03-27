@@ -115,16 +115,7 @@ DiskView::~DiskView()
 		wait_for_thread(fUpdateThread, &dummy);
 	}
 
-	// fDiskListView owns the items? No, BListView doesn't own items by default unless we iterate.
-	// However, if we empty it, we lose the pointers to items that are also in the map.
-	// Correct approach: Empty list without deletion, then delete from map/visible set.
-	// Or just clear map since they are same pointers.
-	// But we need to delete the objects.
 	fDiskListView->MakeEmpty();
-
-	for (auto& pair : fDeviceItemMap) {
-		delete pair.second;
-	}
 	fDeviceItemMap.clear();
 }
 
@@ -405,11 +396,12 @@ void DiskView::UpdateData(BMessage* message)
 		DiskListItem* item;
 		auto result = fDeviceItemMap.emplace(deviceID, nullptr);
 		if (result.second) {
-			item = new DiskListItem(deviceID, deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font, this);
+			auto newItem = std::unique_ptr<DiskListItem>(new DiskListItem(deviceID, deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font, this));
+			item = newItem.get();
 			fDiskListView->AddItem(item);
-			result.first->second = item;
+			result.first->second = std::move(newItem);
 		} else {
-			item = result.first->second;
+			item = result.first->second.get();
 			item->Update(deviceName, mountPoint, fsType, totalSize, usedSize, freeSize, usagePercent, &font, fontChanged);
 		}
 		item->SetGeneration(fListGeneration);
@@ -417,9 +409,8 @@ void DiskView::UpdateData(BMessage* message)
 
 	for (auto it = fDeviceItemMap.begin(); it != fDeviceItemMap.end();) {
 		if (it->second->Generation() != fListGeneration) {
-			DiskListItem* item = it->second;
+			DiskListItem* item = it->second.get();
 			fDiskListView->RemoveItem(item);
-			delete item;
 			it = fDeviceItemMap.erase(it);
 		} else {
 			++it;
