@@ -700,6 +700,11 @@ int32 ProcessView::UpdateThread(void* data)
 					cachedInfo->cpuTime = currentTeamTime;
 				}
 
+				if (cached && teamActiveTimeDelta > 0) {
+					isRunning = true;
+					skipThreadScan = true;
+				}
+
 				if (!skipThreadScan) {
 					// Optimization: Check the last known running thread first
 					if (cached && cachedInfo->lastRunningThread != -1) {
