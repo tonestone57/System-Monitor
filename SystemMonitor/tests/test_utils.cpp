@@ -43,6 +43,103 @@ void test_get_core_count() {
     }
 }
 
+void test_get_locale() {
+    // Test default case (both LC_ALL and LANG unset)
+    pid_t pid = fork();
+    if (pid == 0) {
+        unsetenv("LC_ALL");
+        unsetenv("LANG");
+        assert(GetLocale() == "en_US.UTF-8");
+        exit(0);
+    } else {
+        int status;
+        waitpid(pid, &status, 0);
+        assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    }
+
+    // Test LC_ALL set
+    pid = fork();
+    if (pid == 0) {
+        setenv("LC_ALL", "fr_FR.UTF-8", 1);
+        unsetenv("LANG");
+        assert(GetLocale() == "fr_FR.UTF-8");
+        exit(0);
+    } else {
+        int status;
+        waitpid(pid, &status, 0);
+        assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    }
+
+    // Test LANG set, LC_ALL unset
+    pid = fork();
+    if (pid == 0) {
+        unsetenv("LC_ALL");
+        setenv("LANG", "de_DE.UTF-8", 1);
+        assert(GetLocale() == "de_DE.UTF-8");
+        exit(0);
+    } else {
+        int status;
+        waitpid(pid, &status, 0);
+        assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    }
+
+    // Test LC_ALL takes precedence
+    pid = fork();
+    if (pid == 0) {
+        setenv("LC_ALL", "es_ES.UTF-8", 1);
+        setenv("LANG", "de_DE.UTF-8", 1);
+        assert(GetLocale() == "es_ES.UTF-8");
+        exit(0);
+    } else {
+        int status;
+        waitpid(pid, &status, 0);
+        assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    }
+
+    // Test empty strings (should fallback to default or LANG)
+    pid = fork();
+    if (pid == 0) {
+        setenv("LC_ALL", "", 1);
+        setenv("LANG", "it_IT.UTF-8", 1);
+        // Expecting LANG if LC_ALL is empty
+        assert(GetLocale() == "it_IT.UTF-8");
+        exit(0);
+    } else {
+        int status;
+        waitpid(pid, &status, 0);
+        assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    }
+
+    // Test excessively long string
+    pid = fork();
+    if (pid == 0) {
+        std::string longStr(1024, 'A');
+        setenv("LC_ALL", longStr.c_str(), 1);
+        BString locale = GetLocale();
+        assert(locale.Length() < 1024);
+        assert(locale.Length() > 0);
+        exit(0);
+    } else {
+        int status;
+        waitpid(pid, &status, 0);
+        assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    }
+
+    // Test control characters / newlines
+    pid = fork();
+    if (pid == 0) {
+        setenv("LC_ALL", "en_US.UTF-8\nInjected: True", 1);
+        BString locale = GetLocale();
+        assert(locale.FindFirst("\n") == -1);
+        assert(locale.FindFirst("\r") == -1);
+        exit(0);
+    } else {
+        int status;
+        waitpid(pid, &status, 0);
+        assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    }
+}
+
 int main() {
     std::cout << "Testing Utils.cpp..." << std::endl;
 
@@ -116,6 +213,7 @@ int main() {
     assert(FormatSpeed(1024, 500000) == "2.00 KiB/s");
 
     test_get_core_count();
+    test_get_locale();
 
     std::cout << "All Utils tests passed!" << std::endl;
     return 0;
