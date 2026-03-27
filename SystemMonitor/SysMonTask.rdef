@@ -1,5 +1,4 @@
 #include <AppDefs.h>
-#include <AppFileInfo.h>
 
 resource app_signature "application/x-vnd.HaikuSysMonTask";
 
