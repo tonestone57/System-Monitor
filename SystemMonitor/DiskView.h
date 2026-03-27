@@ -9,6 +9,7 @@
 #include <vector>
 #include <set>
 #include <atomic>
+#include <memory>
 #include <Font.h>
 #include <NodeMonitor.h>
 
@@ -70,7 +71,7 @@ private:
 	std::vector<ClickableHeaderView*> fHeaders;
 
 	BLocker fLocker; // Protects fVolumeCache and fDeviceItemMap
-	std::unordered_map<dev_t, DiskListItem*> fDeviceItemMap;
+	std::unordered_map<dev_t, std::unique_ptr<DiskListItem>> fDeviceItemMap;
 
 	BFont fCachedFont;
 
