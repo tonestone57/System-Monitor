@@ -136,7 +136,7 @@ SystemDetailsView::SystemDetailsView()
 			.AddGlue()
 			.SetInsets(inset)
 			.View(),
-		false, true, B_NO_BORDER))
+		0, false, true, B_NO_BORDER))
 		.End();
 }
 

@@ -59,6 +59,8 @@ public:
 	}
 };
 
+class MainWindow;
+
 class SysMonTaskApp : public BApplication {
 public:
 	SysMonTaskApp();
@@ -164,8 +166,8 @@ void MainWindow::MessageReceived(BMessage* message) {
 		case MSG_ABOUT_REQUESTED:
 			{
 				if (fAboutWindow.IsValid()) {
-					BWindow* window;
-					if (fAboutWindow.Target(&window) == B_OK && window != NULL) {
+					BWindow* window = nullptr;
+					if (fAboutWindow.Target(reinterpret_cast<BLooper**>(&window)) != NULL && window != NULL) {
 						window->Activate(true);
 						break;
 					}

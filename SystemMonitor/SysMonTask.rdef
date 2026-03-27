@@ -1,15 +1,16 @@
 #include <AppDefs.h>
+#include <app/AppFileInfo.h>
 
 resource app_signature "application/x-vnd.HaikuSysMonTask";
 
 resource app_version {
-	major    = 1,
-	middle   = 0,
-	minor    = 0,
-	variety  = B_APPV_FINAL,
+	major = 1,
+	middle = 0,
+	minor = 0,
+	variety = B_APPV_FINAL,
 	internal = 0,
 	short_info = "1.0.0",
-	long_info  = "SysMonTask - Haiku System Monitor v1.0.0"
+	long_info = "SysMonTask - Haiku System Monitor v1.0.0"
 };
 
 resource app_flags B_SINGLE_LAUNCH;
