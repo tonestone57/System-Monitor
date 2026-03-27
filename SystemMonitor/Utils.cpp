@@ -416,9 +416,25 @@ BString GetLocale()
 {
 	BString locale;
 	const char* lang = getenv("LC_ALL");
-	if (!lang) lang = getenv("LANG");
-	if (lang) locale = lang;
-	else locale = "en_US.UTF-8";
+	if (lang == NULL || lang[0] == '\0')
+		lang = getenv("LANG");
+
+	if (lang != NULL && lang[0] != '\0') {
+		char buffer[65];
+		size_t i;
+		for (i = 0; i < 64 && lang[i] != '\0'; i++) {
+			unsigned char c = (unsigned char)lang[i];
+			if (c < 32 || c == 127)
+				buffer[i] = ' ';
+			else
+				buffer[i] = lang[i];
+		}
+		buffer[i] = '\0';
+		locale = buffer;
+	} else {
+		locale = "en_US.UTF-8";
+	}
+
 	return locale;
 }
 
