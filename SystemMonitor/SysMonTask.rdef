@@ -1,3 +1,23 @@
-resource app_signature "application/x-vnd.Haiku-SystemMonitor"; resource app_flags B_SINGLE_LAUNCH;
+#include <AppDefs.h>
+#include <AppFileInfo.h>
 
-resource app_version { major = 1, middle = 0, minor = 0, variety = B_APP_DEVELOPMENT, internal = 0, short_info = "System Monitor", long_info = "Haiku System Monitor ©2026" };
+resource app_signature "application/x-vnd.System-Monitor";
+
+resource app_version {
+    major  = 1,
+    middle = 0,
+    minor  = 0,
+    variety = B_APP_VARIETY_FINAL,
+    internal = 0,
+    short_info = "System Monitor",
+    long_info = "Haiku System Monitor v1.0.0"
+};
+
+resource app_flags B_SINGLE_LAUNCH;
+
+/* The icon data was joined into a single string to avoid concatenation issues */
+resource vector_icon {
+    $"6E636966080500020006023E49240000000000003CAAAA4940004A30007700"
+    $"FFFFFBFFFFFF0004040A060100023F4924000000000000003E000040000040"
+    $"00FFFF7F00000000044000FF"
+};
