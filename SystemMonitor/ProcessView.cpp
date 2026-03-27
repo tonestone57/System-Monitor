@@ -362,7 +362,9 @@ void ProcessView::SetSelectedProcessPriority(int32 priority) {
 	thread_info tInfo;
 	int32 cookie = 0;
 	while (get_next_thread_info(team, &cookie, &tInfo) == B_OK) {
-		set_thread_priority(tInfo.thread, priority);
+		if (tInfo.priority != priority) {
+			set_thread_priority(tInfo.thread, priority);
+		}
 	}
 }
 
