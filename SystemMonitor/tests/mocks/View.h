@@ -1,8 +1,17 @@
 #ifndef MOCK_VIEW_H
 #define MOCK_VIEW_H
 #include "../HaikuMocks.h"
+typedef enum {
+    B_ITEMS_IN_COLUMN
+} menu_layout;
+
+#define B_FOLLOW_LEFT 1
+#define B_FOLLOW_TOP 2
+
 class BView {
 public:
+    BView() {}
+    BView(BRect frame, const char* name, uint32 resizingMode, uint32 flags) {}
     BView(const char* name, uint32 flags) {}
     virtual ~BView() {}
     void SetViewColor(int) {}
