@@ -27,9 +27,9 @@ const float kBaseDiskDeviceWidth = 120;
 const float kBaseDiskMountWidth = 120;
 const float kBaseDiskFSWidth = 80;
 const float kBaseDiskTotalWidth = 100;
-const float kBaseDiskUsedWidth = 100;
+const float kBaseDiskUsedWidth = 200;
 const float kBaseDiskFreeWidth = 100;
-const float kBaseDiskPercentWidth = 80;
+const float kBaseDiskPercentWidth = 0;
 
 
 DiskView::DiskView()
@@ -73,12 +73,11 @@ DiskView::DiskView()
 	};
 
 	addHeader(B_TRANSLATE("Device"), fDeviceWidth, SORT_DISK_BY_DEVICE);
-	addHeader(B_TRANSLATE("Mount Point"), fMountWidth, SORT_DISK_BY_MOUNT);
-	addHeader(B_TRANSLATE("FS Type"), fFSWidth, SORT_DISK_BY_FS);
+	addHeader(B_TRANSLATE("Directory"), fMountWidth, SORT_DISK_BY_MOUNT);
+	addHeader(B_TRANSLATE("Type"), fFSWidth, SORT_DISK_BY_FS);
 	addHeader(B_TRANSLATE("Total"), fTotalWidth, SORT_DISK_BY_TOTAL, B_ALIGN_RIGHT);
-	addHeader(B_TRANSLATE("Used"), fUsedWidth, SORT_DISK_BY_USED, B_ALIGN_RIGHT);
-	addHeader(B_TRANSLATE("Free"), fFreeWidth, SORT_DISK_BY_FREE, B_ALIGN_RIGHT);
-	addHeader(B_TRANSLATE("Usage"), fPercentWidth, SORT_DISK_BY_PERCENT, B_ALIGN_RIGHT);
+	addHeader(B_TRANSLATE("Available"), fFreeWidth, SORT_DISK_BY_FREE, B_ALIGN_RIGHT);
+	addHeader(B_TRANSLATE("Used"), fUsedWidth, SORT_DISK_BY_USED, B_ALIGN_LEFT);
 
 	headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
