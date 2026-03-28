@@ -452,5 +452,9 @@ ActivityGraphView::_DrawHistory()
 		view->Sync();
 		fOffscreen->Unlock();
 	}
-	DrawBitmap(fOffscreen, frame, Bounds());
+
+	BView* view = _OffscreenView();
+	if (view != NULL) {
+		DrawBitmap(fOffscreen, view->Bounds(), Bounds());
+	}
 }
