@@ -16,6 +16,7 @@ public:
     virtual ~BView() {}
     void SetViewColor(int) {}
     void SetViewColor(rgb_color) {}
+    void SetLowColor(rgb_color) {}
     uint32 Flags() const { return 0; }
     void SetFlags(uint32) {}
     bool IsHidden() const { return false; }
