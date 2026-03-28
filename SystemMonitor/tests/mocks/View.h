@@ -33,6 +33,8 @@ public:
     void GetFontHeight(font_height* fh) const { MockGetFontHeight(fh); }
     float StringWidth(const char* s) const { return 10.0f; }
     void DrawString(const char* s, BPoint p) {}
+    void SetDrawingMode(int) {}
+    void DrawBitmap(void* bitmap, BPoint p) {}
     void Invalidate() {}
 };
 #endif
