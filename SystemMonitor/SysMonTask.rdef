@@ -3,6 +3,8 @@
 
 resource app_signature "application/x-vnd.System-Monitor";
 
+resource app_name_catalog_entry "x-vnd.System-Monitor:System name:System Monitor";
+
 resource app_version {
     major  = 1,
     middle = 0,
