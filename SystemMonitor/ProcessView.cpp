@@ -134,18 +134,19 @@ ProcessView::ProcessView()
 	BLayoutBuilder::Group<>(headerView).SetInsets(5, 0, 0, 0);
 
 	// Helper to add header label
-	auto addHeader = [&](const char* label, float width, int32 mode) {
+	auto addHeader = [&](const char* label, float width, int32 mode, alignment align = B_ALIGN_LEFT) {
 		ClickableHeaderView* sv = new ClickableHeaderView(label, width, mode, this);
+		sv->SetAlignment(align);
 		headerView->AddChild(sv);
 		fHeaders.push_back(sv);
 	};
 
-	addHeader(B_TRANSLATE("PID"), fPIDWidth, SORT_BY_PID);
+	addHeader(B_TRANSLATE("PID"), fPIDWidth, SORT_BY_PID, B_ALIGN_RIGHT);
 	addHeader(B_TRANSLATE("Name"), fNameWidth, SORT_BY_NAME);
 	addHeader(B_TRANSLATE("State"), fStateWidth, SORT_BY_STATE);
-	addHeader(B_TRANSLATE("CPU%"), fCPUWidth, SORT_BY_CPU);
-	addHeader(B_TRANSLATE("Mem"), fMemWidth, SORT_BY_MEM);
-	addHeader(B_TRANSLATE("Thds"), fThreadsWidth, SORT_BY_THREADS);
+	addHeader(B_TRANSLATE("CPU%"), fCPUWidth, SORT_BY_CPU, B_ALIGN_RIGHT);
+	addHeader(B_TRANSLATE("Mem"), fMemWidth, SORT_BY_MEM, B_ALIGN_RIGHT);
+	addHeader(B_TRANSLATE("Thds"), fThreadsWidth, SORT_BY_THREADS, B_ALIGN_RIGHT);
 	addHeader(B_TRANSLATE("Priority"), fPriorityWidth, SORT_BY_PRIORITY);
 	addHeader(B_TRANSLATE("User"), fUserWidth, SORT_BY_USER);
 
