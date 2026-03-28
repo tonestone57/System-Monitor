@@ -14,6 +14,8 @@
 #include <DurationFormat.h>
 #include <Font.h>
 #include <LayoutBuilder.h>
+#include <GridLayout.h>
+#include <SpaceLayoutItem.h>
 #include <Message.h>
 #include <NumberFormat.h>
 #include <OS.h>
@@ -150,12 +152,12 @@ SystemDetailsView::SystemDetailsView()
 	fLocaleLabelView = _CreateLabel("localelabel", B_TRANSLATE("Locale"));
 	fLocaleInfoView = _CreateSubtext("localetext", GetLocale());
 
-BGridLayout* gridLayout = new BGridLayout(be_control_look->DefaultItemSpacing(), be_control_look->DefaultItemSpacing() / 2);
-	BGroupView* detailsGroup = new BGroupView(B_VERTICAL);
+BGroupView* detailsGroup = new BGroupView(B_VERTICAL);
 	detailsGroup->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
-	detailsGroup->SetLayout(gridLayout);
 
-	auto layoutBuilder = BLayoutBuilder::Grid<>(gridLayout)
+	auto layoutBuilder = BLayoutBuilder::Group<>(detailsGroup, B_VERTICAL)
+		.SetInsets(inset)
+		.AddGrid(be_control_look->DefaultItemSpacing(), be_control_look->DefaultItemSpacing() / 2)
 		// OS Version:
 		.Add(fVersionLabelView, 0, 0)
 		.Add(fVersionInfoView, 1, 0)
@@ -211,14 +213,9 @@ BGridLayout* gridLayout = new BGridLayout(be_control_look->DefaultItemSpacing(),
 	}
 
 	layoutBuilder.Add(fLocaleLabelView, 0, row)
-		.Add(fLocaleInfoView, 1, row);
-
-	row++;
-	layoutBuilder.Add(BSpaceLayoutItem::CreateGlue(), 0, row, 3);
-	gridLayout->SetRowWeight(row, 1.0f);
-	gridLayout->SetColumnWeight(2, 1.0f);
-
-	layoutBuilder.SetInsets(inset)
+		.Add(fLocaleInfoView, 1, row)
+		.End()
+		.AddGlue()
 		.End();
 
 	detailsGroup->SetExplicitMinSize(BSize(B_SIZE_UNSET, 600));
