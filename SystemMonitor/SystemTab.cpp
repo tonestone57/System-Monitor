@@ -1,8 +1,6 @@
 #include "SystemTab.h"
 #include "SystemSummaryView.h"
-#include "SystemDetailsView.h"
 
-#include <TabView.h>
 #include <LayoutBuilder.h>
 #include <Catalog.h>
 
@@ -12,11 +10,10 @@
 SystemTab::SystemTab()
 	: BView("SystemTab", B_WILL_DRAW)
 {
-	SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
+	SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
 
-	BLayoutBuilder::Group<>(this, B_HORIZONTAL)
-		.Add(new SystemSummaryView(), 1.0f)
-		.Add(new SystemDetailsView(), 1.0f)
+	BLayoutBuilder::Group<>(this, B_VERTICAL)
+		.Add(new SystemSummaryView())
 		.End();
 }
 

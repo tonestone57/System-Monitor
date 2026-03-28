@@ -20,7 +20,6 @@ SRCS = \
 	ProcessView.cpp \
 	GPUView.cpp \
 	SystemSummaryView.cpp \
-	SystemDetailsView.cpp \
 	SystemTab.cpp \
 	DataHistory.cpp \
 	ActivityGraphView.cpp \
