@@ -100,7 +100,8 @@ DiskView::DiskView()
 	headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
 	fDiskListView = new BListView("disk_list", B_SINGLE_SELECTION_LIST, B_WILL_DRAW | B_NAVIGABLE);
-	BScrollView* diskScrollView = new BScrollView("disk_scroll", fDiskListView, 0, false, true, B_NO_BORDER);
+	BScrollView* diskScrollView = new BScrollView("disk_scroll", fDiskListView, 0, false, true);
+	diskScrollView->SetBorder(B_NO_BORDER);
 
 	BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
 		.SetInsets(0)
