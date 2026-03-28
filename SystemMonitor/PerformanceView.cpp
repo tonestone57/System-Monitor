@@ -13,6 +13,7 @@
 #include "DiskView.h"
 #include "GPUView.h"
 #include "ActivityGraphView.h"
+#include "Utils.h"
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "PerformanceView"
@@ -25,32 +26,36 @@
 class SummaryView : public BView {
 public:
 	SummaryView(SystemStats* stats)
-		: BView("SummaryView", B_WILL_DRAW), fStats(stats)
+		: BView("SummaryView", B_WILL_DRAW), fStats(stats),
+		  fCpuInfoText(NULL), fMemInfoText(NULL), fNetInfoText(NULL)
 	{
 		SetViewColor({255, 255, 255, 255});
 
 		fCpuGraph = new ActivityGraphView("cpu_summary_graph",
-			{0, 0, 0, 0}, B_SUCCESS_COLOR);
-		fCpuGraph->SetExplicitMinSize(BSize(50, 60));
-		fCpuGraph->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
+			{255, 255, 255, 255}, (color_which)-1);
+		fCpuGraph->SetViewColor({0, 0, 0, 255});
+		fCpuGraph->SetExplicitMinSize(BSize(60, 50));
+		fCpuGraph->SetExplicitMaxSize(BSize(60, 50));
 		fCpuGraph->SetManualScale(0, 1000);
 
 		fMemGraph = new ActivityGraphView("mem_summary_graph",
-			{0, 0, 0, 0}, B_MENU_SELECTION_BACKGROUND_COLOR);
-		fMemGraph->SetExplicitMinSize(BSize(50, 60));
-		fMemGraph->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
+			{255, 255, 255, 255}, (color_which)-1);
+		fMemGraph->SetViewColor({0, 0, 0, 255});
+		fMemGraph->SetExplicitMinSize(BSize(60, 50));
+		fMemGraph->SetExplicitMaxSize(BSize(60, 50));
 		fMemGraph->SetManualScale(0, 1000);
 
 		fNetGraph = new ActivityGraphView("net_summary_graph",
-			{0, 0, 0, 0}, B_FAILURE_COLOR);
-		fNetGraph->SetExplicitMinSize(BSize(50, 60));
-		fNetGraph->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
+			{255, 255, 255, 255}, (color_which)-1);
+		fNetGraph->SetViewColor({0, 0, 0, 255});
+		fNetGraph->SetExplicitMinSize(BSize(60, 50));
+		fNetGraph->SetExplicitMaxSize(BSize(60, 50));
 
 		BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
 			.SetInsets(B_USE_DEFAULT_SPACING)
-			.Add(_CreateCard(B_TRANSLATE("CPU"), fCpuGraph))
-			.Add(_CreateCard(B_TRANSLATE("Memory"), fMemGraph))
-			.Add(_CreateCard(B_TRANSLATE("Network"), fNetGraph))
+			.Add(_CreateCard(B_TRANSLATE("CPU"), fCpuGraph, &fCpuInfoText))
+			.Add(_CreateCard(B_TRANSLATE("Memory"), fMemGraph, &fMemInfoText))
+			.Add(_CreateCard(B_TRANSLATE("Network"), fNetGraph, &fNetInfoText))
 			.AddGlue();
 
 		SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
@@ -68,23 +73,57 @@ public:
 			fCpuGraph->AddValue(now, fStats->cpuUsage * 10);
 			fMemGraph->AddValue(now, fStats->memoryUsage * 10);
 			fNetGraph->AddValue(now, fStats->uploadSpeed + fStats->downloadSpeed);
+
+			if (fCpuInfoText) {
+				BString cpuStr;
+				cpuStr.SetToFormat("%.0f%% %.2f GHz", fStats->cpuUsage, fStats->cpuFrequency / 1000000.0f / 1000.0f);
+				fCpuInfoText->SetText(cpuStr.String());
+			}
+
+			if (fMemInfoText) {
+				BString memStr;
+				float usedGB = fStats->memoryUsage * fStats->memoryTotal / 100.0f / (1024.0f * 1024.0f * 1024.0f);
+				float totalGB = fStats->memoryTotal / (1024.0f * 1024.0f * 1024.0f);
+				memStr.SetToFormat("%.1f/%.1f GB (%.0f%%)", usedGB, totalGB, fStats->memoryUsage);
+				fMemInfoText->SetText(memStr.String());
+			}
+
+			if (fNetInfoText) {
+				BString netStr;
+				netStr.SetToFormat("S: %.0f R: %.0f Kbps", fStats->uploadSpeed, fStats->downloadSpeed);
+				fNetInfoText->SetText(netStr.String());
+			}
 		}
 	}
 
 private:
-	BView* _CreateCard(const char* label, BView* content) {
+	BView* _CreateCard(const char* label, BView* content, BStringView** infoTextOut) {
 		BView* card = new BView(NULL, B_WILL_DRAW);
 		card->SetViewColor({255, 255, 255, 255});
+
+		BBox* borderBox = new BBox("border");
+		borderBox->SetBorder(B_PLAIN_BORDER);
+		BLayoutBuilder::Group<>(borderBox)
+			.SetInsets(1)
+			.Add(content);
+
 		BStringView* labelView = new BStringView(NULL, label);
 		labelView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 		BFont font(be_bold_font);
 		labelView->SetFont(&font);
 
-		BLayoutBuilder::Group<>(card, B_VERTICAL, 0)
+		BStringView* infoText = new BStringView(NULL, "");
+		infoText->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
+		*infoTextOut = infoText;
+
+		BLayoutBuilder::Group<>(card, B_HORIZONTAL, B_USE_DEFAULT_SPACING)
 			.SetInsets(B_USE_DEFAULT_SPACING / 2)
-			.Add(labelView)
-			.AddStrut(5)
-			.Add(content);
+			.Add(borderBox)
+			.AddGroup(B_VERTICAL, 0)
+				.Add(labelView)
+				.Add(infoText)
+				.AddGlue()
+			.End();
 
 		card->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 		return card;
@@ -93,6 +132,9 @@ private:
 	ActivityGraphView*	fCpuGraph;
 	ActivityGraphView*	fMemGraph;
 	ActivityGraphView*	fNetGraph;
+	BStringView*		fCpuInfoText;
+	BStringView*		fMemInfoText;
+	BStringView*		fNetInfoText;
 	SystemStats*		fStats;
 };
 
@@ -164,6 +206,11 @@ PerformanceView::Pulse()
 	fStats.memoryUsage   = fMemView->GetCurrentUsage();
 	fStats.uploadSpeed   = fNetworkView->GetUploadSpeed();
 	fStats.downloadSpeed = fNetworkView->GetDownloadSpeed();
+	fStats.cpuFrequency  = GetCpuFrequency();
+
+	uint64 used, total, physical;
+	GetMemoryUsage(used, total, physical);
+	fStats.memoryTotal   = total;
 
 	if (fSummaryView)
 		fSummaryView->UpdateData();
