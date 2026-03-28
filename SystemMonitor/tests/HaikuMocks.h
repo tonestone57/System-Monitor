@@ -367,3 +367,7 @@ public:
 #ifndef B_RGBA32
 #define B_RGBA32 1
 #endif
+
+#ifndef B_CONTROL_HIGHLIGHT_COLOR
+#define B_CONTROL_HIGHLIGHT_COLOR 32
+#endif
