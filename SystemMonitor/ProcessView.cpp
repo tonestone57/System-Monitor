@@ -129,7 +129,7 @@ ProcessView::ProcessView()
 
 	// Header View construction
 	BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);
-	headerView->SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
+	headerView->SetViewColor({0, 0, 0, 255});
 	BLayoutBuilder::Group<>(headerView).SetInsets(5, 0, 0, 0);
 
 	// Helper to add header label
