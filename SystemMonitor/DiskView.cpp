@@ -46,9 +46,9 @@ const float kBaseDiskDeviceWidth = 120;
 const float kBaseDiskMountWidth = 120;
 const float kBaseDiskFSWidth = 80;
 const float kBaseDiskTotalWidth = 100;
-const float kBaseDiskUsedWidth = 200;
+const float kBaseDiskUsedWidth = 100;
 const float kBaseDiskFreeWidth = 100;
-const float kBaseDiskPercentWidth = 0;
+const float kBaseDiskPercentWidth = 80;
 
 
 DiskView::DiskView()
@@ -61,7 +61,7 @@ DiskView::DiskView()
 	  fListGeneration(0),
 	  fSortMode(SORT_DISK_BY_PERCENT)
 {
-	SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
+	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 	fScanSem = create_sem(0, "disk scan sem");
 
 
@@ -81,6 +81,7 @@ DiskView::DiskView()
 	// Header view
 	BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);
 	headerView->SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
+	BLayoutBuilder::Group<>(headerView).SetInsets(5, 0, 0, 0);
 
 	auto addHeader = [&](const char* label, float width, int32 mode, alignment align = B_ALIGN_LEFT) {
 		DiskHeaderView* sv = new DiskHeaderView(label, width, mode, this);
@@ -90,11 +91,12 @@ DiskView::DiskView()
 	};
 
 	addHeader(B_TRANSLATE("Device"), fDeviceWidth, SORT_DISK_BY_DEVICE);
-	addHeader(B_TRANSLATE("Directory"), fMountWidth, SORT_DISK_BY_MOUNT);
-	addHeader(B_TRANSLATE("Type"), fFSWidth, SORT_DISK_BY_FS);
+	addHeader(B_TRANSLATE("Mount Point"), fMountWidth, SORT_DISK_BY_MOUNT);
+	addHeader(B_TRANSLATE("FS Type"), fFSWidth, SORT_DISK_BY_FS);
 	addHeader(B_TRANSLATE("Total"), fTotalWidth, SORT_DISK_BY_TOTAL, B_ALIGN_RIGHT);
-	addHeader(B_TRANSLATE("Available"), fFreeWidth, SORT_DISK_BY_FREE, B_ALIGN_RIGHT);
-	addHeader(B_TRANSLATE("Used"), fUsedWidth, SORT_DISK_BY_USED, B_ALIGN_LEFT);
+	addHeader(B_TRANSLATE("Used"), fUsedWidth, SORT_DISK_BY_USED, B_ALIGN_RIGHT);
+	addHeader(B_TRANSLATE("Free"), fFreeWidth, SORT_DISK_BY_FREE, B_ALIGN_RIGHT);
+	addHeader(B_TRANSLATE("Usage"), fPercentWidth, SORT_DISK_BY_PERCENT, B_ALIGN_RIGHT);
 
 	headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
@@ -252,10 +254,8 @@ int32 DiskView::UpdateThread(void* data)
 
 		if (view->fTerminated) break;
 
-		if (!view->fPerformanceViewVisible) {
-			snooze(100000);
+		if (!view->fPerformanceViewVisible)
 			continue;
-		}
 
 		// Drain the semaphore if we were woken up explicitly (e.g. interval change)
 		if (err == B_OK) {

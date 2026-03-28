@@ -109,6 +109,7 @@ public:
 		owner->DrawString(fTruncatedMount.String(),  BPoint(x, y)); x += fView->MountWidth();
 		owner->DrawString(fTruncatedFS.String(),     BPoint(x, y)); x += fView->FSWidth();
 		drawRight(fCachedTotal,   fView->TotalWidth());
+		drawRight(fCachedUsed,    fView->UsedWidth());
 		drawRight(fCachedFree,    fView->FreeWidth());
 
 		// Draw "Used" text left-aligned, then progress bar

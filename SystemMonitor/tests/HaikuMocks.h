@@ -44,8 +44,6 @@ typedef int32 status_t;
 #define B_SINGLE_SELECTION_LIST 1
 #define B_NAVIGABLE 4
 #define B_FILE_NAME_LENGTH 256
-#define B_OP_COPY 0
-#define B_OP_OVER 1
 #define B_OS_NAME_LENGTH 32
 #define B_LOW_PRIORITY 5
 #define B_NORMAL_PRIORITY 10
