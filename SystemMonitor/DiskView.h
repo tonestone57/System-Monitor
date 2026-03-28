@@ -66,7 +66,6 @@ private:
 	void UpdateData(BMessage* message);
 	status_t GetDiskInfo(BVolume& volume, DiskInfo& info);
 
-	BBox* fDiskInfoBox;
 	BListView* fDiskListView;
 	std::vector<ClickableHeaderView*> fHeaders;
 

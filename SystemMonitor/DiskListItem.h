@@ -8,6 +8,8 @@
 #include <InterfaceDefs.h>
 #include <SupportDefs.h>
 #include <cstring>
+#include <Volume.h>
+#include <Bitmap.h>
 #include "DiskView.h"
 #include "Utils.h"
 
@@ -72,14 +74,14 @@ public:
 		if (IsSelected() || complete) {
 			rgb_color color = IsSelected()
 				? ui_color(B_LIST_SELECTED_BACKGROUND_COLOR)
-				: ui_color(B_LIST_BACKGROUND_COLOR);
+				: rgb_color{255, 255, 255, 255};
 			owner->SetHighColor(color);
 			owner->FillRect(itemRect);
 		}
 
 		rgb_color textColor = IsSelected()
 			? ui_color(B_LIST_SELECTED_ITEM_TEXT_COLOR)
-			: ui_color(B_LIST_ITEM_TEXT_COLOR);
+			: rgb_color{0, 0, 0, 255};
 		owner->SetHighColor(textColor);
 
 		font_height fh;
@@ -93,13 +95,62 @@ public:
 			x += width;
 		};
 
-		owner->DrawString(fTruncatedDevice.String(), BPoint(x, y)); x += fView->DeviceWidth();
+		// Draw placeholder icon
+		BRect iconRect(x, itemRect.top + (itemRect.Height() - 16) / 2, x + 16, itemRect.top + (itemRect.Height() - 16) / 2 + 16);
+		owner->SetHighColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+		owner->FillRect(iconRect);
+		owner->SetHighColor({0, 0, 0, 255}); // Black border
+		//owner->StrokeRect(iconRect);
+		owner->SetHighColor(textColor); // Restore text color
+
+		float deviceStringX = x + 20; // Icon width (16) + padding (4)
+		owner->DrawString(fTruncatedDevice.String(), BPoint(deviceStringX, y));
+		x += fView->DeviceWidth();
 		owner->DrawString(fTruncatedMount.String(),  BPoint(x, y)); x += fView->MountWidth();
 		owner->DrawString(fTruncatedFS.String(),     BPoint(x, y)); x += fView->FSWidth();
 		drawRight(fCachedTotal,   fView->TotalWidth());
 		drawRight(fCachedUsed,    fView->UsedWidth());
 		drawRight(fCachedFree,    fView->FreeWidth());
-		drawRight(fCachedPercent, fView->PercentWidth());
+
+		// Draw "Used" text left-aligned, then progress bar
+		float textX = x;
+		owner->DrawString(fCachedUsed.String(), BPoint(textX, y));
+		float usedTextWidth = owner->StringWidth(fCachedUsed.String());
+
+		float barX = textX + usedTextWidth + 10;
+		float barWidth = fView->UsedWidth() - usedTextWidth - 15;
+		if (barWidth > 20) {
+			BRect barRect(barX, itemRect.top + 2, barX + barWidth, itemRect.bottom - 2);
+
+			// Background
+			rgb_color darkBg = ui_color(B_PANEL_BACKGROUND_COLOR);
+			owner->SetHighColor(darkBg);
+			owner->FillRect(barRect);
+
+			// Fill
+			if (fPercent > 0) {
+				BRect fillRect = barRect;
+				fillRect.right = fillRect.left + (barWidth * (fPercent / 100.0));
+				rgb_color blueColor = {40, 115, 235, 255};
+				owner->SetHighColor(blueColor); // Blue color like in the screenshot
+				owner->FillRect(fillRect);
+			}
+
+			// Percentage text in the center of the bar
+			// Set drawing mode to ensure text is visible over background
+			owner->SetDrawingMode(B_OP_OVER);
+			rgb_color blackColor = {0, 0, 0, 255};
+			owner->SetHighColor(blackColor);
+			BString percentStr;
+			percentStr.SetToFormat("%.0f%%", fPercent);
+			float percentWidth = owner->StringWidth(percentStr.String());
+			float percentX = barRect.left + (barWidth - percentWidth) / 2.0;
+			owner->DrawString(percentStr.String(), BPoint(percentX, y));
+
+			// Restore drawing mode
+			owner->SetDrawingMode(B_OP_COPY);
+		}
+		x += fView->UsedWidth();
 	}
 
 	static int CompareDevice(const void* a, const void* b) {
