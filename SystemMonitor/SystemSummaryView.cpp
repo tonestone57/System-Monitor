@@ -78,7 +78,7 @@ void SystemSummaryView::CreateLayout()
 	.End();
 
 	BScrollView* scrollView = new BScrollView("sysInfoScroller", groupView,
-		true, true, B_PLAIN_BORDER);
+		0, true, true, B_PLAIN_BORDER);
 	scrollView->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH, B_ALIGN_USE_FULL_HEIGHT));
 
 	BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
