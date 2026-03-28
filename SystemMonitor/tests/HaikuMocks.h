@@ -148,6 +148,9 @@ inline rgb_color ui_color(int) { return {0, 0, 0, 255}; }
 #define B_PRIu32 PRIu32
 #define B_HAIKU_ABI_NAME "mock_abi"
 
+#define B_OP_OVER 1
+#define B_OP_COPY 2
+
 class BHandler {
 public:
     virtual ~BHandler() {}
