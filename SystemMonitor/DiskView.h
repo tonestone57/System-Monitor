@@ -28,7 +28,7 @@ struct DiskInfo {
 	dev_t deviceID;
 };
 
-const uint32 kMsgDiskDataUpdate = 'dskd';
+constexpr uint32 kMsgDiskDataUpdate = 'dskd';
 
 enum DiskSortMode {
 	SORT_DISK_BY_DEVICE,

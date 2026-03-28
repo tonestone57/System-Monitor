@@ -19,6 +19,7 @@ public:
 			void		AddValue(bigtime_t time, int64 value);
 
 			int64		ValueAt(bigtime_t time, int32* hintIndex = NULL);
+			void		GetValues(int64* outValues, int32 count, bigtime_t startTime, bigtime_t timeStep);
 			int64		MaximumValue() const;
 			int64		MinimumValue() const;
 			bigtime_t	Start() const;

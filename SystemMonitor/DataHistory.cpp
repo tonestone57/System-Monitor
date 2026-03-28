@@ -137,6 +137,70 @@ DataHistory::ValueAt(bigtime_t time, int32* hintIndex)
 }
 
 
+void
+DataHistory::GetValues(int64* outValues, int32 count, bigtime_t startTime, bigtime_t timeStep)
+{
+	if (count <= 0) return;
+
+	int32 right = (int32)fBuffer.CountItems() - 1;
+	if (right < 0) {
+		for (int i = 0; i < count; ++i) outValues[i] = 0;
+		return;
+	}
+
+	// Fast path: if startTime is way after the last item
+	data_item* lastItem = fBuffer.ItemAt(right);
+	if (lastItem->time <= startTime) {
+		for (int i = 0; i < count; ++i) {
+			outValues[i] = lastItem->value;
+		}
+		return;
+	}
+
+	int32 index = 0;
+	int32 left = 0;
+	int32 r = right;
+	// Binary search to find the item right before or exactly at startTime
+	while (left <= r) {
+		int32 mid = (left + r) / 2;
+		data_item* item = fBuffer.ItemAt(mid);
+		if (item->time > startTime) {
+			r = mid - 1;
+		} else {
+			index = mid;
+			left = mid + 1;
+		}
+	}
+
+	data_item* item = fBuffer.ItemAt(index);
+	data_item* nextItem = fBuffer.ItemAt(index + 1);
+
+	for (int32 i = 0; i < count; i++) {
+		bigtime_t time = startTime + i * timeStep;
+
+		while (nextItem != NULL && nextItem->time <= time) {
+			index++;
+			item = nextItem;
+			nextItem = fBuffer.ItemAt(index + 1);
+		}
+
+		if (item->time > time) {
+			outValues[i] = 0;
+		} else if (nextItem == NULL) {
+			outValues[i] = item->value;
+		} else {
+			int64 value = item->value;
+			int64 timeDiff = nextItem->time - item->time;
+			if (timeDiff > 0) {
+				value += static_cast<int64>(static_cast<double>(nextItem->value - value)
+					/ timeDiff * (time - item->time));
+			}
+			outValues[i] = value;
+		}
+	}
+}
+
+
 int64
 DataHistory::MaximumValue() const
 {

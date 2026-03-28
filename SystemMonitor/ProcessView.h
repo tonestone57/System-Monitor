@@ -43,8 +43,8 @@ struct ProcessInfo {
 };
 
 
-const uint32 MSG_PROCESS_DATA_UPDATE = 'pdup';
-const uint32 MSG_SEARCH_UPDATED = 'srch';
+constexpr uint32 MSG_PROCESS_DATA_UPDATE = 'pdup';
+constexpr uint32 MSG_SEARCH_UPDATED = 'srch';
 
 enum ProcessSortMode {
 	SORT_BY_PID,

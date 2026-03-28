@@ -9,7 +9,7 @@
 
 class BFont;
 
-const uint32 MSG_HEADER_CLICKED = 'head';
+constexpr uint32 MSG_HEADER_CLICKED = 'head';
 
 class ClickableHeaderView : public BStringView {
 public:
