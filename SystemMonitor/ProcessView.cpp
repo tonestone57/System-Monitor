@@ -606,14 +606,14 @@ int32 ProcessView::UpdateThread(void* data)
 		float totalPossibleCoreTime = coreCount * systemTimeDelta;
 		if (totalPossibleCoreTime <= 0) totalPossibleCoreTime = 1.0f;
 
-		std::vector<team_id> visibleTeams;
+		std::unordered_set<team_id> visibleTeams;
 		if (view->LockLooper()) {
 			BRect bounds = view->fProcessListView->Bounds();
 			for (int32 i = 0; i < view->fProcessListView->CountItems(); i++) {
 				BRect frame = view->fProcessListView->ItemFrame(i);
 				if (frame.Intersects(bounds)) {
 					ProcessListItem* item = static_cast<ProcessListItem*>(view->fProcessListView->ItemAt(i));
-					if (item) visibleTeams.push_back(item->TeamID());
+					if (item) visibleTeams.insert(item->TeamID());
 				} else if (frame.top > bounds.bottom) {
 					break; // Items are ordered top to bottom
 				}
@@ -770,7 +770,7 @@ int32 ProcessView::UpdateThread(void* data)
 
 			if (cached) {
 				// Optimize memory calculation: Skip calculation if off-screen or throttled
-				bool isVisible = std::find(visibleTeams.begin(), visibleTeams.end(), teamInfo.team) != visibleTeams.end();
+				bool isVisible = visibleTeams.find(teamInfo.team) != visibleTeams.end();
 				if (!isVisible) {
 					memoryNeedsUpdate = false;
 				} else if (cachedInfo->cachedAreaCount == teamInfo.area_count
