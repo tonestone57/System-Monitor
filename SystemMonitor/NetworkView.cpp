@@ -45,7 +45,7 @@ NetworkView::NetworkView()
 	fListGeneration(0),
 	fSortMode(SORT_NET_BY_TX_SPEED)
 {
-	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+	SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 	fScanSem = create_sem(0, "network scan sem");
 
 	auto* netBox = new BBox("NetworkInterfacesBox");
@@ -87,7 +87,7 @@ NetworkView::NetworkView()
 	headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
 	fInterfaceListView = new BListView("interface_list", B_SINGLE_SELECTION_LIST, B_WILL_DRAW | B_NAVIGABLE);
-	BScrollView* netScrollView = new BScrollView("net_scroll", fInterfaceListView, 0, false, true, true);
+	BScrollView* netScrollView = new BScrollView("net_scroll", fInterfaceListView, 0, false, true, B_NO_BORDER);
 
 	BLayoutBuilder::Group<>(netBox, B_VERTICAL, 0)
 		.SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING + 15,
