@@ -126,8 +126,12 @@ public:
 			if (fPercent > 0) {
 				BRect fillRect = barRect;
 				fillRect.right = fillRect.left + (barWidth * (fPercent / 100.0));
-				rgb_color blueColor = {40, 115, 235, 255};
-				owner->SetHighColor(blueColor); // Blue color like in the screenshot
+				// Use Haiku's standard accent color (orange), or fallback to literal orange if not available in tests
+				rgb_color orangeColor = ui_color(B_CONTROL_HIGHLIGHT_COLOR);
+				if (orangeColor.red == 0 && orangeColor.green == 0 && orangeColor.blue == 0) {
+					orangeColor = {255, 128, 0, 255}; // literal orange
+				}
+				owner->SetHighColor(orangeColor); // Orange color used by Haiku OS
 				owner->FillRect(fillRect);
 			}
 
