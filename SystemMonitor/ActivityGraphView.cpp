@@ -201,8 +201,11 @@ ActivityGraphView::_DrawHistory()
 	if (view == NULL)
 		return;
 
-	if (fOffscreen->Lock()) {
-		BRect frame = view->Bounds();
+	bool locked = fOffscreen->Lock();
+	BRect viewBounds;
+	if (locked) {
+		viewBounds = view->Bounds();
+		BRect frame = viewBounds;
 
 		uint32 steps = static_cast<uint32>(frame.Width()) + 1;
 		if (steps > 0) {
@@ -453,7 +456,7 @@ ActivityGraphView::_DrawHistory()
 		fOffscreen->Unlock();
 	}
 
-	if (view != NULL) {
-		DrawBitmap(fOffscreen, view->Bounds(), Bounds());
+	if (locked && view != NULL) {
+		DrawBitmap(fOffscreen, viewBounds, Bounds());
 	}
 }
