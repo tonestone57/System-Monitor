@@ -21,24 +21,6 @@
 #include "DiskListItem.h"
 
 
-class DiskHeaderView : public ClickableHeaderView {
-public:
-	DiskHeaderView(const char* label, float width, int32 mode, BHandler* target)
-		: ClickableHeaderView(label, width, mode, target)
-	{
-		SetViewColor({255, 255, 255, 255}); // White background
-		SetHighColor({0, 0, 0, 255}); // Black text
-		SetLowColor({255, 255, 255, 255});
-	}
-
-	virtual void AttachedToWindow() {
-		ClickableHeaderView::AttachedToWindow();
-		SetViewColor({255, 255, 255, 255}); // White background
-		SetHighColor({0, 0, 0, 255}); // Black text
-		SetLowColor({255, 255, 255, 255});
-	}
-};
-
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "DiskView"
 
@@ -84,7 +66,7 @@ DiskView::DiskView()
 	BLayoutBuilder::Group<>(headerView).SetInsets(5, 0, 0, 0);
 
 	auto addHeader = [&](const char* label, float width, int32 mode, alignment align = B_ALIGN_LEFT) {
-		DiskHeaderView* sv = new DiskHeaderView(label, width, mode, this);
+		ClickableHeaderView* sv = new ClickableHeaderView(label, width, mode, this);
 		sv->SetAlignment(align);
 		headerView->AddChild(sv);
 		fHeaders.push_back(sv);
