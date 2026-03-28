@@ -48,7 +48,7 @@ SystemDetailsView::SystemDetailsView()
 	  fKernelDateTimeView(NULL),
 	  fUptimeView(NULL)
 {
-	SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
+	SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
 
 	// Begin construction of system information controls.
 	system_info sysInfo;
@@ -99,44 +99,51 @@ SystemDetailsView::SystemDetailsView()
 	const float offset = be_control_look->DefaultLabelSpacing();
 	const float inset = offset;
 
+	BGroupView* detailsGroup = new BGroupView(B_VERTICAL);
+	detailsGroup->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
+
+	BLayoutBuilder::Group<>(detailsGroup, B_VERTICAL)
+		// Version:
+		.Add(fVersionLabelView)
+		.Add(fVersionInfoView)
+		.AddStrut(offset)
+		// Processors:
+		.Add(fCPULabelView)
+		.Add(fCPUInfoView)
+		.Add(fCPUFeaturesView)
+		.AddStrut(offset)
+		// GPU/Display:
+		.Add(gpuLabel)
+		.Add(fGPUInfoView)
+		.Add(displayLabel)
+		.Add(fDisplayInfoView)
+		.AddStrut(offset)
+		// Memory:
+		.Add(fMemSizeView)
+		.Add(fMemUsageView)
+		.Add(fSwapUsageView)
+		.AddStrut(offset)
+		// Disk:
+		.Add(diskLabel)
+		.Add(fDiskUsageView)
+		.AddStrut(offset)
+		// Kernel:
+		.Add(kernelLabel)
+		.Add(fKernelDateTimeView)
+		.AddStrut(offset)
+		// Time running:
+		.Add(uptimeLabel)
+		.Add(fUptimeView)
+		.AddGlue()
+		.SetInsets(inset)
+		.End();
+
+	BScrollView* scrollView = new BScrollView("scroll_details", detailsGroup, 0, false, true, B_NO_BORDER);
+	scrollView->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH, B_ALIGN_USE_FULL_HEIGHT));
+
 	SetLayout(new BGroupLayout(B_VERTICAL, 0));
 	BLayoutBuilder::Group<>(static_cast<BGroupLayout*>(GetLayout()))
-		.Add(new BScrollView("scroll_details", BLayoutBuilder::Group<>(B_VERTICAL)
-			// Version:
-			.Add(fVersionLabelView)
-			.Add(fVersionInfoView)
-			.AddStrut(offset)
-			// Processors:
-			.Add(fCPULabelView)
-			.Add(fCPUInfoView)
-			.Add(fCPUFeaturesView)
-			.AddStrut(offset)
-			// GPU/Display:
-			.Add(gpuLabel)
-			.Add(fGPUInfoView)
-			.Add(displayLabel)
-			.Add(fDisplayInfoView)
-			.AddStrut(offset)
-			// Memory:
-			.Add(fMemSizeView)
-			.Add(fMemUsageView)
-			.Add(fSwapUsageView)
-			.AddStrut(offset)
-			// Disk:
-			.Add(diskLabel)
-			.Add(fDiskUsageView)
-			.AddStrut(offset)
-			// Kernel:
-			.Add(kernelLabel)
-			.Add(fKernelDateTimeView)
-			.AddStrut(offset)
-			// Time running:
-			.Add(uptimeLabel)
-			.Add(fUptimeView)
-			.AddGlue()
-			.SetInsets(inset)
-			.View(),
-		0, false, true, B_NO_BORDER))
+		.Add(scrollView)
 		.End();
 }
 
@@ -204,7 +211,7 @@ void SystemDetailsView::_UpdateText(BTextView* textView)
 	textView->SetWordWrap(true);
 	textView->SetDoesUndo(false);
 	textView->SetInsets(0, 0, 0, 0);
-	textView->SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
+	textView->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
 }
 
 BString SystemDetailsView::_GetOSVersion()

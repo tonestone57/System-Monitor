@@ -28,10 +28,10 @@ const uint32 MSG_ABOUT_REQUESTED = 'abou';
 class AboutWindow : public BWindow {
 public:
 	AboutWindow()
-		: BWindow(BRect(0, 0, 300, 200), B_TRANSLATE("About SysMonTask"),
+		: BWindow(BRect(0, 0, 300, 200), B_TRANSLATE("About System Monitor"),
 				  B_TITLED_WINDOW, B_NOT_RESIZABLE | B_NOT_ZOOMABLE | B_AUTO_UPDATE_SIZE_LIMITS | B_CLOSE_ON_ESCAPE)
 	{
-		BStringView* titleView = new BStringView("title", "SysMonTask");
+		BStringView* titleView = new BStringView("title", "System Monitor");
 		BFont titleFont(be_bold_font);
 		titleFont.SetSize(titleFont.Size() * 1.5);
 		titleView->SetFont(&titleFont);
@@ -40,7 +40,7 @@ public:
 		BStringView* descView = new BStringView("desc", B_TRANSLATE("A comprehensive system monitor for Haiku."));
 		descView->SetAlignment(B_ALIGN_CENTER);
 
-		BStringView* copyView = new BStringView("copyright", "Copyright 2023 Haiku Archives");
+		BStringView* copyView = new BStringView("copyright", "Copyright 2026");
 		copyView->SetAlignment(B_ALIGN_CENTER);
 
 		BButton* okButton = new BButton("ok", B_TRANSLATE("OK"), new BMessage(B_QUIT_REQUESTED));
