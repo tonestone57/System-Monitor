@@ -25,10 +25,10 @@
 #include <Catalog.h>
 #include <ScrollView.h>
 #include <Autolock.h>
-#include "ProcessListItem.h"
-
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "ProcessView"
+
+#include "ProcessListItem.h"
 
 bool ProcessListItem::sSortAscending = false;
 
