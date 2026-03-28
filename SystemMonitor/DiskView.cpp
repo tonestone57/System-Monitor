@@ -42,7 +42,7 @@ DiskView::DiskView()
 	  fListGeneration(0),
 	  fSortMode(SORT_DISK_BY_PERCENT)
 {
-	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+	SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 	fScanSem = create_sem(0, "disk scan sem");
 
 	fDiskInfoBox = new BBox("DiskInfoBox");
@@ -63,8 +63,7 @@ DiskView::DiskView()
 
 	// Header view
 	BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);
-	headerView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
-	BLayoutBuilder::Group<>(headerView).SetInsets(5, 0, 0, 0);
+	headerView->SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 
 	auto addHeader = [&](const char* label, float width, int32 mode, alignment align = B_ALIGN_LEFT) {
 		ClickableHeaderView* sv = new ClickableHeaderView(label, width, mode, this);
@@ -250,8 +249,10 @@ int32 DiskView::UpdateThread(void* data)
 
 		if (view->fTerminated) break;
 
-		if (!view->fPerformanceViewVisible)
+		if (!view->fPerformanceViewVisible) {
+			snooze(100000);
 			continue;
+		}
 
 		// Drain the semaphore if we were woken up explicitly (e.g. interval change)
 		if (err == B_OK) {
