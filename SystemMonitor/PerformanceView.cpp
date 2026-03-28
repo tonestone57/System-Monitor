@@ -32,16 +32,19 @@ public:
 		fCpuGraph = new ActivityGraphView("cpu_summary_graph",
 			{0, 0, 0, 0}, B_SUCCESS_COLOR);
 		fCpuGraph->SetExplicitMinSize(BSize(50, 60));
+		fCpuGraph->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 		fCpuGraph->SetManualScale(0, 1000);
 
 		fMemGraph = new ActivityGraphView("mem_summary_graph",
 			{0, 0, 0, 0}, B_MENU_SELECTION_BACKGROUND_COLOR);
 		fMemGraph->SetExplicitMinSize(BSize(50, 60));
+		fMemGraph->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 		fMemGraph->SetManualScale(0, 1000);
 
 		fNetGraph = new ActivityGraphView("net_summary_graph",
 			{0, 0, 0, 0}, B_FAILURE_COLOR);
 		fNetGraph->SetExplicitMinSize(BSize(50, 60));
+		fNetGraph->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 
 		BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
 			.SetInsets(B_USE_DEFAULT_SPACING)
@@ -49,6 +52,8 @@ public:
 			.Add(_CreateCard(B_TRANSLATE("Memory"), fMemGraph))
 			.Add(_CreateCard(B_TRANSLATE("Network"), fNetGraph))
 			.AddGlue();
+
+		SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 	}
 
 	void SetRefreshInterval(bigtime_t interval) {
@@ -71,6 +76,7 @@ private:
 		BView* card = new BView(NULL, B_WILL_DRAW);
 		card->SetViewColor({255, 255, 255, 255});
 		BStringView* labelView = new BStringView(NULL, label);
+		labelView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 		BFont font(be_bold_font);
 		labelView->SetFont(&font);
 
@@ -79,6 +85,8 @@ private:
 			.Add(labelView)
 			.AddStrut(5)
 			.Add(content);
+
+		card->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 		return card;
 	}
 
@@ -106,6 +114,7 @@ PerformanceView::PerformanceView()
 	BTabView* tabView = new BTabView("tab_view");
 	fRightPane = tabView;
 	fRightPane->SetExplicitMinSize(BSize(150, B_SIZE_UNSET));
+	fRightPane->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 
 	fCPUView     = new CPUView();
 	fMemView     = new MemView();

@@ -40,6 +40,7 @@ struct ProcessInfo {
 	uid_t userID;
 	uint64 memoryUsageBytes;
 	float cpuUsage;
+	int32 priority;
 };
 
 
@@ -53,6 +54,7 @@ enum ProcessSortMode {
 	SORT_BY_MEM,
 	SORT_BY_THREADS,
 	SORT_BY_STATE,
+	SORT_BY_PRIORITY,
 	SORT_BY_USER
 };
 
@@ -80,6 +82,7 @@ public:
 	float CPUWidth() const { return fCPUWidth; }
 	float MemWidth() const { return fMemWidth; }
 	float ThreadsWidth() const { return fThreadsWidth; }
+	float PriorityWidth() const { return fPriorityWidth; }
 	float UserWidth() const { return fUserWidth; }
 
 private:
@@ -140,6 +143,7 @@ private:
 	std::atomic<bool> fIsHidden;
 
 	ProcessSortMode fSortMode;
+	bool fSortAscending;
 	BFont fCachedFont;
 	int32 fCurrentGeneration;
 	int32 fListGeneration;
@@ -150,6 +154,7 @@ private:
 	float fCPUWidth;
 	float fMemWidth;
 	float fThreadsWidth;
+	float fPriorityWidth;
 	float fUserWidth;
 };
 
