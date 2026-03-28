@@ -171,6 +171,10 @@ public:
 };
 
 
+extern "C" {
+    inline uint32 __get_haiku_revision() { return 57121; }
+}
+
 struct system_info {
     uint32 max_pages;
     uint32 used_pages;
