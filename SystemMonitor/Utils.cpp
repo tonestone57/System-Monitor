@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <Messenger.h>
 #include <Window.h>
+#include <system_revision.h>
 
 #if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
@@ -248,8 +249,8 @@ BString GetOSVersion()
 
 	system_info sysInfo;
 	if (get_system_info(&sysInfo) == B_OK) {
-		revision.SetToFormat(B_TRANSLATE("Haiku %s (hrev%" B_PRId64 ")"),
-			u.machine, sysInfo.kernel_version);
+		revision.SetToFormat(B_TRANSLATE("Haiku %s (%s)"),
+			u.machine, __get_haiku_revision());
 	} else {
 		revision << u.sysname << " " << u.machine << " " << u.release;
 	}

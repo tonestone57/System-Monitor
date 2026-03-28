@@ -37,12 +37,11 @@ static const uint32 kMsgUpdateInfo = 'UPDT';
 
 SystemSummaryView::SystemSummaryView()
 	: BView("SystemSummaryView", B_WILL_DRAW | B_PULSE_NEEDED),
-	  fLogoTextView(NULL),
 	  fInfoTextView(NULL),
 	  fLoadThread(-1),
 	  fThreadRunning(false)
 {
-	SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
+	SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
 	CreateLayout();
 }
 
@@ -56,13 +55,6 @@ SystemSummaryView::~SystemSummaryView()
 
 void SystemSummaryView::CreateLayout()
 {
-	fLogoTextView = new BTextView("logo_text_view");
-	fLogoTextView->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
-	fLogoTextView->SetStylable(true);
-	fLogoTextView->MakeEditable(false);
-	fLogoTextView->SetWordWrap(false);
-	fLogoTextView->SetFontAndColor(be_fixed_font);
-
 	fInfoTextView = new BTextView("info_text_view");
 	fInfoTextView->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
 	fInfoTextView->SetStylable(true);
@@ -72,7 +64,6 @@ void SystemSummaryView::CreateLayout()
 
 	BGroupView* groupView = new BGroupView(B_HORIZONTAL, B_USE_DEFAULT_SPACING);
 	BLayoutBuilder::Group<>(groupView)
-		.Add(fLogoTextView)
 		.Add(fInfoTextView)
 		.AddGlue()
 	.End();
@@ -132,104 +123,11 @@ void SystemSummaryView::MessageReceived(BMessage* message)
 			fLoadThread = -1;
 			fThreadRunning = false;
 
-			_UpdateLogo();
 			_UpdateSystemInfo(message);
 			break;
 		}
 		default:
 			BView::MessageReceived(message);
-	}
-}
-
-void SystemSummaryView::_UpdateLogo()
-{
-	if (fLogoTextView->TextLength() == 0) {
-		BString logo;
-		logo << "		  MMMM\n";
-		logo << "		  MMMM\n";
-		logo << "		  MMMM\n";
-		logo << "		  MMMM\n";
-		logo << "		  MMMM	   .ciO | /YMMMMM*\"\n";
-		logo << "		  MMMM	.cOMMMMM | /MMMMM/`\n"; // Modified slightly to match screenshot curve
-		logo << "		  ,iMM | /MMMMMMMMMMMMMMMM*\n";
-		logo << " `*	  -cMMMMMMMMMMMMMMMMMMM/` .MMM\n";
-		logo << "   MMMMMMMMMM/` :MMM/  MMMM\n";
-		logo << "   MMMM		 MMMM\n";
-		logo << "   MMMM		 MMMM\n";
-		logo << "   \"\"\"\"		 \"\"\"\"\n";
-
-		fLogoTextView->SetText(logo.String());
-
-		// Colors (Approximation based on screenshot)
-		// Dark Grey/Black for MMMM stem? No, screenshot shows dark grey/black.
-		// Yellow/Gold for Leaf.
-		rgb_color darkGrey = {80, 80, 80, 255};
-		rgb_color gold = {255, 200, 0, 255}; // Leaf
-		// Stem/details?
-
-		// Apply global dark grey first
-		fLogoTextView->SetFontAndColor(0, logo.Length(), NULL, 0, &darkGrey);
-
-		// Highlight Leaf parts (Yellow)
-		// Manual highlighting of leaf parts based on line content
-		// Lines 5-8 contain the leaf
-		const char* lines[] = {
-			"		  MMMM\n",
-			"		  MMMM\n",
-			"		  MMMM\n",
-			"		  MMMM\n",
-			"		  MMMM	   .ciO | /YMMMMM*\"\n",
-			"		  MMMM	.cOMMMMM | /MMMMM/`\n",
-			"		  ,iMM | /MMMMMMMMMMMMMMMM*\n",
-			" `*	  -cMMMMMMMMMMMMMMMMMMM/` .MMM\n",
-			"   MMMMMMMMMM/` :MMM/  MMMM\n",
-			"   MMMM		 MMMM\n",
-			"   MMMM		 MMMM\n",
-			"   \"\"\"\"		 \"\"\"\"\n",
-			NULL
-		};
-
-		int32 offset = 0;
-		for (int i = 0; lines[i]; i++) {
-			const char* line = lines[i];
-			int32 lineLen = static_cast<int32>(strlen(line));
-
-			// Coloring logic based on line index and content pattern
-			if (i == 4) { // .ciO...
-				const char* leafStartPtr = strstr(line, ".ciO");
-				if (leafStartPtr != NULL) {
-					int32 leafStart = static_cast<int32>(leafStartPtr - line);
-					fLogoTextView->SetFontAndColor(offset + leafStart, offset + lineLen - 1, NULL, 0, &gold);
-				}
-			} else if (i == 5) { // .cOMMM...
-				const char* leafStartPtr = strstr(line, ".cOMMM");
-				if (leafStartPtr != NULL) {
-					int32 leafStart = static_cast<int32>(leafStartPtr - line);
-					fLogoTextView->SetFontAndColor(offset + leafStart, offset + lineLen - 1, NULL, 0, &gold);
-				}
-			} else if (i == 6) { // | /MMM... (after ,iMM)
-				const char* leafStartPtr = strstr(line, "|");
-				if (leafStartPtr != NULL) {
-					int32 leafStart = static_cast<int32>(leafStartPtr - line);
-					fLogoTextView->SetFontAndColor(offset + leafStart, offset + lineLen - 1, NULL, 0, &gold);
-				}
-			} else if (i == 7) { // `* -cMM...
-				// Whole line except last .MMM? Actually the whole left part is leaf-like here.
-				fLogoTextView->SetFontAndColor(offset, offset + lineLen - 1, NULL, 0, &gold);
-			} else if (i == 8) { // ... :MMM/
-				 // The :MMM/ part
-				 const char* leafStartPtr = strstr(line, ":");
-				 if (leafStartPtr != NULL) {
-					 int32 leafStart = static_cast<int32>(leafStartPtr - line);
-					 const char* leafEndPtr = strstr(leafStartPtr, "  ");
-					 int32 leafEnd = (leafEndPtr != NULL)
-						 ? static_cast<int32>(leafEndPtr - line)
-						 : lineLen - 1;
-					 fLogoTextView->SetFontAndColor(offset + leafStart, offset + leafEnd, NULL, 0, &gold);
-				 }
-			}
-			offset += lineLen;
-		}
 	}
 }
 
@@ -281,20 +179,28 @@ void SystemSummaryView::_UpdateSystemInfo(BMessage* message)
 	fInfoTextView->SetText(infoText.String());
 
 	// Apply Colors
-	rgb_color userColor = {255, 200, 0, 255}; // Yellow/Orange
+	rgb_color userColor = {0, 0, 0, 255}; // Black
 	rgb_color keyColor = {255, 100, 100, 255}; // Salmon/Red
 	rgb_color sepColor = {200, 200, 200, 255}; // Grey
 
-	// 1. User@Host (Yellow)
+	BFont userFont(be_fixed_font);
+	userFont.SetFace(B_BOLD_FACE);
+	userFont.SetSize(userFont.Size() + 1);
+
+	// 1. User@Host (Black)
 	int32 pos = 0;
 	int32 len = userHost.Length();
-	fInfoTextView->SetFontAndColor(pos, pos + len, NULL, 0, &userColor);
+	fInfoTextView->SetFontAndColor(pos, pos + len, &userFont, B_FONT_ALL, &userColor);
 	pos += len + 1; // newline
 
 	// 2. Separator (Grey)
 	len = separator.Length();
 	fInfoTextView->SetFontAndColor(pos, pos + len, NULL, 0, &sepColor);
 	pos += len + 1; // newline
+
+	BFont keyFont(be_fixed_font);
+	keyFont.SetFace(B_BOLD_FACE);
+	keyFont.SetSize(keyFont.Size() + 2);
 
 	// 3. Key: Value lines
 	const char* keys[] = {
@@ -308,7 +214,7 @@ void SystemSummaryView::_UpdateSystemInfo(BMessage* message)
 		keyStr << ":";
 		int32 keyStart = currentText.FindFirst(keyStr, pos);
 		if (keyStart >= 0) {
-			fInfoTextView->SetFontAndColor(keyStart, keyStart + keyStr.Length(), NULL, 0, &keyColor);
+			fInfoTextView->SetFontAndColor(keyStart, keyStart + keyStr.Length(), &keyFont, B_FONT_ALL, &keyColor);
 			pos = keyStart + keyStr.Length();
 		}
 	}

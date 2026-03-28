@@ -27,10 +27,8 @@ private:
 	void _StartLoadThread();
 	static int32 _LoadDataThread(void* data);
 
-	void _UpdateLogo();
 	void _UpdateSystemInfo(BMessage* message);
 
-	BTextView* fLogoTextView;
 	BTextView* fInfoTextView;
 	thread_id  fLoadThread;
 	std::atomic<bool> fThreadRunning;
