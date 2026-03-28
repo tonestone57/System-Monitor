@@ -54,6 +54,22 @@ private:
 	BStringView* fDiskUsageView;
 	BStringView* fKernelDateTimeView;
 	BTextView*   fUptimeView;
+	BStringView* fPackagesLabelView;
+	BStringView* fPackagesInfoView;
+	BStringView* fShellLabelView;
+	BStringView* fShellInfoView;
+	BStringView* fDELabelView;
+	BStringView* fDEInfoView;
+	BStringView* fWMLabelView;
+	BStringView* fWMInfoView;
+	BStringView* fFontLabelView;
+	BStringView* fFontInfoView;
+	BStringView* fIPLabelView;
+	BStringView* fIPInfoView;
+	BStringView* fBatteryLabelView;
+	BStringView* fBatteryInfoView;
+	BStringView* fLocaleLabelView;
+	BStringView* fLocaleInfoView;
 
 	BNumberFormat fNumberFormat;
 

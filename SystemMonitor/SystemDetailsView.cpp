@@ -1,5 +1,6 @@
 #include "SystemDetailsView.h"
 #include "Utils.h"
+#include <cstdlib>
 
 #include <cstdio>
 #include <time.h>
@@ -57,8 +58,8 @@ SystemDetailsView::SystemDetailsView()
 	// Create all the various labels for system infomation.
 
 	// OS Version / ABI
-	fVersionLabelView = _CreateLabel("oslabel", _GetOSVersion());
-	fVersionInfoView = _CreateSubtext("ostext", _GetABIVersion());
+	fVersionLabelView = _CreateLabel("oslabel", B_TRANSLATE("OS"));
+	fVersionInfoView = _CreateSubtext("ostext", _GetOSVersion());
 
 	// CPU count, type and clock speed
 	fCPULabelView = _CreateLabel("cpulabel", _GetCPUCount(&sysInfo));
@@ -69,10 +70,10 @@ SystemDetailsView::SystemDetailsView()
 	_UpdateText(fCPUFeaturesView);
 
 	// GPU and Display
-	BStringView* gpuLabel = _CreateLabel("gpulabel", B_TRANSLATE("GPU:"));
+	BStringView* gpuLabel = _CreateLabel("gpulabel", B_TRANSLATE("GPU"));
 	fGPUInfoView = _CreateSubtext("gputext", _GetGPUInfo());
 
-	BStringView* displayLabel = _CreateLabel("displaylabel", B_TRANSLATE("Display:"));
+	BStringView* displayLabel = _CreateLabel("displaylabel", B_TRANSLATE("Resolution"));
 	fDisplayInfoView = _CreateSubtext("displaytext", _GetDisplayInfo());
 
 	// Memory size and usage
@@ -81,15 +82,15 @@ SystemDetailsView::SystemDetailsView()
 	fSwapUsageView = _CreateSubtext("swaptext", _GetSwapUsage(&sysInfo));
 
 	// Disk Usage
-	BStringView* diskLabel = _CreateLabel("disklabel", B_TRANSLATE("Disk Usage (Root):"));
+	BStringView* diskLabel = _CreateLabel("disklabel", B_TRANSLATE("Disk Usage (Root)"));
 	fDiskUsageView = _CreateSubtext("disktext", _GetDiskUsage());
 
 	// Kernel build time/date
-	BStringView* kernelLabel = _CreateLabel("kernellabel", B_TRANSLATE("Kernel:"));
+	BStringView* kernelLabel = _CreateLabel("kernellabel", B_TRANSLATE("Kernel"));
 	fKernelDateTimeView = _CreateSubtext("kerneltext", _GetKernelDateTime(&sysInfo));
 
 	// Uptime
-	BStringView* uptimeLabel = _CreateLabel("uptimelabel", B_TRANSLATE("Time running:"));
+	BStringView* uptimeLabel = _CreateLabel("uptimelabel", B_TRANSLATE("Time running"));
 	fUptimeView = new BTextView("uptimetext");
 	fUptimeView->SetText(_GetUptime());
 	_UpdateText(fUptimeView);
@@ -99,24 +100,102 @@ SystemDetailsView::SystemDetailsView()
 	const float offset = be_control_look->DefaultLabelSpacing();
 	const float inset = offset;
 
-	BGroupView* detailsGroup = new BGroupView(B_VERTICAL);
+
+	// Packages
+	BString packages;
+	GetPackageCount(packages);
+	fPackagesLabelView = _CreateLabel("packageslabel", B_TRANSLATE("Packages"));
+	fPackagesInfoView = _CreateSubtext("packagestext", packages.String());
+
+	// Shell
+	const char* shellEnv = getenv("SHELL");
+	BString shell = shellEnv ? shellEnv : "/bin/sh";
+	BPath shellPath(shell.String());
+	if (shellPath.InitCheck() == B_OK) shell = shellPath.Leaf();
+	fShellLabelView = _CreateLabel("shelllabel", B_TRANSLATE("Shell"));
+	fShellInfoView = _CreateSubtext("shelltext", shell.String());
+
+	// DE / WM
+	fDELabelView = _CreateLabel("delabel", B_TRANSLATE("DE"));
+	fDEInfoView = _CreateSubtext("detext", B_TRANSLATE("Application Kit"));
+	fWMLabelView = _CreateLabel("wmlabel", B_TRANSLATE("WM"));
+	fWMInfoView = _CreateSubtext("wmtext", B_TRANSLATE("Application Server"));
+
+	// Font
+	font_family family;
+	font_style style;
+	be_plain_font->GetFamilyAndStyle(&family, &style);
+	BString font;
+	font << family << " " << style << " (" << static_cast<int>(be_plain_font->Size()) << "pt)";
+	fFontLabelView = _CreateLabel("fontlabel", B_TRANSLATE("Font"));
+	fFontInfoView = _CreateSubtext("fonttext", font.String());
+
+	// Local IP
+	fIPLabelView = _CreateLabel("iplabel", B_TRANSLATE("Local IP"));
+	fIPInfoView = _CreateSubtext("iptext", GetLocalIPAddress());
+
+	// Battery
+	BString battery = GetBatteryCapacity();
+	if (!battery.IsEmpty()) {
+		fBatteryLabelView = _CreateLabel("batterylabel", B_TRANSLATE("Battery"));
+		fBatteryInfoView = _CreateSubtext("batterytext", battery.String());
+	} else {
+		fBatteryLabelView = NULL;
+		fBatteryInfoView = NULL;
+	}
+
+	// Locale
+	fLocaleLabelView = _CreateLabel("localelabel", B_TRANSLATE("Locale"));
+	fLocaleInfoView = _CreateSubtext("localetext", GetLocale());
+
+BGroupView* detailsGroup = new BGroupView(B_VERTICAL);
 	detailsGroup->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
 
-	BLayoutBuilder::Group<>(detailsGroup, B_VERTICAL)
-		// Version:
+	auto layoutBuilder = BLayoutBuilder::Group<>(detailsGroup, B_VERTICAL)
+		// OS Version:
 		.Add(fVersionLabelView)
 		.Add(fVersionInfoView)
 		.AddStrut(offset)
-		// Processors:
+		// Kernel:
+		.Add(kernelLabel)
+		.Add(fKernelDateTimeView)
+		.AddStrut(offset)
+		// Time running:
+		.Add(uptimeLabel)
+		.Add(fUptimeView)
+		.AddStrut(offset)
+		// Packages:
+		.Add(fPackagesLabelView)
+		.Add(fPackagesInfoView)
+		.AddStrut(offset)
+		// Shell:
+		.Add(fShellLabelView)
+		.Add(fShellInfoView)
+		.AddStrut(offset)
+		// Resolution:
+		.Add(displayLabel)
+		.Add(fDisplayInfoView)
+		.AddStrut(offset)
+		// DE:
+		.Add(fDELabelView)
+		.Add(fDEInfoView)
+		.AddStrut(offset)
+		// WM:
+		.Add(fWMLabelView)
+		.Add(fWMInfoView)
+		.AddStrut(offset)
+		// Font:
+		.Add(fFontLabelView)
+		.Add(fFontInfoView)
+		.AddStrut(offset)
+		// CPU / Processors:
 		.Add(fCPULabelView)
 		.Add(fCPUInfoView)
 		.Add(fCPUFeaturesView)
 		.AddStrut(offset)
-		// GPU/Display:
+		// GPU:
 		.Add(gpuLabel)
 		.Add(fGPUInfoView)
-		.Add(displayLabel)
-		.Add(fDisplayInfoView)
 		.AddStrut(offset)
 		// Memory:
 		.Add(fMemSizeView)
@@ -127,13 +206,19 @@ SystemDetailsView::SystemDetailsView()
 		.Add(diskLabel)
 		.Add(fDiskUsageView)
 		.AddStrut(offset)
-		// Kernel:
-		.Add(kernelLabel)
-		.Add(fKernelDateTimeView)
-		.AddStrut(offset)
-		// Time running:
-		.Add(uptimeLabel)
-		.Add(fUptimeView)
+		// Local IP:
+		.Add(fIPLabelView)
+		.Add(fIPInfoView)
+		.AddStrut(offset);
+
+	if (fBatteryLabelView) {
+		layoutBuilder.Add(fBatteryLabelView)
+			.Add(fBatteryInfoView)
+			.AddStrut(offset);
+	}
+
+	layoutBuilder.Add(fLocaleLabelView)
+		.Add(fLocaleInfoView)
 		.AddGlue()
 		.SetInsets(inset)
 		.End();
@@ -167,6 +252,19 @@ void SystemDetailsView::Pulse()
 	fMemUsageView->SetText(_GetRamUsage(&sysInfo));
 	fSwapUsageView->SetText(_GetSwapUsage(&sysInfo));
 	fUptimeView->SetText(_GetUptime());
+
+	BString packages;
+	GetPackageCount(packages);
+	fPackagesInfoView->SetText(packages.String());
+
+	fIPInfoView->SetText(GetLocalIPAddress());
+
+	if (fBatteryInfoView) {
+		BString battery = GetBatteryCapacity();
+		fBatteryInfoView->SetText(battery.String());
+	}
+
+	fLocaleInfoView->SetText(GetLocale());
 }
 
 void SystemDetailsView::MessageReceived(BMessage* message)
@@ -185,6 +283,10 @@ void SystemDetailsView::_UpdateLabel(BStringView* label)
 {
 	label->SetExplicitAlignment(BAlignment(B_ALIGN_LEFT, B_ALIGN_VERTICAL_UNSET));
 	label->SetFont(be_bold_font, B_FONT_FAMILY_AND_STYLE);
+	label->SetHighColor(139, 0, 0, 255);
+	BString text = label->Text();
+	text.ToUpper();
+	label->SetText(text.String());
 }
 
 BStringView* SystemDetailsView::_CreateSubtext(const char* name, const char* text)
@@ -198,12 +300,14 @@ void SystemDetailsView::_UpdateSubtext(BStringView* subtext)
 {
 	subtext->SetExplicitAlignment(BAlignment(B_ALIGN_LEFT, B_ALIGN_VERTICAL_UNSET));
 	subtext->SetFont(be_plain_font, B_FONT_FAMILY_AND_STYLE);
+	subtext->SetHighColor(0, 0, 0, 255);
 }
 
 void SystemDetailsView::_UpdateText(BTextView* textView)
 {
 	textView->SetExplicitAlignment(BAlignment(B_ALIGN_LEFT, B_ALIGN_TOP));
-	textView->SetFontAndColor(be_plain_font, B_FONT_FAMILY_AND_STYLE);
+	rgb_color black = {0, 0, 0, 255};
+	textView->SetFontAndColor(be_plain_font, B_FONT_FAMILY_AND_STYLE, &black);
 	textView->SetColorSpace(B_RGBA32);
 	textView->MakeResizable(false);
 	textView->MakeEditable(false);
@@ -216,8 +320,8 @@ void SystemDetailsView::_UpdateText(BTextView* textView)
 
 BString SystemDetailsView::_GetOSVersion()
 {
-	BString revision = B_TRANSLATE("Version: ");
-	revision << GetOSVersion();
+	BString revision = GetOSVersion();
+	revision << " (" << GetABIVersion() << ")";
 	return revision;
 }
 
@@ -229,8 +333,8 @@ BString SystemDetailsView::_GetABIVersion()
 BString SystemDetailsView::_GetCPUCount(system_info* sysInfo)
 {
 	static BStringFormat format(B_TRANSLATE_COMMENT(
-		"{0, plural, one{Processor:} other{# Processors:}}",
-		"\"Processor:\" or \"2 Processors:\""));
+		"{0, plural, one{# Logical Core} other{# Logical Cores}}",
+		"\"1 Logical Core\" or \"6 Logical Cores\""));
 
 	BString processorLabel;
 	format.Format(processorLabel, sysInfo->cpu_count);
@@ -256,17 +360,7 @@ BString SystemDetailsView::_GetCPUFeatures()
 
 BString SystemDetailsView::_GetRamSize(system_info* sysInfo)
 {
-	uint64 used, total, physical;
-	GetMemoryUsage(used, total, physical);
-
-	BString physicalStr;
-	::FormatBytes(physicalStr, physical);
-
-	BString ramSize;
-	ramSize.SetToFormat(B_TRANSLATE_COMMENT("%s Memory:",
-		"2048 MiB Memory:"), physicalStr.String());
-
-	return ramSize;
+	return B_TRANSLATE("Memory");
 }
 
 BString SystemDetailsView::_GetRamUsage(system_info* sysInfo)

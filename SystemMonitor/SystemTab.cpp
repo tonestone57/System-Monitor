@@ -1,5 +1,4 @@
 #include "SystemTab.h"
-#include "SystemSummaryView.h"
 #include "SystemDetailsView.h"
 
 #include <LayoutBuilder.h>
@@ -14,7 +13,6 @@ SystemTab::SystemTab()
 	SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
 
 	BLayoutBuilder::Group<>(this, B_HORIZONTAL)
-		.Add(new SystemSummaryView())
 		.Add(new SystemDetailsView())
 		.End();
 }
