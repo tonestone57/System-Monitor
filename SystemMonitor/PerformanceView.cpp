@@ -34,22 +34,19 @@ public:
 		fCpuGraph = new ActivityGraphView("cpu_summary_graph",
 			{255, 255, 255, 255}, (color_which)-1);
 		fCpuGraph->SetViewColor({0, 0, 0, 255});
-		fCpuGraph->SetExplicitMinSize(BSize(60, 50));
-		fCpuGraph->SetExplicitMaxSize(BSize(60, 50));
+		fCpuGraph->SetExplicitMinSize(BSize(60, 60));
 		fCpuGraph->SetManualScale(0, 1000);
 
 		fMemGraph = new ActivityGraphView("mem_summary_graph",
 			{255, 255, 255, 255}, (color_which)-1);
 		fMemGraph->SetViewColor({0, 0, 0, 255});
-		fMemGraph->SetExplicitMinSize(BSize(60, 50));
-		fMemGraph->SetExplicitMaxSize(BSize(60, 50));
+		fMemGraph->SetExplicitMinSize(BSize(60, 60));
 		fMemGraph->SetManualScale(0, 1000);
 
 		fNetGraph = new ActivityGraphView("net_summary_graph",
 			{255, 255, 255, 255}, (color_which)-1);
 		fNetGraph->SetViewColor({0, 0, 0, 255});
-		fNetGraph->SetExplicitMinSize(BSize(60, 50));
-		fNetGraph->SetExplicitMaxSize(BSize(60, 50));
+		fNetGraph->SetExplicitMinSize(BSize(60, 60));
 
 		BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
 			.SetInsets(B_USE_DEFAULT_SPACING)
@@ -103,7 +100,7 @@ private:
 
 		BBox* borderBox = new BBox("border");
 		borderBox->SetBorder(B_PLAIN_BORDER);
-		BLayoutBuilder::Group<>(borderBox)
+		BLayoutBuilder::Group<>(borderBox, B_HORIZONTAL, 0)
 			.SetInsets(1)
 			.Add(content);
 
@@ -112,7 +109,7 @@ private:
 		BFont font(be_bold_font);
 		labelView->SetFont(&font);
 
-		BStringView* infoText = new BStringView(NULL, "");
+		BStringView* infoText = new BStringView(NULL, " ");
 		infoText->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 		*infoTextOut = infoText;
 
