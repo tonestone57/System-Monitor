@@ -14,16 +14,9 @@ SystemTab::SystemTab()
 {
 	SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
 
-	BTabView* tabView = new BTabView("system_tab_view");
-
-	tabView->AddTab(new SystemSummaryView());
-	tabView->TabAt(0)->SetLabel(B_TRANSLATE("Summary"));
-
-	tabView->AddTab(new SystemDetailsView());
-	tabView->TabAt(1)->SetLabel(B_TRANSLATE("Details"));
-
-	BLayoutBuilder::Group<>(this, B_VERTICAL)
-		.Add(tabView)
+	BLayoutBuilder::Group<>(this, B_HORIZONTAL)
+		.Add(new SystemSummaryView(), 1.0f)
+		.Add(new SystemDetailsView(), 1.0f)
 		.End();
 }
 
