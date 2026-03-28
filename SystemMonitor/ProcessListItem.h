@@ -35,6 +35,7 @@ public:
 		bool cpuChanged     = force || fInfo.cpuUsage != info.cpuUsage;
 		bool memChanged     = force || fInfo.memoryUsageBytes != info.memoryUsageBytes;
 		bool threadsChanged = force || fInfo.threadCount != info.threadCount;
+		bool priorityChanged = force || fInfo.priority != info.priority;
 		bool pidChanged     = force || fInfo.id != info.id;
 
 		fInfo = info;
@@ -63,6 +64,14 @@ public:
 
 		if (threadsChanged)
 			fCachedThreads.SetToFormat("%" B_PRIu32, fInfo.threadCount);
+
+		if (priorityChanged) {
+			if (fInfo.priority <= B_LOW_PRIORITY) fCachedPriority = B_TRANSLATE("Low");
+			else if (fInfo.priority <= B_NORMAL_PRIORITY) fCachedPriority = B_TRANSLATE("Normal");
+			else if (fInfo.priority <= B_DISPLAY_PRIORITY) fCachedPriority = B_TRANSLATE("High");
+			else if (fInfo.priority <= B_REAL_TIME_DISPLAY_PRIORITY) fCachedPriority = B_TRANSLATE("Real-Time");
+			else fCachedPriority.SetToFormat("%" B_PRId32, fInfo.priority);
+		}
 
 		if (userChanged) {
 			if (font && fView) {
@@ -101,6 +110,7 @@ public:
 		owner->DrawString(fCachedCPU.String(),     BPoint(x, y)); x += fView->CPUWidth();
 		owner->DrawString(fCachedMem.String(),     BPoint(x, y)); x += fView->MemWidth();
 		owner->DrawString(fCachedThreads.String(), BPoint(x, y)); x += fView->ThreadsWidth();
+		owner->DrawString(fCachedPriority.String(), BPoint(x, y)); x += fView->PriorityWidth();
 		owner->DrawString(fTruncatedUser.String(), BPoint(x, y));
 	}
 
@@ -108,50 +118,67 @@ public:
 	const char*         Name()   const { return fInfo.name; }
 	const ProcessInfo&  Info()   const { return fInfo; }
 
+	static bool sSortAscending;
+
 	static int CompareCPU(const void* a, const void* b) {
 		const ProcessListItem* i1 = *static_cast<const ProcessListItem* const*>(a);
 		const ProcessListItem* i2 = *static_cast<const ProcessListItem* const*>(b);
-		if (i1->fInfo.cpuUsage > i2->fInfo.cpuUsage) return -1;
-		if (i1->fInfo.cpuUsage < i2->fInfo.cpuUsage) return  1;
-		return 0;
+		int result = 0;
+		if (i1->fInfo.cpuUsage > i2->fInfo.cpuUsage) result = -1;
+		else if (i1->fInfo.cpuUsage < i2->fInfo.cpuUsage) result = 1;
+		return sSortAscending ? -result : result;
 	}
 	static int ComparePID(const void* a, const void* b) {
 		const ProcessListItem* i1 = *static_cast<const ProcessListItem* const*>(a);
 		const ProcessListItem* i2 = *static_cast<const ProcessListItem* const*>(b);
-		if (i1->fInfo.id < i2->fInfo.id) return -1;
-		if (i1->fInfo.id > i2->fInfo.id) return  1;
-		return 0;
+		int result = 0;
+		if (i1->fInfo.id < i2->fInfo.id) result = -1;
+		else if (i1->fInfo.id > i2->fInfo.id) result = 1;
+		return sSortAscending ? result : -result;
 	}
 	static int CompareName(const void* a, const void* b) {
 		const ProcessListItem* i1 = *static_cast<const ProcessListItem* const*>(a);
 		const ProcessListItem* i2 = *static_cast<const ProcessListItem* const*>(b);
-		return strcasecmp(i1->fInfo.name, i2->fInfo.name);
+		int result = strcasecmp(i1->fInfo.name, i2->fInfo.name);
+		return sSortAscending ? result : -result;
 	}
 	static int CompareMem(const void* a, const void* b) {
 		const ProcessListItem* i1 = *static_cast<const ProcessListItem* const*>(a);
 		const ProcessListItem* i2 = *static_cast<const ProcessListItem* const*>(b);
-		if (i1->fInfo.memoryUsageBytes > i2->fInfo.memoryUsageBytes) return -1;
-		if (i1->fInfo.memoryUsageBytes < i2->fInfo.memoryUsageBytes) return  1;
-		return 0;
+		int result = 0;
+		if (i1->fInfo.memoryUsageBytes > i2->fInfo.memoryUsageBytes) result = -1;
+		else if (i1->fInfo.memoryUsageBytes < i2->fInfo.memoryUsageBytes) result = 1;
+		return sSortAscending ? -result : result;
 	}
 	static int CompareThreads(const void* a, const void* b) {
 		const ProcessListItem* i1 = *static_cast<const ProcessListItem* const*>(a);
 		const ProcessListItem* i2 = *static_cast<const ProcessListItem* const*>(b);
-		if (i1->fInfo.threadCount > i2->fInfo.threadCount) return -1;
-		if (i1->fInfo.threadCount < i2->fInfo.threadCount) return  1;
-		return 0;
+		int result = 0;
+		if (i1->fInfo.threadCount > i2->fInfo.threadCount) result = -1;
+		else if (i1->fInfo.threadCount < i2->fInfo.threadCount) result = 1;
+		return sSortAscending ? -result : result;
+	}
+	static int ComparePriority(const void* a, const void* b) {
+		const ProcessListItem* i1 = *static_cast<const ProcessListItem* const*>(a);
+		const ProcessListItem* i2 = *static_cast<const ProcessListItem* const*>(b);
+		int result = 0;
+		if (i1->fInfo.priority > i2->fInfo.priority) result = -1;
+		else if (i1->fInfo.priority < i2->fInfo.priority) result = 1;
+		return sSortAscending ? -result : result;
 	}
 	static int CompareState(const void* a, const void* b) {
 		const ProcessListItem* i1 = *static_cast<const ProcessListItem* const*>(a);
 		const ProcessListItem* i2 = *static_cast<const ProcessListItem* const*>(b);
-		if (i1->fInfo.state < i2->fInfo.state) return -1;
-		if (i1->fInfo.state > i2->fInfo.state) return  1;
-		return 0;
+		int result = 0;
+		if (i1->fInfo.state < i2->fInfo.state) result = -1;
+		else if (i1->fInfo.state > i2->fInfo.state) result = 1;
+		return sSortAscending ? result : -result;
 	}
 	static int CompareUser(const void* a, const void* b) {
 		const ProcessListItem* i1 = *static_cast<const ProcessListItem* const*>(a);
 		const ProcessListItem* i2 = *static_cast<const ProcessListItem* const*>(b);
-		return strcasecmp(i1->fInfo.userName, i2->fInfo.userName);
+		int result = strcasecmp(i1->fInfo.userName, i2->fInfo.userName);
+		return sSortAscending ? result : -result;
 	}
 
 private:
@@ -161,6 +188,7 @@ private:
 	BString		fCachedCPU;
 	BString		fCachedMem;
 	BString		fCachedThreads;
+	BString		fCachedPriority;
 	BString		fTruncatedName;
 	BString		fTruncatedUser;
 	int32		fGeneration;

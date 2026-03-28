@@ -25,10 +25,12 @@
 #include <Catalog.h>
 #include <ScrollView.h>
 #include <Autolock.h>
-#include "ProcessListItem.h"
-
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "ProcessView"
+
+#include "ProcessListItem.h"
+
+bool ProcessListItem::sSortAscending = false;
 
 // Define constants for columns (used for drawing)
 const float kBasePIDWidth = 60;
@@ -37,6 +39,7 @@ const float kBaseStateWidth = 80;
 const float kBaseCPUWidth = 60;
 const float kBaseMemWidth = 90;
 const float kBaseThreadsWidth = 60;
+const float kBasePriorityWidth = 70;
 const float kBaseUserWidth = 80;
 
 const uint32 MSG_KILL_PROCESS = 'kill';
@@ -79,6 +82,7 @@ ProcessView::ProcessView()
 	  fTerminated(false),
 	  fIsHidden(false),
 	  fSortMode(SORT_BY_CPU),
+	  fSortAscending(false),
 	  fCurrentGeneration(0),
 	  fListGeneration(0)
 {
@@ -120,11 +124,13 @@ ProcessView::ProcessView()
 	fCPUWidth = kBaseCPUWidth * scale;
 	fMemWidth = kBaseMemWidth * scale;
 	fThreadsWidth = kBaseThreadsWidth * scale;
+	fPriorityWidth = kBasePriorityWidth * scale;
 	fUserWidth = kBaseUserWidth * scale;
 
 	// Header View construction
 	BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);
 	headerView->SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
+	BLayoutBuilder::Group<>(headerView).SetInsets(5, 0, 0, 0);
 
 	// Helper to add header label
 	auto addHeader = [&](const char* label, float width, int32 mode) {
@@ -139,6 +145,7 @@ ProcessView::ProcessView()
 	addHeader(B_TRANSLATE("CPU%"), fCPUWidth, SORT_BY_CPU);
 	addHeader(B_TRANSLATE("Mem"), fMemWidth, SORT_BY_MEM);
 	addHeader(B_TRANSLATE("Thds"), fThreadsWidth, SORT_BY_THREADS);
+	addHeader(B_TRANSLATE("Priority"), fPriorityWidth, SORT_BY_PRIORITY);
 	addHeader(B_TRANSLATE("User"), fUserWidth, SORT_BY_USER);
 
 	headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
@@ -253,7 +260,12 @@ void ProcessView::MessageReceived(BMessage* message)
 		case MSG_HEADER_CLICKED: {
 			int32 mode;
 			if (message->FindInt32("mode", &mode) == B_OK) {
-				fSortMode = (ProcessSortMode)mode;
+				if (fSortMode == (ProcessSortMode)mode) {
+					fSortAscending = !fSortAscending;
+				} else {
+					fSortMode = (ProcessSortMode)mode;
+					fSortAscending = (fSortMode == SORT_BY_PID || fSortMode == SORT_BY_NAME || fSortMode == SORT_BY_USER || fSortMode == SORT_BY_STATE || fSortMode == SORT_BY_PRIORITY);
+				}
 				FilterRows(); // Trigger sort
 			}
 			break;
@@ -376,12 +388,14 @@ void ProcessView::SetRefreshInterval(bigtime_t interval)
 
 void ProcessView::_SortItems()
 {
+	ProcessListItem::sSortAscending = fSortAscending;
 	switch (fSortMode) {
 		case SORT_BY_PID: fProcessListView->SortItems(ProcessListItem::ComparePID); break;
 		case SORT_BY_NAME: fProcessListView->SortItems(ProcessListItem::CompareName); break;
 		case SORT_BY_MEM: fProcessListView->SortItems(ProcessListItem::CompareMem); break;
 		case SORT_BY_THREADS: fProcessListView->SortItems(ProcessListItem::CompareThreads); break;
 		case SORT_BY_STATE: fProcessListView->SortItems(ProcessListItem::CompareState); break;
+		case SORT_BY_PRIORITY: fProcessListView->SortItems(ProcessListItem::ComparePriority); break;
 		case SORT_BY_USER: fProcessListView->SortItems(ProcessListItem::CompareUser); break;
 		case SORT_BY_CPU: default: fProcessListView->SortItems(ProcessListItem::CompareCPU); break;
 	}
@@ -496,9 +510,10 @@ void ProcessView::Update(BMessage* message)
 		fCPUWidth = kBaseCPUWidth * scale;
 		fMemWidth = kBaseMemWidth * scale;
 		fThreadsWidth = kBaseThreadsWidth * scale;
+		fPriorityWidth = kBasePriorityWidth * scale;
 		fUserWidth = kBaseUserWidth * scale;
 
-		UpdateHeaderWidths(fHeaders, { fPIDWidth, fNameWidth, fStateWidth, fCPUWidth, fMemWidth, fThreadsWidth, fUserWidth });
+		UpdateHeaderWidths(fHeaders, { fPIDWidth, fNameWidth, fStateWidth, fCPUWidth, fMemWidth, fThreadsWidth, fPriorityWidth, fUserWidth });
 	}
 
 	// First pass: Update existing items or create new ones
@@ -697,8 +712,18 @@ int32 ProcessView::UpdateThread(void* data)
 			bool isRunning = false;
 			bool isReady = false;
 
+			// Main thread usually has ID == team ID, but we just grab the first valid thread priority.
+			// Will be updated if a running thread is found.
+			int32 teamPriority = 0;
+			bool priorityFound = false;
+
 			if (teamInfo.team == 1) { // Kernel team: use thread iteration
 				while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
+					if (!priorityFound || tInfo.thread == teamInfo.team || tInfo.state == B_THREAD_RUNNING) {
+						teamPriority = tInfo.priority;
+						priorityFound = true;
+					}
+
 					bigtime_t threadTime = tInfo.user_time + tInfo.kernel_time;
 
 					if (tInfo.state == B_THREAD_RUNNING) isRunning = true;
@@ -734,30 +759,51 @@ int32 ProcessView::UpdateThread(void* data)
 					skipThreadScan = true;
 				}
 
-				if (!skipThreadScan) {
+				if (skipThreadScan && cached && cachedInfo->lastRunningThread != -1) {
+					thread_info lastInfo;
+					if (get_thread_info(cachedInfo->lastRunningThread, &lastInfo) == B_OK && lastInfo.team == teamInfo.team) {
+						teamPriority = lastInfo.priority;
+						priorityFound = true;
+					}
+				}
+
+				if (!skipThreadScan || !priorityFound) {
 					// Optimization: Check the last known running thread first
 					if (cached && cachedInfo->lastRunningThread != -1) {
 						thread_info lastInfo;
 						if (get_thread_info(cachedInfo->lastRunningThread, &lastInfo) == B_OK
-							&& lastInfo.team == teamInfo.team
-							&& lastInfo.state == B_THREAD_RUNNING) {
-							isRunning = true;
-							skipThreadScan = true;
+							&& lastInfo.team == teamInfo.team) {
+							if (!priorityFound) {
+								teamPriority = lastInfo.priority;
+								priorityFound = true;
+							}
+							if (lastInfo.state == B_THREAD_RUNNING) {
+								isRunning = true;
+								skipThreadScan = true;
+							}
 						}
 					}
 
-					if (!skipThreadScan) {
+					if (!skipThreadScan || !priorityFound) {
 						while (get_next_thread_info(teamInfo.team, &threadCookie, &tInfo) == B_OK) {
+							if (!priorityFound || tInfo.thread == teamInfo.team || tInfo.state == B_THREAD_RUNNING) {
+								teamPriority = tInfo.priority;
+								priorityFound = true;
+							}
 							if (tInfo.state == B_THREAD_RUNNING) {
 								isRunning = true;
 								cachedInfo->lastRunningThread = tInfo.thread;
-								break; // Found running, can stop scanning
+								// We found a running thread, its priority is likely the most relevant.
+								// Only break if we already have the priority.
+								break;
 							}
 							if (tInfo.state == B_THREAD_READY) isReady = true;
 						}
 					}
 				}
 			}
+
+			currentProc.priority = teamPriority;
 
 			if (isRunning) currentProc.state = PROCESS_STATE_RUNNING;
 			else if (isReady) currentProc.state = PROCESS_STATE_READY;

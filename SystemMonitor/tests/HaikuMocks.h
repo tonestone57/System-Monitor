@@ -45,7 +45,11 @@ typedef int32 status_t;
 #define B_NAVIGABLE 4
 #define B_FILE_NAME_LENGTH 256
 #define B_OS_NAME_LENGTH 32
+#define B_LOW_PRIORITY 5
 #define B_NORMAL_PRIORITY 10
+#define B_DISPLAY_PRIORITY 15
+#define B_URGENT_DISPLAY_PRIORITY 20
+#define B_REAL_TIME_DISPLAY_PRIORITY 100
 #define B_RELATIVE_TIMEOUT 1
 #define B_TIMED_OUT 1
 #define B_INTERRUPTED 2
@@ -172,7 +176,7 @@ public:
 
 
 extern "C" {
-    inline uint32 __get_haiku_revision() { return 57121; }
+    inline const char* __get_haiku_revision() { return "hrev57121"; }
 }
 
 struct system_info {
