@@ -97,48 +97,9 @@ public:
 		owner->DrawString(fTruncatedMount.String(),  BPoint(x, y)); x += fView->MountWidth();
 		owner->DrawString(fTruncatedFS.String(),     BPoint(x, y)); x += fView->FSWidth();
 		drawRight(fCachedTotal,   fView->TotalWidth());
+		drawRight(fCachedUsed,    fView->UsedWidth());
 		drawRight(fCachedFree,    fView->FreeWidth());
-
-		// Draw "Used" text left-aligned, then progress bar
-		float textX = x;
-		owner->DrawString(fCachedUsed.String(), BPoint(textX, y));
-		float usedTextWidth = owner->StringWidth(fCachedUsed.String());
-
-		float barX = textX + usedTextWidth + 10;
-		float barWidth = fView->UsedWidth() - usedTextWidth - 15;
-		if (barWidth > 20) {
-			BRect barRect(barX, itemRect.top + 2, barX + barWidth, itemRect.bottom - 2);
-
-			// Background
-			rgb_color bg = ui_color(B_PANEL_BACKGROUND_COLOR);
-			rgb_color darkBg = { (uint8)(bg.red * 0.8), (uint8)(bg.green * 0.8), (uint8)(bg.blue * 0.8), 255 };
-			owner->SetHighColor(darkBg);
-			owner->FillRect(barRect);
-
-			// Fill
-			if (fPercent > 0) {
-				BRect fillRect = barRect;
-				fillRect.right = fillRect.left + (barWidth * (fPercent / 100.0));
-				rgb_color blueColor = {40, 115, 235, 255};
-				owner->SetHighColor(blueColor); // Blue color like in the screenshot
-				owner->FillRect(fillRect);
-			}
-
-			// Percentage text in the center of the bar
-			// Set drawing mode to ensure text is visible over background
-			owner->SetDrawingMode(B_OP_OVER);
-			rgb_color blackColor = {0, 0, 0, 255};
-			owner->SetHighColor(blackColor);
-			BString percentStr;
-			percentStr.SetToFormat("%.0f%%", fPercent);
-			float percentWidth = owner->StringWidth(percentStr.String());
-			float percentX = barRect.left + (barWidth - percentWidth) / 2.0;
-			owner->DrawString(percentStr.String(), BPoint(percentX, y));
-
-			// Restore drawing mode
-			owner->SetDrawingMode(B_OP_COPY);
-		}
-		x += fView->UsedWidth();
+		drawRight(fCachedPercent, fView->PercentWidth());
 	}
 
 	static int CompareDevice(const void* a, const void* b) {
