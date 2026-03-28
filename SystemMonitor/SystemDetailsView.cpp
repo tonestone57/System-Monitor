@@ -223,7 +223,10 @@ BGroupView* detailsGroup = new BGroupView(B_VERTICAL);
 		.SetInsets(inset)
 		.End();
 
-	BScrollView* scrollView = new BScrollView("scroll_details", detailsGroup, 0, false, true, B_NO_BORDER);
+	detailsGroup->SetExplicitMinSize(BSize(B_SIZE_UNSET, 600));
+
+	BScrollView* scrollView = new BScrollView("scroll_details", detailsGroup, 0, false, true);
+	scrollView->SetBorder(B_NO_BORDER);
 	scrollView->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH, B_ALIGN_USE_FULL_HEIGHT));
 
 	SetLayout(new BGroupLayout(B_VERTICAL, 0));

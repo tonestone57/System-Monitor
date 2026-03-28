@@ -87,7 +87,8 @@ NetworkView::NetworkView()
 	headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
 	fInterfaceListView = new BListView("interface_list", B_SINGLE_SELECTION_LIST, B_WILL_DRAW | B_NAVIGABLE);
-	BScrollView* netScrollView = new BScrollView("net_scroll", fInterfaceListView, 0, false, true, B_NO_BORDER);
+	BScrollView* netScrollView = new BScrollView("net_scroll", fInterfaceListView, 0, false, true);
+	netScrollView->SetBorder(B_NO_BORDER);
 
 	BLayoutBuilder::Group<>(netBox, B_VERTICAL, 0)
 		.SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING + 15,

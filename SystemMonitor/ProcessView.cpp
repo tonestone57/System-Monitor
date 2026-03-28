@@ -94,7 +94,8 @@ ProcessView::ProcessView()
 	fSearchControl->SetModificationMessage(new BMessage(MSG_SEARCH_UPDATED));
 
 	fProcessListView = new ProcessListView("process_list");
-	BScrollView* processScrollView = new BScrollView("process_scroll", fProcessListView, 0, false, true, B_NO_BORDER);
+	BScrollView* processScrollView = new BScrollView("process_scroll", fProcessListView, 0, false, true);
+	processScrollView->SetBorder(B_NO_BORDER);
 
 	// Cache translated strings
 	fStrRunning = B_TRANSLATE("Running");
