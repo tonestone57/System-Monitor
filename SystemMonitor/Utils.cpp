@@ -39,7 +39,12 @@ ClickableHeaderView::ClickableHeaderView(const char* label, float width, int32 m
 	SetExplicitMaxSize(BSize(width, B_SIZE_UNSET));
 	SetAlignment(B_ALIGN_LEFT);
 	SetFont(be_bold_font);
-	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+	SetViewColor({0, 0, 0, 255}); // Black background
+	SetHighColor({255, 255, 255, 255}); // White text
+
+	BString upperLabel(label);
+	upperLabel.ToUpper();
+	SetText(upperLabel.String());
 }
 
 void ClickableHeaderView::MouseDown(BPoint where) {

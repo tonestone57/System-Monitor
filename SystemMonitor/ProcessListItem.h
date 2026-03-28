@@ -104,12 +104,26 @@ public:
 		float x = itemRect.left + 5;
 		float y = itemRect.bottom - fh.descent;
 
-		owner->DrawString(fCachedPID.String(),    BPoint(x, y)); x += fView->PIDWidth();
+		float rightX = 0;
+		rightX = x + fView->PIDWidth() - owner->StringWidth(fCachedPID.String()) - 5;
+		owner->DrawString(fCachedPID.String(), BPoint(rightX, y));
+		x += fView->PIDWidth();
+
 		owner->DrawString(fTruncatedName.String(), BPoint(x, y)); x += fView->NameWidth();
 		owner->DrawString(fCachedState.String(),   BPoint(x, y)); x += fView->StateWidth();
-		owner->DrawString(fCachedCPU.String(),     BPoint(x, y)); x += fView->CPUWidth();
-		owner->DrawString(fCachedMem.String(),     BPoint(x, y)); x += fView->MemWidth();
-		owner->DrawString(fCachedThreads.String(), BPoint(x, y)); x += fView->ThreadsWidth();
+
+		rightX = x + fView->CPUWidth() - owner->StringWidth(fCachedCPU.String()) - 5;
+		owner->DrawString(fCachedCPU.String(),     BPoint(rightX, y));
+		x += fView->CPUWidth();
+
+		rightX = x + fView->MemWidth() - owner->StringWidth(fCachedMem.String()) - 5;
+		owner->DrawString(fCachedMem.String(),     BPoint(rightX, y));
+		x += fView->MemWidth();
+
+		rightX = x + fView->ThreadsWidth() - owner->StringWidth(fCachedThreads.String()) - 5;
+		owner->DrawString(fCachedThreads.String(), BPoint(rightX, y));
+		x += fView->ThreadsWidth();
+
 		owner->DrawString(fCachedPriority.String(), BPoint(x, y)); x += fView->PriorityWidth();
 		owner->DrawString(fTruncatedUser.String(), BPoint(x, y));
 	}

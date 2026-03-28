@@ -129,6 +129,13 @@ public:
         return false;
     }
 
+    BString& ToUpper() {
+        for (char& c : str) {
+            c = std::toupper(static_cast<unsigned char>(c));
+        }
+        return *this;
+    }
+
     bool operator==(const BString& other) const { return str == other.str; }
     bool operator==(const char* other) const { return str == other; }
     bool operator!=(const char* other) const { return str != other; }
