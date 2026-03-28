@@ -1,13 +1,13 @@
 ## Haiku Generic Makefile ##
 
 # The name of the binary
-NAME = SysMonTask
+NAME = System-Monitor
 
 # The type of binary (APP, SHARED, STATIC, DRIVER)
 TYPE = APP
 
 # Application MIME type
-APP_MIME_SIG = application/x-vnd.HaikuSysMonTask
+APP_MIME_SIG = application/x-vnd.System-Monitor
 
 # Source files
 SRCS = \
@@ -27,7 +27,7 @@ SRCS = \
 	Utils.cpp
 
 # Resource definition files
-RDEFS = SysMonTask.rdef
+# RDEFS = SysMonTask.rdef
 
 # Resource files
 # RSRCS =

@@ -17,6 +17,7 @@
 #include <MenuItem.h>
 #include <Font.h>
 #include <vector>
+#include <algorithm>
 #include <unordered_set>
 #include <Window.h>
 #include <Invoker.h>
@@ -48,8 +49,6 @@ const uint32 MSG_SHOW_CONTEXT_MENU = 'cntx';
 const uint32 MSG_CONFIRM_KILL = 'conf';
 
 const int32 kMemoryCacheGenerations = 10;
-
-
 
 #include <cinttypes>
 
@@ -607,6 +606,21 @@ int32 ProcessView::UpdateThread(void* data)
 		float totalPossibleCoreTime = coreCount * systemTimeDelta;
 		if (totalPossibleCoreTime <= 0) totalPossibleCoreTime = 1.0f;
 
+		std::unordered_set<team_id> visibleTeams;
+		if (view->LockLooper()) {
+			BRect bounds = view->fProcessListView->Bounds();
+			for (int32 i = 0; i < view->fProcessListView->CountItems(); i++) {
+				BRect frame = view->fProcessListView->ItemFrame(i);
+				if (frame.Intersects(bounds)) {
+					ProcessListItem* item = static_cast<ProcessListItem*>(view->fProcessListView->ItemAt(i));
+					if (item) visibleTeams.insert(item->TeamID());
+				} else if (frame.top > bounds.bottom) {
+					break; // Items are ordered top to bottom
+				}
+			}
+			view->UnlockLooper();
+		}
+
 		int32 cookie = 0;
 		team_info teamInfo;
 		while (get_next_team_info(&cookie, &teamInfo) == B_OK) {
@@ -628,12 +642,7 @@ int32 ProcessView::UpdateThread(void* data)
 					strlcpy(currentProc.args, cachedInfo->args, sizeof(currentProc.args));
 					cachedInfo->generation = view->fCurrentGeneration;
 
-					// Optimize memory calculation
-					if (cachedInfo->cachedAreaCount == teamInfo.area_count
-						&& (view->fCurrentGeneration - cachedInfo->memoryGeneration < kMemoryCacheGenerations)) {
-						memoryNeedsUpdate = false;
-						currentProc.memoryUsageBytes = cachedInfo->memoryUsage;
-					}
+					// memoryNeedsUpdate logic has been moved down
 				}
 			}
 
@@ -758,6 +767,21 @@ int32 ProcessView::UpdateThread(void* data)
 			if (teamCpuPercent < 0.0f) teamCpuPercent = 0.0f;
 			if (teamCpuPercent > 100.0f) teamCpuPercent = 100.0f;
 			currentProc.cpuUsage = teamCpuPercent;
+
+			if (cached) {
+				// Optimize memory calculation: Skip calculation if off-screen or throttled
+				bool isVisible = visibleTeams.find(teamInfo.team) != visibleTeams.end();
+				if (!isVisible) {
+					memoryNeedsUpdate = false;
+				} else if (cachedInfo->cachedAreaCount == teamInfo.area_count
+					&& (view->fCurrentGeneration - cachedInfo->memoryGeneration < kMemoryCacheGenerations)) {
+					memoryNeedsUpdate = false;
+				}
+
+				if (!memoryNeedsUpdate) {
+					currentProc.memoryUsageBytes = cachedInfo->memoryUsage;
+				}
+			}
 
 			if (memoryNeedsUpdate) {
 				currentProc.memoryUsageBytes = 0;
