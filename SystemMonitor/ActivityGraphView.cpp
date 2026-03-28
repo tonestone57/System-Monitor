@@ -200,9 +200,9 @@ ActivityGraphView::_DrawHistory()
 	if (view == NULL)
 		return;
 
-	BRect frame = view->Bounds();
-
 	if (fOffscreen->Lock()) {
+		BRect frame = view->Bounds();
+
 		uint32 steps = static_cast<uint32>(frame.Width()) + 1;
 		if (steps > 0) {
 			bigtime_t now = system_time();

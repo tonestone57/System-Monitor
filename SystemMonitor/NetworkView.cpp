@@ -34,16 +34,16 @@ NetworkView::NetworkView()
 	: BView("NetworkView", B_WILL_DRAW),
 	fDownloadGraph(NULL),
 	fUploadGraph(NULL),
+	fLastTotalUpdateTime(0),
 	fUploadSpeed(0.0f),
 	fDownloadSpeed(0.0f),
-	fLastTotalUpdateTime(0),
 	fUpdateThread(-1),
 	fScanSem(-1),
 	fTerminated(false),
 	fPerformanceViewVisible(true),
 	fRefreshInterval(1000000),
-	fSortMode(SORT_NET_BY_TX_SPEED),
-	fListGeneration(0)
+	fListGeneration(0),
+	fSortMode(SORT_NET_BY_TX_SPEED)
 {
 	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 	fScanSem = create_sem(0, "network scan sem");
