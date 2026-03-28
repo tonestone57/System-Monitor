@@ -8,6 +8,7 @@
 #include <new>
 #include <cmath>
 #include "Utils.h"
+#include <vector>
 
 ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_which systemColor)
 	: BView(name, B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE | B_FRAME_EVENTS),
@@ -284,9 +285,11 @@ ActivityGraphView::_DrawHistory()
 					// Bottom-left corner for polygon fill
 					points[0] = BPoint(frame.left, frame.bottom);
 
-					int32 searchIndex = 0;
+					std::vector<int64> values(steps);
+					fHistory->GetValues(values.data(), steps, now - (steps - 1) * timeStep, timeStep);
+
 					for (uint32 i = 0; i < steps; i++) {
-						int64 value = fHistory->ValueAt(now - (steps - 1 - i) * timeStep, &searchIndex);
+						int64 value = values[i];
 						float y;
 						if (range == 0) {
 							if (min == 0) y = frame.Height();
@@ -394,15 +397,21 @@ ActivityGraphView::_DrawHistory()
 					// Bottom-start corner for partial polygon fill
 					points[0] = BPoint(startI, frame.bottom);
 
-					int32 searchIndex = 0;
+					std::vector<int64> values(count);
+					fHistory->GetValues(values.data(), count, fLastRefresh - static_cast<bigtime_t>(steps - 1 - startI) * timeStep, timeStep);
+
 					for (int32 j = 0; j < count; j++) {
 						int32 i = startI + j;
 						// For the very last pixel, use 'now' for maximum smoothness
 						bigtime_t t;
-						if (i == static_cast<int32>(steps) - 1) t = now;
-						else t = fLastRefresh - static_cast<bigtime_t>(steps - 1 - i) * timeStep;
+						int64 value;
+						if (i == static_cast<int32>(steps) - 1) {
+							t = now;
+							value = fHistory->ValueAt(t, NULL);
+						} else {
+							value = values[j];
+						}
 
-						int64 value = fHistory->ValueAt(t, &searchIndex);
 						float y;
 						if (range == 0) {
 							if (min == 0) y = frame.Height();
@@ -443,5 +452,9 @@ ActivityGraphView::_DrawHistory()
 		view->Sync();
 		fOffscreen->Unlock();
 	}
-	DrawBitmap(fOffscreen, frame, Bounds());
+
+	BView* view = _OffscreenView();
+	if (view != NULL) {
+		DrawBitmap(fOffscreen, view->Bounds(), Bounds());
+	}
 }
