@@ -6,12 +6,16 @@ struct SystemStats {
 		: cpuUsage(0.0f),
 		  memoryUsage(0.0f),
 		  uploadSpeed(0.0f),
-		  downloadSpeed(0.0f) {}
+		  downloadSpeed(0.0f),
+		  cpuFrequency(0),
+		  memoryTotal(0) {}
 
 	float cpuUsage;
 	float memoryUsage;
 	float uploadSpeed;
 	float downloadSpeed;
+	uint64 cpuFrequency;
+	uint64 memoryTotal;
 };
 
 #endif // SYSTEMSTATS_H
