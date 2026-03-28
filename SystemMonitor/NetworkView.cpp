@@ -67,6 +67,7 @@ NetworkView::NetworkView()
 	// Header View
 	BGroupView* headerView = new BGroupView(B_HORIZONTAL, 0);
 	headerView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+	BLayoutBuilder::Group<>(headerView).SetInsets(5, 0, 0, 0);
 
 	auto addHeader = [&](const char* label, float width, int32 mode, alignment align = B_ALIGN_LEFT) {
 		ClickableHeaderView* sv = new ClickableHeaderView(label, width, mode, this);
