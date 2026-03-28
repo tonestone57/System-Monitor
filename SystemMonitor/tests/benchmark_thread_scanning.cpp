@@ -238,17 +238,13 @@ void RunBenchmark(bool useSkipScan, bool useLastRunningThread) {
             if (!skipScan) {
                 int32_t tCookie = 0;
                 thread_info tInfo;
-                bool isRunning = false;
-                bool isReady = false;
                 while (get_next_thread_info(teamInfo.team, &tCookie, &tInfo) == B_OK) {
                     if (tInfo.state == B_THREAD_RUNNING) {
-                        isRunning = true;
                         if (useLastRunningThread) {
                             cachedInfo->lastRunningThread = tInfo.thread;
                         }
                         break;
                     }
-                    if (tInfo.state == B_THREAD_READY) isReady = true;
                 }
             }
         }

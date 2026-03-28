@@ -29,3 +29,4 @@ test_utils
 test_data_history
 test_disk_list_item
 benchmark_priority_set
+test_process_list_item

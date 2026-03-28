@@ -13,11 +13,12 @@
 
 class DiskListItem : public BListItem {
 public:
+	using BListItem::Update;
 	DiskListItem(dev_t deviceID,
 		const BString& device, const BString& mount, const BString& fs,
 		uint64 total, uint64 used, uint64 free, double percent,
 		const BFont* font, DiskView* view)
-		: BListItem(), fDeviceID(deviceID), fGeneration(0), fView(view)
+		: BListItem(), fGeneration(0), fDeviceID(deviceID), fView(view)
 	{
 		Update(device, mount, fs, total, used, free, percent, font, true);
 	}
