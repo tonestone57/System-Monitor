@@ -101,12 +101,14 @@ ActivityGraphView::_UpdateOffscreenBitmap()
 
 	if (fOffscreen != NULL && fOffscreen->Bounds().Contains(bounds)) {
 		BView* view = _OffscreenView();
-		if (view != NULL && view->Bounds() != bounds) {
+		if (view != NULL) {
 			if (fOffscreen->Lock()) {
-				view->ResizeTo(bounds.Width(), bounds.Height());
+				if (view->Bounds() != bounds) {
+					view->ResizeTo(bounds.Width(), bounds.Height());
+					fLastRefresh = 0;
+				}
 				fOffscreen->Unlock();
 			}
-			fLastRefresh = 0;
 		}
 		return;
 	}
