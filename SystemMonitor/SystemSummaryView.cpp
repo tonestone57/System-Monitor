@@ -59,18 +59,21 @@ void SystemSummaryView::CreateLayout()
 	fInfoTextView->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
 	fInfoTextView->SetStylable(true);
 	fInfoTextView->MakeEditable(false);
-	fInfoTextView->SetWordWrap(false);
-	fInfoTextView->SetFontAndColor(be_fixed_font);
+	fInfoTextView->SetWordWrap(true);
+	fInfoTextView->SetFontAndColor(be_plain_font);
 
 	BGroupView* groupView = new BGroupView(B_HORIZONTAL, B_USE_DEFAULT_SPACING);
+	groupView->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
 	BLayoutBuilder::Group<>(groupView)
+		.SetInsets(B_USE_DEFAULT_SPACING)
 		.Add(fInfoTextView)
 		.AddGlue()
 	.End();
 
 	BScrollView* scrollView = new BScrollView("sysInfoScroller", groupView,
-		0, true, true, B_PLAIN_BORDER);
+		0, false, true, B_NO_BORDER);
 	scrollView->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH, B_ALIGN_USE_FULL_HEIGHT));
+	scrollView->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
 
 	BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
 		.Add(scrollView)
@@ -138,112 +141,62 @@ void SystemSummaryView::_UpdateSystemInfo(BMessage* message)
 	// Note: Colors are applied after setting the text
 	BString infoText;
 
-	// Build string first
-	BString userHost = message->FindString("user_host");
-	BString separator;
-	separator.Append('-', userHost.Length());
-
-	infoText << userHost << "\n" << separator << "\n";
-
 	// Order from screenshot
 	auto addInfoLine = [&](const char* key, const char* field) {
 		BString localizedKey = B_TRANSLATE(key);
-		infoText << localizedKey << ": " << message->FindString(field) << "\n";
+		infoText << localizedKey << ":\n" << message->FindString(field) << "\n\n";
 	};
 
 	addInfoLine("OS", "os");
+	addInfoLine("ABI", "abi");
 	addInfoLine("Kernel", "kernel");
-	addInfoLine("Uptime", "uptime");
-	addInfoLine("Packages", "packages");
-	addInfoLine("Shell", "shell");
-	addInfoLine("Display", "display");
-	addInfoLine("DE", "de");
-	addInfoLine("WM", "wm");
-	addInfoLine("Font", "font");
-	addInfoLine("CPU", "cpu");
+	addInfoLine("Processors", "cpu_count");
+	addInfoLine("CPU Info", "cpu");
+	addInfoLine("CPU Features", "cpu_features");
 	addInfoLine("GPU", "gpu");
+	addInfoLine("Display", "display");
 	addInfoLine("Memory", "memory");
 	addInfoLine("Swap", "swap");
 	addInfoLine("Disk", "disk");
+	addInfoLine("Uptime", "uptime");
+	addInfoLine("Packages", "packages");
+	addInfoLine("Shell", "shell");
+	addInfoLine("DE", "de");
+	addInfoLine("WM", "wm");
+	addInfoLine("Font", "font");
 	addInfoLine("Local IP", "ip");
 	if (message->HasString("battery"))
 		addInfoLine("Battery", "battery");
 	addInfoLine("Locale", "locale");
 
-	// Add Color Blocks at bottom
-	infoText << "\n";
-	// We will render blocks as full block chars
-	BString blocks = "███ ███ ███ ███ ███ ███";
-	infoText << blocks;
-
 	fInfoTextView->SetText(infoText.String());
 
 	// Apply Colors
-	rgb_color userColor = {0, 0, 0, 255}; // Black
-	rgb_color keyColor = {255, 100, 100, 255}; // Salmon/Red
-	rgb_color sepColor = {200, 200, 200, 255}; // Grey
+	rgb_color blackColor = {0, 0, 0, 255};
+	rgb_color keyColor = {139, 0, 0, 255}; // Very dark red
 
-	BFont userFont(be_fixed_font);
-	userFont.SetFace(B_BOLD_FACE);
-	userFont.SetSize(userFont.Size() + 1);
+	BFont valFont(be_plain_font);
+	fInfoTextView->SetFontAndColor(0, infoText.Length(), &valFont, B_FONT_ALL, &blackColor);
 
-	// 1. User@Host (Black)
-	int32 pos = 0;
-	int32 len = userHost.Length();
-	fInfoTextView->SetFontAndColor(pos, pos + len, &userFont, B_FONT_ALL, &userColor);
-	pos += len + 1; // newline
-
-	// 2. Separator (Grey)
-	len = separator.Length();
-	fInfoTextView->SetFontAndColor(pos, pos + len, NULL, 0, &sepColor);
-	pos += len + 1; // newline
-
-	BFont keyFont(be_fixed_font);
+	BFont keyFont(be_plain_font);
 	keyFont.SetFace(B_BOLD_FACE);
-	keyFont.SetSize(keyFont.Size() + 2);
+	keyFont.SetSize(keyFont.Size() + 1.0f);
 
-	// 3. Key: Value lines
+	int32 pos = 0;
+	// 3. Key lines
 	const char* keys[] = {
-		"OS", "Kernel", "Uptime", "Packages", "Shell", "Display", "DE", "WM",
-		"Font", "CPU", "GPU", "Memory", "Swap", "Disk", "Local IP", "Battery", "Locale", NULL
+		"OS", "ABI", "Kernel", "Processors", "CPU Info", "CPU Features", "GPU", "Display", "Memory", "Swap", "Disk", "Uptime", "Packages", "Shell", "DE", "WM", "Font", "Local IP", "Battery", "Locale", NULL
 	};
 
 	BString currentText = fInfoTextView->Text();
 	for (int i=0; keys[i]; i++) {
 		BString keyStr = B_TRANSLATE(keys[i]);
-		keyStr << ":";
+		keyStr << ":\n";
 		int32 keyStart = currentText.FindFirst(keyStr, pos);
 		if (keyStart >= 0) {
-			fInfoTextView->SetFontAndColor(keyStart, keyStart + keyStr.Length(), &keyFont, B_FONT_ALL, &keyColor);
+			fInfoTextView->SetFontAndColor(keyStart, keyStart + keyStr.Length() - 1, &keyFont, B_FONT_ALL, &keyColor);
 			pos = keyStart + keyStr.Length();
 		}
-	}
-
-	// 4. Color Blocks (Manual coloring of the last line)
-	// "███ ███ ███ ███ ███ ███"
-	//  012 345 678 901 234 567
-	//  Blk Red Grn Yel Blu Mag Cyn Wht ...
-	int32 blockStart = currentText.FindFirst("███");
-	if (blockStart >= 0) {
-		rgb_color c1 = {0, 0, 0, 255};	   // Black
-		rgb_color c2 = {255, 0, 0, 255};	 // Red
-		rgb_color c3 = {0, 255, 0, 255};	 // Green
-		rgb_color c4 = {255, 255, 0, 255};   // Yellow
-		rgb_color c5 = {0, 0, 255, 255};	 // Blue
-		rgb_color c6 = {255, 0, 255, 255};   // Magenta
-
-		auto colorBlock = [&](int index, rgb_color c) {
-			 // "███" is 9 bytes in UTF-8. " " is 1 byte.
-			 // Stride is 10 bytes (9 + 1). Block length is 9.
-			 int32 offset = index * 10;
-			 fInfoTextView->SetFontAndColor(blockStart + offset, blockStart + offset + 9, NULL, 0, &c);
-		};
-		colorBlock(0, c1);
-		colorBlock(1, c2);
-		colorBlock(2, c3);
-		colorBlock(3, c4);
-		colorBlock(4, c5);
-		colorBlock(5, c6);
 	}
 }
 
@@ -254,65 +207,40 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 	BMessage reply(kMsgUpdateInfo);
 	system_info sysInfo;
 
-	// 1. User@Host
-	struct passwd* pw = getpwuid(getuid());
-	char hostname[256];
-	if (gethostname(hostname, sizeof(hostname)) != 0)
-		strlcpy(hostname, B_TRANSLATE("unknown"), sizeof(hostname));
-	else
-		hostname[sizeof(hostname) - 1] = '\0';
-
-	BString userHost;
-	userHost << (pw && pw->pw_name ? pw->pw_name : "user") << "@" << hostname;
-	reply.AddString("user_host", userHost);
-
-	// 2. OS
+	// OS
 	reply.AddString("os", GetOSVersion());
 
-	// 3. Kernel
+	// ABI
+	reply.AddString("abi", GetABIVersion());
+
+	// Kernel
 	struct utsname u;
 	uname(&u);
 	BString kernel;
 	kernel << u.sysname << " " << u.release;
 	reply.AddString("kernel", kernel);
 
-	// 4. Uptime
-	reply.AddString("uptime", ::FormatUptime(system_time()));
+	// CPU Count & Info
+	if (get_system_info(&sysInfo) == B_OK) {
+		BString cpuCountStr;
+		cpuCountStr << sysInfo.cpu_count << (sysInfo.cpu_count == 1 ? " Processor" : " Processors");
+		reply.AddString("cpu_count", cpuCountStr);
+	}
 
-	// 5. Packages
-	BString packages;
-	GetPackageCount(packages);
-	reply.AddString("packages", packages);
+	BString cpuInfoStr = ::GetCPUBrandString();
+	cpuInfoStr << " @ " << ::FormatHertz(GetCpuFrequency());
+	reply.AddString("cpu", cpuInfoStr);
 
-	// 6. Shell
-	const char* shellEnv = getenv("SHELL");
-	BString shell = shellEnv ? shellEnv : "/bin/sh";
-	BPath shellPath(shell.String());
-	if (shellPath.InitCheck() == B_OK) shell = shellPath.Leaf();
-	reply.AddString("shell", shell);
+	// CPU Features
+	reply.AddString("cpu_features", GetCPUFeatures());
 
-	// 7. Display
-	reply.AddString("display", GetDisplayInfo());
-
-	// 8. DE / WM
-	reply.AddString("de", B_TRANSLATE("Application Kit"));
-	reply.AddString("wm", B_TRANSLATE("Application Server"));
-
-	// 9. Font
-	font_family family;
-	font_style style;
-	be_plain_font->GetFamilyAndStyle(&family, &style);
-	BString font;
-	font << family << " " << style << " (" << static_cast<int>(be_plain_font->Size()) << "pt)";
-	reply.AddString("font", font);
-
-	// 10. CPU
-	reply.AddString("cpu", ::GetCPUBrandString());
-
-	// 11. GPU
+	// GPU
 	reply.AddString("gpu", GetGPUInfo());
 
-	// 12. Memory
+	// Display
+	reply.AddString("display", GetDisplayInfo());
+
+	// Memory
 	uint64 used, total, physical;
 	GetMemoryUsage(used, total, physical);
 	if (total > 0 && get_system_info(&sysInfo) == B_OK) {
@@ -323,11 +251,12 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 
 		BString memStr;
 		int percent = static_cast<int>(100.0 * used / total);
-		BString usedStr, totalStr;
+		BString usedStr, totalStr, physStr;
 		::FormatBytes(usedStr, used);
 		::FormatBytes(totalStr, total);
-		memStr.SetToFormat(B_TRANSLATE("%s / %s (%d%%), Cached: %s"),
-			usedStr.String(), totalStr.String(), percent, cachedStr.String());
+		::FormatBytes(physStr, physical);
+		memStr.SetToFormat(B_TRANSLATE("%s / %s (%d%%)\nTotal: %s, Cached: %s"),
+			usedStr.String(), totalStr.String(), percent, physStr.String(), cachedStr.String());
 		reply.AddString("memory", memStr);
 
 		uint64 swapUsed, swapTotal;
@@ -343,16 +272,43 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 		reply.AddString("swap", swapStr);
 	}
 
-	// 13. Disk (Root volume)
+	// Disk (Root volume)
 	reply.AddString("disk", GetRootDiskUsage());
 
-	// 14. IP
+	// Uptime
+	reply.AddString("uptime", ::FormatUptime(system_time()));
+
+	// Packages
+	BString packages;
+	GetPackageCount(packages);
+	reply.AddString("packages", packages);
+
+	// Shell
+	const char* shellEnv = getenv("SHELL");
+	BString shell = shellEnv ? shellEnv : "/bin/sh";
+	BPath shellPath(shell.String());
+	if (shellPath.InitCheck() == B_OK) shell = shellPath.Leaf();
+	reply.AddString("shell", shell);
+
+	// DE / WM
+	reply.AddString("de", B_TRANSLATE("Application Kit"));
+	reply.AddString("wm", B_TRANSLATE("Application Server"));
+
+	// Font
+	font_family family;
+	font_style style;
+	be_plain_font->GetFamilyAndStyle(&family, &style);
+	BString font;
+	font << family << " " << style << " (" << static_cast<int>(be_plain_font->Size()) << "pt)";
+	reply.AddString("font", font);
+
+	// IP
 	reply.AddString("ip", GetLocalIPAddress());
 
-	// 15. Battery
+	// Battery
 	reply.AddString("battery", GetBatteryCapacity());
 
-	// 16. Locale
+	// Locale
 	reply.AddString("locale", GetLocale());
 
 	messenger->SendMessage(&reply);

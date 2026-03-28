@@ -22,6 +22,7 @@
 #include "ProcessView.h"
 #include "SystemTab.h"
 #include "PerformanceView.h"
+#include "DiskView.h"
 
 const uint32 MSG_ABOUT_REQUESTED = 'abou';
 
@@ -92,6 +93,7 @@ private:
 	ProcessView* fProcessView;
 	PerformanceView* fPerformanceView;
 	SystemTab* fSystemTab;
+	DiskView* fDiskView;
 
 	BMessenger fAboutWindow;
 };
@@ -118,9 +120,10 @@ MainWindow::MainWindow(BRect frame)
 	viewMenu->AddItem(speedMenu);
 	menuBar->AddItem(viewMenu);
 
-	// Create the three main views
+	// Create the four main views
 	fPerformanceView = new PerformanceView();
 	fProcessView = new ProcessView();
+	fDiskView = new DiskView();
 	fSystemTab = new SystemTab();
 
 	// Create Main Tab View
@@ -131,8 +134,11 @@ MainWindow::MainWindow(BRect frame)
 	fMainTabView->AddTab(fProcessView);
 	fMainTabView->TabAt(1)->SetLabel(B_TRANSLATE("Processes"));
 
+	fMainTabView->AddTab(fDiskView);
+	fMainTabView->TabAt(2)->SetLabel(B_TRANSLATE("File Systems"));
+
 	fMainTabView->AddTab(fSystemTab);
-	fMainTabView->TabAt(2)->SetLabel(B_TRANSLATE("System"));
+	fMainTabView->TabAt(3)->SetLabel(B_TRANSLATE("System"));
 
 	// Set up main window layout
 	BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
@@ -182,16 +188,19 @@ void MainWindow::MessageReceived(BMessage* message) {
 			SetPulseRate(500000);
 			if (fProcessView) fProcessView->SetRefreshInterval(500000);
 			if (fPerformanceView) fPerformanceView->SetRefreshInterval(500000);
+			if (fDiskView) fDiskView->SetRefreshInterval(500000);
 			break;
 		case MSG_REFRESH_SPEED_NORMAL:
 			SetPulseRate(1000000);
 			if (fProcessView) fProcessView->SetRefreshInterval(1000000);
 			if (fPerformanceView) fPerformanceView->SetRefreshInterval(1000000);
+			if (fDiskView) fDiskView->SetRefreshInterval(1000000);
 			break;
 		case MSG_REFRESH_SPEED_LOW:
 			SetPulseRate(2000000);
 			if (fProcessView) fProcessView->SetRefreshInterval(2000000);
 			if (fPerformanceView) fPerformanceView->SetRefreshInterval(2000000);
+			if (fDiskView) fDiskView->SetRefreshInterval(2000000);
 			break;
 
 		default:
@@ -247,6 +256,7 @@ void MainWindow::LoadSettings() {
 					SetPulseRate(rate);
 					if (fProcessView) fProcessView->SetRefreshInterval(rate);
 					if (fPerformanceView) fPerformanceView->SetRefreshInterval(rate);
+					if (fDiskView) fDiskView->SetRefreshInterval(rate);
 				}
 
 				int32 activeTab;

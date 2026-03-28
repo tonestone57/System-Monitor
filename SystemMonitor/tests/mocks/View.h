@@ -29,6 +29,7 @@ public:
     virtual void Draw(BRect) {}
     virtual void MouseDown(BPoint) {}
     void SetHighColor(rgb_color c) {}
+    void SetDrawingMode(int mode) {}
     void FillRect(BRect r) {}
     void GetFontHeight(font_height* fh) const { MockGetFontHeight(fh); }
     float StringWidth(const char* s) const { return 10.0f; }
