@@ -15,6 +15,8 @@ resource app_version {
 
 resource app_flags B_SINGLE_LAUNCH;
 
+resource app_name_catalog_entry "x-vnd.System-Monitor:System name:System Monitor";
+
 /* The icon data was joined into a single string to avoid concatenation issues */
 resource vector_icon {
     $"6E636966080500020006023E49240000000000003CAAAA4940004A30007700FFFFFBFFFFFF0004040A060100023F4924000000000000003E00004000004000FFFF7F00000000044000FF"
