@@ -184,7 +184,7 @@ DataHistory::GetValues(int64* outValues, int32 count, bigtime_t startTime, bigti
 			nextItem = fBuffer.ItemAt(index + 1);
 		}
 
-		if (item == NULL || item->time > time) {
+		if (item->time > time) {
 			outValues[i] = 0;
 		} else if (nextItem == NULL) {
 			outValues[i] = item->value;
