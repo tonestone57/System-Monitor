@@ -26,8 +26,9 @@
 class SummaryView : public BView {
 public:
 	SummaryView(SystemStats* stats)
-		: BView("SummaryView", B_WILL_DRAW), fStats(stats),
-		  fCpuInfoText(NULL), fMemInfoText(NULL), fNetInfoText(NULL)
+		: BView("SummaryView", B_WILL_DRAW),
+		  fCpuInfoText(NULL), fMemInfoText(NULL), fNetInfoText(NULL),
+		  fStats(stats)
 	{
 		SetViewColor({255, 255, 255, 255});
 
