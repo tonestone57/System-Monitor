@@ -29,29 +29,29 @@ public:
 		: BView("SummaryView", B_WILL_DRAW),
 		  fCpuInfoText(NULL), fMemInfoText(NULL), fNetInfoText(NULL), fStats(stats)
 	{
-		SetViewColor({255, 255, 255, 255});
+		SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 
 		fCpuGraph = new ActivityGraphView("cpu_summary_graph",
-			{17, 124, 214, 255}, (color_which)-1);
-		fCpuGraph->SetFillColor({195, 236, 250, 255});
+			make_color(17, 124, 214, 255), (color_which)-1);
+		fCpuGraph->SetFillColor(make_color(195, 236, 250, 255));
 		fCpuGraph->SetDrawGrid(false);
-		fCpuGraph->SetViewColor({255, 255, 255, 255});
+		fCpuGraph->SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 		fCpuGraph->SetExplicitMinSize(BSize(60, 60));
 		fCpuGraph->SetManualScale(0, 1000);
 
 		fMemGraph = new ActivityGraphView("mem_summary_graph",
-			{9, 91, 222, 255}, (color_which)-1);
-		fMemGraph->SetFillColor({201, 225, 255, 255});
+			make_color(9, 91, 222, 255), (color_which)-1);
+		fMemGraph->SetFillColor(make_color(201, 225, 255, 255));
 		fMemGraph->SetDrawGrid(false);
-		fMemGraph->SetViewColor({255, 255, 255, 255});
+		fMemGraph->SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 		fMemGraph->SetExplicitMinSize(BSize(60, 60));
 		fMemGraph->SetManualScale(0, 1000);
 
 		fNetGraph = new ActivityGraphView("net_summary_graph",
-			{191, 23, 79, 255}, (color_which)-1);
-		fNetGraph->SetFillColor({251, 211, 222, 255});
+			make_color(191, 23, 79, 255), (color_which)-1);
+		fNetGraph->SetFillColor(make_color(251, 211, 222, 255));
 		fNetGraph->SetDrawGrid(false);
-		fNetGraph->SetViewColor({255, 255, 255, 255});
+		fNetGraph->SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 		fNetGraph->SetExplicitMinSize(BSize(60, 60));
 
 		BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
@@ -102,7 +102,7 @@ public:
 private:
 	BView* _CreateCard(const char* label, BView* content, BStringView** infoTextOut) {
 		BView* card = new BView(NULL, B_WILL_DRAW);
-		card->SetViewColor({255, 255, 255, 255});
+		card->SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 
 		BBox* borderBox = new BBox("border");
 		borderBox->SetBorder(B_PLAIN_BORDER);
@@ -112,13 +112,14 @@ private:
 
 		BStringView* labelView = new BStringView(NULL, label);
 		labelView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
-		BFont font(be_plain_font);
-		font.SetSize(font.Size() + 2);
+		labelView->SetHighColor(ui_color(B_DOCUMENT_TEXT_COLOR)); // Force explicitly
+		// Reverted the font.SetSize(+2) to default be_bold_font just like original, to see if font resize broke it!
+		BFont font(be_bold_font);
 		labelView->SetFont(&font);
 
 		BStringView* infoText = new BStringView(NULL, " ");
 		infoText->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
-		infoText->SetHighColor({117, 117, 117, 255});
+		infoText->SetHighColor(tint_color(ui_color(B_DOCUMENT_TEXT_COLOR), B_LIGHTEN_2_TINT)); // explicit grey
 		*infoTextOut = infoText;
 
 		BLayoutBuilder::Group<>(card, B_HORIZONTAL, B_USE_DEFAULT_SPACING)
