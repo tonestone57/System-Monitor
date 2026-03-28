@@ -112,13 +112,8 @@ public:
 		drawRight(fCachedUsed,    fView->UsedWidth());
 		drawRight(fCachedFree,    fView->FreeWidth());
 
-		// Draw "Used" text left-aligned, then progress bar
-		float textX = x;
-		owner->DrawString(fCachedUsed.String(), BPoint(textX, y));
-		float usedTextWidth = owner->StringWidth(fCachedUsed.String());
-
-		float barX = textX + usedTextWidth + 10;
-		float barWidth = fView->UsedWidth() - usedTextWidth - 15;
+		float barX = x + 10;
+		float barWidth = itemRect.right - barX - 10;
 		if (barWidth > 20) {
 			BRect barRect(barX, itemRect.top + 2, barX + barWidth, itemRect.bottom - 2);
 
@@ -150,7 +145,7 @@ public:
 			// Restore drawing mode
 			owner->SetDrawingMode(B_OP_COPY);
 		}
-		x += fView->UsedWidth();
+		x += fView->PercentWidth();
 	}
 
 	static int CompareDevice(const void* a, const void* b) {

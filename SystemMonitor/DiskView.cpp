@@ -59,7 +59,7 @@ DiskView::DiskView()
 	  fPerformanceViewVisible(true),
 	  fRefreshInterval(1000000),
 	  fListGeneration(0),
-	  fSortMode(SORT_DISK_BY_PERCENT)
+	  fSortMode(SORT_DISK_BY_DEVICE)
 {
 	SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 	fScanSem = create_sem(0, "disk scan sem");
@@ -96,7 +96,6 @@ DiskView::DiskView()
 	addHeader(B_TRANSLATE("Total"), fTotalWidth, SORT_DISK_BY_TOTAL, B_ALIGN_RIGHT);
 	addHeader(B_TRANSLATE("Used"), fUsedWidth, SORT_DISK_BY_USED, B_ALIGN_RIGHT);
 	addHeader(B_TRANSLATE("Free"), fFreeWidth, SORT_DISK_BY_FREE, B_ALIGN_RIGHT);
-	addHeader(B_TRANSLATE("Usage"), fPercentWidth, SORT_DISK_BY_PERCENT, B_ALIGN_RIGHT);
 
 	headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
@@ -374,7 +373,7 @@ void DiskView::UpdateData(BMessage* message)
 		fFreeWidth = kBaseDiskFreeWidth * scale;
 		fPercentWidth = kBaseDiskPercentWidth * scale;
 
-		UpdateHeaderWidths(fHeaders, { fDeviceWidth, fMountWidth, fFSWidth, fTotalWidth, fUsedWidth, fFreeWidth, fPercentWidth });
+		UpdateHeaderWidths(fHeaders, { fDeviceWidth, fMountWidth, fFSWidth, fTotalWidth, fUsedWidth, fFreeWidth });
 	}
 
 	for (int32 i = 0; i < count; i++) {
@@ -437,13 +436,12 @@ void DiskView::Draw(BRect updateRect)
 void DiskView::_SortItems()
 {
 	switch (fSortMode) {
-		case SORT_DISK_BY_DEVICE: fDiskListView->SortItems(DiskListItem::CompareDevice); break;
+		case SORT_DISK_BY_DEVICE: default: fDiskListView->SortItems(DiskListItem::CompareDevice); break;
 		case SORT_DISK_BY_MOUNT: fDiskListView->SortItems(DiskListItem::CompareMount); break;
 		case SORT_DISK_BY_FS: fDiskListView->SortItems(DiskListItem::CompareFS); break;
 		case SORT_DISK_BY_TOTAL: fDiskListView->SortItems(DiskListItem::CompareTotal); break;
 		case SORT_DISK_BY_USED: fDiskListView->SortItems(DiskListItem::CompareUsed); break;
 		case SORT_DISK_BY_FREE: fDiskListView->SortItems(DiskListItem::CompareFree); break;
-		case SORT_DISK_BY_PERCENT: default: fDiskListView->SortItems(DiskListItem::CompareUsage); break;
 	}
 }
 
