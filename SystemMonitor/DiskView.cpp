@@ -20,6 +20,25 @@
 #include <vector>
 #include "DiskListItem.h"
 
+
+class DiskHeaderView : public ClickableHeaderView {
+public:
+	DiskHeaderView(const char* label, float width, int32 mode, BHandler* target)
+		: ClickableHeaderView(label, width, mode, target)
+	{
+		SetViewColor({255, 255, 255, 255}); // White background
+		SetHighColor({0, 0, 0, 255}); // Black text
+		SetLowColor({255, 255, 255, 255});
+	}
+
+	virtual void AttachedToWindow() {
+		ClickableHeaderView::AttachedToWindow();
+		SetViewColor({255, 255, 255, 255}); // White background
+		SetHighColor({0, 0, 0, 255}); // Black text
+		SetLowColor({255, 255, 255, 255});
+	}
+};
+
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "DiskView"
 
@@ -45,8 +64,6 @@ DiskView::DiskView()
 	SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 	fScanSem = create_sem(0, "disk scan sem");
 
-	fDiskInfoBox = new BBox("DiskInfoBox");
-	fDiskInfoBox->SetLabel(B_TRANSLATE("Disk Volumes"));
 
 	// Calculate scaling
 	BFont font;
@@ -66,7 +83,7 @@ DiskView::DiskView()
 	headerView->SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 
 	auto addHeader = [&](const char* label, float width, int32 mode, alignment align = B_ALIGN_LEFT) {
-		ClickableHeaderView* sv = new ClickableHeaderView(label, width, mode, this);
+		DiskHeaderView* sv = new DiskHeaderView(label, width, mode, this);
 		sv->SetAlignment(align);
 		headerView->AddChild(sv);
 		fHeaders.push_back(sv);
@@ -84,24 +101,10 @@ DiskView::DiskView()
 	fDiskListView = new BListView("disk_list", B_SINGLE_SELECTION_LIST, B_WILL_DRAW | B_NAVIGABLE);
 	BScrollView* diskScrollView = new BScrollView("disk_scroll", fDiskListView, 0, false, true, true);
 
-	BStringView* noteView = new BStringView("io_note", B_TRANSLATE("Real-time Disk I/O monitoring is not supported on this system."));
-	noteView->SetAlignment(B_ALIGN_CENTER);
-	BFont noteFont(be_plain_font);
-	noteFont.SetSize(noteFont.Size() * 0.9f);
-	noteView->SetFont(&noteFont);
-	noteView->SetHighColor(ui_color(B_CONTROL_TEXT_COLOR));
-
-	BLayoutBuilder::Group<>(fDiskInfoBox, B_VERTICAL, 0)
-		.SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING + 15, // Approx font height
-				   B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
-		.Add(headerView)
-		.Add(diskScrollView)
-		.AddStrut(B_USE_DEFAULT_SPACING)
-		.Add(noteView);
-
 	BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
 		.SetInsets(0)
-		.Add(fDiskInfoBox)
+		.Add(headerView)
+		.Add(diskScrollView)
 	.End();
 }
 

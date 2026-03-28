@@ -358,3 +358,11 @@ public:
 };
 
 #endif // HAIKU_MOCKS_H
+
+#ifndef B_MINI_ICON
+#define B_MINI_ICON 1
+#endif
+
+#ifndef B_RGBA32
+#define B_RGBA32 1
+#endif

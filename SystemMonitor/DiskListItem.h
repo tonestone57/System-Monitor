@@ -8,6 +8,8 @@
 #include <InterfaceDefs.h>
 #include <SupportDefs.h>
 #include <cstring>
+#include <Volume.h>
+#include <Bitmap.h>
 #include "DiskView.h"
 #include "Utils.h"
 
@@ -72,14 +74,14 @@ public:
 		if (IsSelected() || complete) {
 			rgb_color color = IsSelected()
 				? ui_color(B_LIST_SELECTED_BACKGROUND_COLOR)
-				: ui_color(B_LIST_BACKGROUND_COLOR);
+				: rgb_color{255, 255, 255, 255};
 			owner->SetHighColor(color);
 			owner->FillRect(itemRect);
 		}
 
 		rgb_color textColor = IsSelected()
 			? ui_color(B_LIST_SELECTED_ITEM_TEXT_COLOR)
-			: ui_color(B_LIST_ITEM_TEXT_COLOR);
+			: rgb_color{0, 0, 0, 255};
 		owner->SetHighColor(textColor);
 
 		font_height fh;
@@ -93,7 +95,17 @@ public:
 			x += width;
 		};
 
-		owner->DrawString(fTruncatedDevice.String(), BPoint(x, y)); x += fView->DeviceWidth();
+		// Draw placeholder icon
+		BRect iconRect(x, itemRect.top + (itemRect.Height() - 16) / 2, x + 16, itemRect.top + (itemRect.Height() - 16) / 2 + 16);
+		owner->SetHighColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+		owner->FillRect(iconRect);
+		owner->SetHighColor({0, 0, 0, 255}); // Black border
+		//owner->StrokeRect(iconRect);
+		owner->SetHighColor(textColor); // Restore text color
+
+		float deviceStringX = x + 20; // Icon width (16) + padding (4)
+		owner->DrawString(fTruncatedDevice.String(), BPoint(deviceStringX, y));
+		x += fView->DeviceWidth();
 		owner->DrawString(fTruncatedMount.String(),  BPoint(x, y)); x += fView->MountWidth();
 		owner->DrawString(fTruncatedFS.String(),     BPoint(x, y)); x += fView->FSWidth();
 		drawRight(fCachedTotal,   fView->TotalWidth());
@@ -110,8 +122,7 @@ public:
 			BRect barRect(barX, itemRect.top + 2, barX + barWidth, itemRect.bottom - 2);
 
 			// Background
-			rgb_color bg = ui_color(B_PANEL_BACKGROUND_COLOR);
-			rgb_color darkBg = { (uint8)(bg.red * 0.8), (uint8)(bg.green * 0.8), (uint8)(bg.blue * 0.8), 255 };
+			rgb_color darkBg = ui_color(B_PANEL_BACKGROUND_COLOR);
 			owner->SetHighColor(darkBg);
 			owner->FillRect(barRect);
 
