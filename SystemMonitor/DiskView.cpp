@@ -39,8 +39,8 @@ DiskView::DiskView()
 	  fTerminated(false),
 	  fPerformanceViewVisible(true),
 	  fRefreshInterval(1000000),
-	  fSortMode(SORT_DISK_BY_PERCENT),
-	  fListGeneration(0)
+	  fListGeneration(0),
+	  fSortMode(SORT_DISK_BY_PERCENT)
 {
 	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 	fScanSem = create_sem(0, "disk scan sem");
