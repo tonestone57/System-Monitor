@@ -607,7 +607,7 @@ int32 ProcessView::UpdateThread(void* data)
 		if (totalPossibleCoreTime <= 0) totalPossibleCoreTime = 1.0f;
 
 		std::vector<team_id> visibleTeams;
-		if (view->Window() != nullptr && view->Window()->Lock()) {
+		if (view->LockLooper()) {
 			BRect bounds = view->fProcessListView->Bounds();
 			for (int32 i = 0; i < view->fProcessListView->CountItems(); i++) {
 				BRect frame = view->fProcessListView->ItemFrame(i);
@@ -618,7 +618,7 @@ int32 ProcessView::UpdateThread(void* data)
 					break; // Items are ordered top to bottom
 				}
 			}
-			view->Window()->Unlock();
+			view->UnlockLooper();
 		}
 
 		int32 cookie = 0;
