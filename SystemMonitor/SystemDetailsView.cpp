@@ -39,6 +39,7 @@ SystemDetailsView::SystemDetailsView()
 	  fVersionInfoView(NULL),
 	  fCPULabelView(NULL),
 	  fCPUInfoView(NULL),
+	  fCPUCoresView(NULL),
 	  fCPUFeaturesView(NULL),
 	  fMemSizeView(NULL),
 	  fMemUsageView(NULL),
@@ -62,8 +63,9 @@ SystemDetailsView::SystemDetailsView()
 	fVersionInfoView = _CreateSubtext("ostext", _GetOSVersion());
 
 	// CPU count, type and clock speed
-	fCPULabelView = _CreateLabel("cpulabel", _GetCPUCount(&sysInfo));
+	fCPULabelView = _CreateLabel("cpulabel", B_TRANSLATE("CPU"));
 	fCPUInfoView = _CreateSubtext("cputext", _GetCPUInfo());
+	fCPUCoresView = _CreateSubtext("cpu_cores", _GetCPUCount(&sysInfo));
 
 	fCPUFeaturesView = new BTextView("cpu_features");
 	fCPUFeaturesView->SetText(_GetCPUFeatures());
@@ -148,79 +150,75 @@ SystemDetailsView::SystemDetailsView()
 	fLocaleLabelView = _CreateLabel("localelabel", B_TRANSLATE("Locale"));
 	fLocaleInfoView = _CreateSubtext("localetext", GetLocale());
 
-BGroupView* detailsGroup = new BGroupView(B_VERTICAL);
+BGridLayout* gridLayout = new BGridLayout(be_control_look->DefaultItemSpacing(), be_control_look->DefaultItemSpacing() / 2);
+	BGroupView* detailsGroup = new BGroupView(B_VERTICAL);
 	detailsGroup->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
+	detailsGroup->SetLayout(gridLayout);
 
-	auto layoutBuilder = BLayoutBuilder::Group<>(detailsGroup, B_VERTICAL)
+	auto layoutBuilder = BLayoutBuilder::Grid<>(gridLayout)
 		// OS Version:
-		.Add(fVersionLabelView)
-		.Add(fVersionInfoView)
-		.AddStrut(offset)
+		.Add(fVersionLabelView, 0, 0)
+		.Add(fVersionInfoView, 1, 0)
+		.Add(BSpaceLayoutItem::CreateGlue(), 2, 0)
 		// Kernel:
-		.Add(kernelLabel)
-		.Add(fKernelDateTimeView)
-		.AddStrut(offset)
+		.Add(kernelLabel, 0, 1)
+		.Add(fKernelDateTimeView, 1, 1)
 		// Time running:
-		.Add(uptimeLabel)
-		.Add(fUptimeView)
-		.AddStrut(offset)
+		.Add(uptimeLabel, 0, 2)
+		.Add(fUptimeView, 1, 2)
 		// Packages:
-		.Add(fPackagesLabelView)
-		.Add(fPackagesInfoView)
-		.AddStrut(offset)
+		.Add(fPackagesLabelView, 0, 3)
+		.Add(fPackagesInfoView, 1, 3)
 		// Shell:
-		.Add(fShellLabelView)
-		.Add(fShellInfoView)
-		.AddStrut(offset)
+		.Add(fShellLabelView, 0, 4)
+		.Add(fShellInfoView, 1, 4)
 		// Resolution:
-		.Add(displayLabel)
-		.Add(fDisplayInfoView)
-		.AddStrut(offset)
+		.Add(displayLabel, 0, 5)
+		.Add(fDisplayInfoView, 1, 5)
 		// DE:
-		.Add(fDELabelView)
-		.Add(fDEInfoView)
-		.AddStrut(offset)
+		.Add(fDELabelView, 0, 6)
+		.Add(fDEInfoView, 1, 6)
 		// WM:
-		.Add(fWMLabelView)
-		.Add(fWMInfoView)
-		.AddStrut(offset)
+		.Add(fWMLabelView, 0, 7)
+		.Add(fWMInfoView, 1, 7)
 		// Font:
-		.Add(fFontLabelView)
-		.Add(fFontInfoView)
-		.AddStrut(offset)
+		.Add(fFontLabelView, 0, 8)
+		.Add(fFontInfoView, 1, 8)
 		// CPU / Processors:
-		.Add(fCPULabelView)
-		.Add(fCPUInfoView)
-		.Add(fCPUFeaturesView)
-		.AddStrut(offset)
+		.Add(fCPULabelView, 0, 9)
+		.Add(fCPUInfoView, 1, 9)
+		.Add(fCPUCoresView, 1, 10)
+		.Add(fCPUFeaturesView, 1, 11)
 		// GPU:
-		.Add(gpuLabel)
-		.Add(fGPUInfoView)
-		.AddStrut(offset)
+		.Add(gpuLabel, 0, 12)
+		.Add(fGPUInfoView, 1, 12)
 		// Memory:
-		.Add(fMemSizeView)
-		.Add(fMemUsageView)
-		.Add(fSwapUsageView)
-		.AddStrut(offset)
+		.Add(fMemSizeView, 0, 13)
+		.Add(fMemUsageView, 1, 13)
+		.Add(fSwapUsageView, 1, 14)
 		// Disk:
-		.Add(diskLabel)
-		.Add(fDiskUsageView)
-		.AddStrut(offset)
+		.Add(diskLabel, 0, 15)
+		.Add(fDiskUsageView, 1, 15)
 		// Local IP:
-		.Add(fIPLabelView)
-		.Add(fIPInfoView)
-		.AddStrut(offset);
+		.Add(fIPLabelView, 0, 16)
+		.Add(fIPInfoView, 1, 16);
 
+	int row = 17;
 	if (fBatteryLabelView) {
-		layoutBuilder.Add(fBatteryLabelView)
-			.Add(fBatteryInfoView)
-			.AddStrut(offset);
+		layoutBuilder.Add(fBatteryLabelView, 0, row)
+			.Add(fBatteryInfoView, 1, row);
+		row++;
 	}
 
-	layoutBuilder.Add(fLocaleLabelView)
-		.Add(fLocaleInfoView)
-		.AddGlue()
-		.SetInsets(inset)
+	layoutBuilder.Add(fLocaleLabelView, 0, row)
+		.Add(fLocaleInfoView, 1, row);
+
+	row++;
+	layoutBuilder.Add(BSpaceLayoutItem::CreateGlue(), 0, row, 3);
+	gridLayout->SetRowWeight(row, 1.0f);
+	gridLayout->SetColumnWeight(2, 1.0f);
+
+	layoutBuilder.SetInsets(inset)
 		.End();
 
 	detailsGroup->SetExplicitMinSize(BSize(B_SIZE_UNSET, 600));
@@ -284,11 +282,16 @@ BStringView* SystemDetailsView::_CreateLabel(const char* name, const char* text)
 
 void SystemDetailsView::_UpdateLabel(BStringView* label)
 {
-	label->SetExplicitAlignment(BAlignment(B_ALIGN_LEFT, B_ALIGN_VERTICAL_UNSET));
-	label->SetFont(be_bold_font, B_FONT_FAMILY_AND_STYLE);
+	label->SetExplicitAlignment(BAlignment(B_ALIGN_RIGHT, B_ALIGN_VERTICAL_UNSET));
+	BFont font(be_bold_font);
+	font.SetSize(font.Size() + 2);
+	label->SetFont(&font, B_FONT_ALL);
 	label->SetHighColor(139, 0, 0, 255);
 	BString text = label->Text();
 	text.ToUpper();
+	if (!text.EndsWith(":")) {
+		text << ":";
+	}
 	label->SetText(text.String());
 }
 
@@ -302,7 +305,9 @@ BStringView* SystemDetailsView::_CreateSubtext(const char* name, const char* tex
 void SystemDetailsView::_UpdateSubtext(BStringView* subtext)
 {
 	subtext->SetExplicitAlignment(BAlignment(B_ALIGN_LEFT, B_ALIGN_VERTICAL_UNSET));
-	subtext->SetFont(be_plain_font, B_FONT_FAMILY_AND_STYLE);
+	BFont font(be_plain_font);
+	font.SetSize(font.Size() + 1);
+	subtext->SetFont(&font, B_FONT_ALL);
 	subtext->SetHighColor(0, 0, 0, 255);
 }
 
@@ -310,7 +315,9 @@ void SystemDetailsView::_UpdateText(BTextView* textView)
 {
 	textView->SetExplicitAlignment(BAlignment(B_ALIGN_LEFT, B_ALIGN_TOP));
 	rgb_color black = {0, 0, 0, 255};
-	textView->SetFontAndColor(be_plain_font, B_FONT_FAMILY_AND_STYLE, &black);
+	BFont font(be_plain_font);
+	font.SetSize(font.Size() + 1);
+	textView->SetFontAndColor(&font, B_FONT_ALL, &black);
 	textView->SetColorSpace(B_RGBA32);
 	textView->MakeResizable(false);
 	textView->MakeEditable(false);

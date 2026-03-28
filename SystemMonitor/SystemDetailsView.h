@@ -45,6 +45,7 @@ private:
 	BStringView* fVersionInfoView;
 	BStringView* fCPULabelView;
 	BStringView* fCPUInfoView;
+	BStringView* fCPUCoresView;
 	BTextView*   fCPUFeaturesView;
 	BStringView* fMemSizeView;
 	BStringView* fMemUsageView;
