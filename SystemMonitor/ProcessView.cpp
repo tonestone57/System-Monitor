@@ -17,6 +17,7 @@
 #include <MenuItem.h>
 #include <Font.h>
 #include <vector>
+#include <algorithm>
 #include <unordered_set>
 #include <Window.h>
 #include <Invoker.h>
