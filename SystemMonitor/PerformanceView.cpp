@@ -32,20 +32,26 @@ public:
 		SetViewColor({255, 255, 255, 255});
 
 		fCpuGraph = new ActivityGraphView("cpu_summary_graph",
-			{255, 255, 255, 255}, (color_which)-1);
-		fCpuGraph->SetViewColor({0, 0, 0, 255});
+			{17, 124, 214, 255}, (color_which)-1);
+		fCpuGraph->SetFillColor({195, 236, 250, 255});
+		fCpuGraph->SetDrawGrid(false);
+		fCpuGraph->SetViewColor({255, 255, 255, 255});
 		fCpuGraph->SetExplicitMinSize(BSize(60, 60));
 		fCpuGraph->SetManualScale(0, 1000);
 
 		fMemGraph = new ActivityGraphView("mem_summary_graph",
-			{255, 255, 255, 255}, (color_which)-1);
-		fMemGraph->SetViewColor({0, 0, 0, 255});
+			{9, 91, 222, 255}, (color_which)-1);
+		fMemGraph->SetFillColor({201, 225, 255, 255});
+		fMemGraph->SetDrawGrid(false);
+		fMemGraph->SetViewColor({255, 255, 255, 255});
 		fMemGraph->SetExplicitMinSize(BSize(60, 60));
 		fMemGraph->SetManualScale(0, 1000);
 
 		fNetGraph = new ActivityGraphView("net_summary_graph",
-			{255, 255, 255, 255}, (color_which)-1);
-		fNetGraph->SetViewColor({0, 0, 0, 255});
+			{191, 23, 79, 255}, (color_which)-1);
+		fNetGraph->SetFillColor({251, 211, 222, 255});
+		fNetGraph->SetDrawGrid(false);
+		fNetGraph->SetViewColor({255, 255, 255, 255});
 		fNetGraph->SetExplicitMinSize(BSize(60, 60));
 
 		BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
@@ -106,11 +112,13 @@ private:
 
 		BStringView* labelView = new BStringView(NULL, label);
 		labelView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
-		BFont font(be_bold_font);
+		BFont font(be_plain_font);
+		font.SetSize(font.Size() + 2);
 		labelView->SetFont(&font);
 
 		BStringView* infoText = new BStringView(NULL, " ");
 		infoText->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
+		infoText->SetHighColor({117, 117, 117, 255});
 		*infoTextOut = infoText;
 
 		BLayoutBuilder::Group<>(card, B_HORIZONTAL, B_USE_DEFAULT_SPACING)

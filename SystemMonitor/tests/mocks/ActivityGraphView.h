@@ -11,6 +11,9 @@ public:
     void SetManualScale(int64_t min, int64_t max) {}
     void AddValue(bigtime_t time, int64_t value) {}
     void SetRefreshInterval(bigtime_t interval) {}
+    void SetFillColor(rgb_color color) {}
+    void SetDrawGrid(bool drawGrid) {}
+    void SetDrawFill(bool drawFill) {}
 };
 
 #endif

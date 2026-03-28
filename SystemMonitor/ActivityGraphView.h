@@ -22,6 +22,10 @@ public:
 			void		SetManualScale(int64 min, int64 max);
 			void		SetAutoScale();
 
+			void		SetFillColor(rgb_color color);
+			void		SetDrawGrid(bool drawGrid);
+			void		SetDrawFill(bool drawFill);
+
 private:
 			void		_UpdateOffscreenBitmap();
 			BView*		_OffscreenView();
@@ -35,6 +39,9 @@ private:
 	bigtime_t			fResolution;
 	std::vector<BPoint>	fPoints;
 
+	rgb_color			fFillColor;
+	bool				fDrawGrid;
+	bool				fDrawFill;
 	bool				fManualScale;
 	int64				fManualMin;
 	int64				fManualMax;

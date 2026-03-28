@@ -16,6 +16,9 @@ ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_wh
 	fSystemColor(systemColor),
 	fOffscreen(NULL),
 	fResolution(1000000),
+	fFillColor({0,0,0,0}),
+	fDrawGrid(true),
+	fDrawFill(true),
 	fManualScale(false),
 	fManualMin(0),
 	fManualMax(0),
@@ -256,21 +259,23 @@ ActivityGraphView::_DrawHistory()
 				view->FillRect(frame, B_SOLID_LOW);
 
 				// Draw Grid
-				view->SetDrawingMode(B_OP_COPY);
-				view->SetHighColor(gridColor);
-				view->SetPenSize(1.0);
+				if (fDrawGrid) {
+					view->SetDrawingMode(B_OP_COPY);
+					view->SetHighColor(gridColor);
+					view->SetPenSize(1.0);
 
-				// Horizontal lines
-				for (int i = 1; i < 4; i++) {
-					float y = frame.top + frame.Height() * i / 4;
-					view->StrokeLine(BPoint(frame.left, y), BPoint(frame.right, y));
-				}
-				// Vertical lines
-				BFont viewFont;
-				view->GetFont(&viewFont);
-				float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
-				for (float x = 0; x < frame.Width(); x += gridSpacing) {
-					 view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
+					// Horizontal lines
+					for (int i = 1; i < 4; i++) {
+						float y = frame.top + frame.Height() * i / 4;
+						view->StrokeLine(BPoint(frame.left, y), BPoint(frame.right, y));
+					}
+					// Vertical lines
+					BFont viewFont;
+					view->GetFont(&viewFont);
+					float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
+					for (float x = 0; x < frame.Width(); x += gridSpacing) {
+						 view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
+					}
 				}
 
 				// Calculate points for polygon fill and line stroke.
@@ -308,11 +313,16 @@ ActivityGraphView::_DrawHistory()
 					points[pointCount-1] = BPoint(frame.right, frame.bottom);
 
 					// Fill
-					view->SetDrawingMode(B_OP_ALPHA);
-					rgb_color fillColor = drawColor;
-					fillColor.alpha = 100;
-					view->SetHighColor(fillColor);
-					view->FillPolygon(points, pointCount);
+					if (fDrawFill) {
+						view->SetDrawingMode(B_OP_ALPHA);
+						rgb_color fillColor = drawColor;
+						fillColor.alpha = 100;
+						if (fFillColor.alpha != 0) {
+							fillColor = fFillColor;
+						}
+						view->SetHighColor(fillColor);
+						view->FillPolygon(points, pointCount);
+					}
 
 					// Stroke Line
 					view->SetDrawingMode(B_OP_COPY);
@@ -359,25 +369,27 @@ ActivityGraphView::_DrawHistory()
 				view->FillRect(newArea, B_SOLID_LOW);
 
 				// Draw Grid (New Area)
-				view->SetDrawingMode(B_OP_COPY);
-				view->SetHighColor(gridColor);
-				view->SetPenSize(1.0);
+				if (fDrawGrid) {
+					view->SetDrawingMode(B_OP_COPY);
+					view->SetHighColor(gridColor);
+					view->SetPenSize(1.0);
 
-				// Horizontal lines
-				for (int i = 1; i < 4; i++) {
-					float y = frame.top + frame.Height() * i / 4;
-					view->StrokeLine(BPoint(newArea.left, y), BPoint(newArea.right, y));
-				}
+					// Horizontal lines
+					for (int i = 1; i < 4; i++) {
+						float y = frame.top + frame.Height() * i / 4;
+						view->StrokeLine(BPoint(newArea.left, y), BPoint(newArea.right, y));
+					}
 
-				// Vertical lines
-				BFont viewFont;
-				view->GetFont(&viewFont);
-				float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
-				int64 startK = (int64)ceilf((newArea.left + fScrollOffset) / gridSpacing);
-				for (int64 k = startK; ; k++) {
-					float x = k * gridSpacing - fScrollOffset;
-					if (x > newArea.right) break;
-					view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
+					// Vertical lines
+					BFont viewFont;
+					view->GetFont(&viewFont);
+					float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
+					int64 startK = (int64)ceilf((newArea.left + fScrollOffset) / gridSpacing);
+					for (int64 k = startK; ; k++) {
+						float x = k * gridSpacing - fScrollOffset;
+						if (x > newArea.right) break;
+						view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
+					}
 				}
 
 				// Clip drawing to new area to prevent overlap artifacts
@@ -430,11 +442,16 @@ ActivityGraphView::_DrawHistory()
 					points[polyCount-1] = BPoint(endI, frame.bottom);
 
 					// Fill
-					view->SetDrawingMode(B_OP_ALPHA);
-					rgb_color fillColor = drawColor;
-					fillColor.alpha = 100;
-					view->SetHighColor(fillColor);
-					view->FillPolygon(points, polyCount);
+					if (fDrawFill) {
+						view->SetDrawingMode(B_OP_ALPHA);
+						rgb_color fillColor = drawColor;
+						fillColor.alpha = 100;
+						if (fFillColor.alpha != 0) {
+							fillColor = fFillColor;
+						}
+						view->SetHighColor(fillColor);
+						view->FillPolygon(points, polyCount);
+					}
 
 					// Stroke
 					view->SetDrawingMode(B_OP_COPY);
@@ -461,4 +478,25 @@ ActivityGraphView::_DrawHistory()
 	if (locked && view != NULL) {
 		DrawBitmap(fOffscreen, viewBounds, Bounds());
 	}
+}
+
+void
+ActivityGraphView::SetFillColor(rgb_color color)
+{
+	fFillColor = color;
+	Invalidate();
+}
+
+void
+ActivityGraphView::SetDrawGrid(bool drawGrid)
+{
+	fDrawGrid = drawGrid;
+	Invalidate();
+}
+
+void
+ActivityGraphView::SetDrawFill(bool drawFill)
+{
+	fDrawFill = drawFill;
+	Invalidate();
 }
