@@ -61,7 +61,7 @@ DiskView::DiskView()
 	  fListGeneration(0),
 	  fSortMode(SORT_DISK_BY_PERCENT)
 {
-	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+	SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 	fScanSem = create_sem(0, "disk scan sem");
 
 
@@ -101,7 +101,7 @@ DiskView::DiskView()
 	headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
 	fDiskListView = new BListView("disk_list", B_SINGLE_SELECTION_LIST, B_WILL_DRAW | B_NAVIGABLE);
-	BScrollView* diskScrollView = new BScrollView("disk_scroll", fDiskListView, 0, false, true, true);
+	BScrollView* diskScrollView = new BScrollView("disk_scroll", fDiskListView, 0, false, true, B_NO_BORDER);
 
 	BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
 		.SetInsets(0)
