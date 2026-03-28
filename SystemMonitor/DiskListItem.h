@@ -100,10 +100,11 @@ public:
 		drawRight(fCachedFree,    fView->FreeWidth());
 
 		// Draw "Used" text left-aligned, then progress bar
-		owner->DrawString(fCachedUsed.String(), BPoint(x, y));
+		float textX = x;
+		owner->DrawString(fCachedUsed.String(), BPoint(textX, y));
 		float usedTextWidth = owner->StringWidth(fCachedUsed.String());
 
-		float barX = x + usedTextWidth + 10;
+		float barX = textX + usedTextWidth + 10;
 		float barWidth = fView->UsedWidth() - usedTextWidth - 15;
 		if (barWidth > 20) {
 			BRect barRect(barX, itemRect.top + 2, barX + barWidth, itemRect.bottom - 2);
@@ -124,12 +125,18 @@ public:
 			}
 
 			// Percentage text in the center of the bar
-			owner->SetHighColor(ui_color(B_CONTROL_TEXT_COLOR));
+			// Set drawing mode to ensure text is visible over background
+			owner->SetDrawingMode(B_OP_OVER);
+			rgb_color blackColor = {0, 0, 0, 255};
+			owner->SetHighColor(blackColor);
 			BString percentStr;
 			percentStr.SetToFormat("%.0f%%", fPercent);
 			float percentWidth = owner->StringWidth(percentStr.String());
 			float percentX = barRect.left + (barWidth - percentWidth) / 2.0;
 			owner->DrawString(percentStr.String(), BPoint(percentX, y));
+
+			// Restore drawing mode
+			owner->SetDrawingMode(B_OP_COPY);
 		}
 		x += fView->UsedWidth();
 	}
