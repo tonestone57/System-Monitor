@@ -228,7 +228,7 @@ ActivityGraphView::_DrawHistory()
 				drawColor = ui_color(fSystemColor);
 			}
 
-			rgb_color bg = ui_color(B_PANEL_BACKGROUND_COLOR);
+			rgb_color bg = ViewColor();
 			rgb_color gridColor = tint_color(bg, B_DARKEN_1_TINT);
 
 			int64 min, max;
