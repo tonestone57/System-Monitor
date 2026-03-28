@@ -138,13 +138,6 @@ void SystemSummaryView::_UpdateSystemInfo(BMessage* message)
 	// Note: Colors are applied after setting the text
 	BString infoText;
 
-	// Build string first
-	BString userHost = message->FindString("user_host");
-	BString separator;
-	separator.Append('-', userHost.Length());
-
-	infoText << userHost << "\n" << separator << "\n";
-
 	// Order from screenshot
 	auto addInfoLine = [&](const char* key, const char* field) {
 		BString localizedKey = B_TRANSLATE(key);
@@ -170,38 +163,16 @@ void SystemSummaryView::_UpdateSystemInfo(BMessage* message)
 		addInfoLine("Battery", "battery");
 	addInfoLine("Locale", "locale");
 
-	// Add Color Blocks at bottom
-	infoText << "\n";
-	// We will render blocks as full block chars
-	BString blocks = "███ ███ ███ ███ ███ ███";
-	infoText << blocks;
-
 	fInfoTextView->SetText(infoText.String());
 
 	// Apply Colors
-	rgb_color userColor = {0, 0, 0, 255}; // Black
 	rgb_color keyColor = {255, 100, 100, 255}; // Salmon/Red
-	rgb_color sepColor = {200, 200, 200, 255}; // Grey
-
-	BFont userFont(be_fixed_font);
-	userFont.SetFace(B_BOLD_FACE);
-	userFont.SetSize(userFont.Size() + 1);
-
-	// 1. User@Host (Black)
-	int32 pos = 0;
-	int32 len = userHost.Length();
-	fInfoTextView->SetFontAndColor(pos, pos + len, &userFont, B_FONT_ALL, &userColor);
-	pos += len + 1; // newline
-
-	// 2. Separator (Grey)
-	len = separator.Length();
-	fInfoTextView->SetFontAndColor(pos, pos + len, NULL, 0, &sepColor);
-	pos += len + 1; // newline
 
 	BFont keyFont(be_fixed_font);
 	keyFont.SetFace(B_BOLD_FACE);
 	keyFont.SetSize(keyFont.Size() + 2);
 
+	int32 pos = 0;
 	// 3. Key: Value lines
 	const char* keys[] = {
 		"OS", "Kernel", "Uptime", "Packages", "Shell", "Display", "DE", "WM",
@@ -218,33 +189,6 @@ void SystemSummaryView::_UpdateSystemInfo(BMessage* message)
 			pos = keyStart + keyStr.Length();
 		}
 	}
-
-	// 4. Color Blocks (Manual coloring of the last line)
-	// "███ ███ ███ ███ ███ ███"
-	//  012 345 678 901 234 567
-	//  Blk Red Grn Yel Blu Mag Cyn Wht ...
-	int32 blockStart = currentText.FindFirst("███");
-	if (blockStart >= 0) {
-		rgb_color c1 = {0, 0, 0, 255};	   // Black
-		rgb_color c2 = {255, 0, 0, 255};	 // Red
-		rgb_color c3 = {0, 255, 0, 255};	 // Green
-		rgb_color c4 = {255, 255, 0, 255};   // Yellow
-		rgb_color c5 = {0, 0, 255, 255};	 // Blue
-		rgb_color c6 = {255, 0, 255, 255};   // Magenta
-
-		auto colorBlock = [&](int index, rgb_color c) {
-			 // "███" is 9 bytes in UTF-8. " " is 1 byte.
-			 // Stride is 10 bytes (9 + 1). Block length is 9.
-			 int32 offset = index * 10;
-			 fInfoTextView->SetFontAndColor(blockStart + offset, blockStart + offset + 9, NULL, 0, &c);
-		};
-		colorBlock(0, c1);
-		colorBlock(1, c2);
-		colorBlock(2, c3);
-		colorBlock(3, c4);
-		colorBlock(4, c5);
-		colorBlock(5, c6);
-	}
 }
 
 int32 SystemSummaryView::_LoadDataThread(void* data) {
@@ -253,18 +197,6 @@ int32 SystemSummaryView::_LoadDataThread(void* data) {
 
 	BMessage reply(kMsgUpdateInfo);
 	system_info sysInfo;
-
-	// 1. User@Host
-	struct passwd* pw = getpwuid(getuid());
-	char hostname[256];
-	if (gethostname(hostname, sizeof(hostname)) != 0)
-		strlcpy(hostname, B_TRANSLATE("unknown"), sizeof(hostname));
-	else
-		hostname[sizeof(hostname) - 1] = '\0';
-
-	BString userHost;
-	userHost << (pw && pw->pw_name ? pw->pw_name : "user") << "@" << hostname;
-	reply.AddString("user_host", userHost);
 
 	// 2. OS
 	reply.AddString("os", GetOSVersion());
