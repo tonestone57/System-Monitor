@@ -258,60 +258,36 @@ int32 DiskView::UpdateThread(void* data)
 			view->fLocker.Unlock();
 		}
 
-		struct DiskUpdate {
-			dev_t deviceID;
-			uint64 totalSize;
-			uint64 freeSize;
-			BString deviceName;
-			bool valid;
-		};
-		std::vector<DiskUpdate> updates;
-		updates.reserve(volumesToPoll.size());
-
 		for (auto dev : volumesToPoll) {
-			 fs_info fsInfo;
-			 DiskUpdate update;
-			 update.deviceID = dev;
-			 if (fs_stat_dev(dev, &fsInfo) != B_OK) {
-				 update.valid = false;
-			 } else {
-				 update.valid = true;
-				 update.totalSize = static_cast<uint64>(fsInfo.total_blocks) * fsInfo.block_size;
-				 update.freeSize = static_cast<uint64>(fsInfo.free_blocks) * fsInfo.block_size;
-				 if (strlen(fsInfo.volume_name) > 0) {
-					 update.deviceName = fsInfo.volume_name;
-				 } else {
-					 update.deviceName = fsInfo.device_name;
-				 }
-			 }
-			 updates.push_back(update);
-		}
+			fs_info fsInfo;
+			if (fs_stat_dev(dev, &fsInfo) != B_OK)
+				continue;
 
-		if (view->fLocker.Lock()) {
-			for (const auto& update : updates) {
-				 if (!update.valid) continue;
+			uint64 totalSize = static_cast<uint64>(fsInfo.total_blocks) * fsInfo.block_size;
+			uint64 freeSize = static_cast<uint64>(fsInfo.free_blocks) * fsInfo.block_size;
+			const char* deviceName = (strlen(fsInfo.volume_name) > 0) ? fsInfo.volume_name : fsInfo.device_name;
 
-				 // Update cache
-				 auto it = view->fVolumeCache.find(update.deviceID);
-				 if (it != view->fVolumeCache.end()) {
-					 it->second.totalSize = update.totalSize;
-					 it->second.freeSize = update.freeSize;
-					 it->second.deviceName = update.deviceName;
+			if (view->fLocker.Lock()) {
+				auto it = view->fVolumeCache.find(dev);
+				if (it != view->fVolumeCache.end()) {
+					it->second.totalSize = totalSize;
+					it->second.freeSize = freeSize;
+					it->second.deviceName = deviceName;
 
-					 const DiskInfo& info = it->second;
+					const DiskInfo& info = it->second;
 
-					 BMessage volMsg;
-					 volMsg.AddInt32("device_id", info.deviceID);
-					 volMsg.AddString("device_name", info.deviceName);
-					 volMsg.AddString("mount_point", info.mountPoint);
-					 volMsg.AddString("fs_type", info.fileSystemType);
-					 volMsg.AddUInt64("total_size", info.totalSize);
-					 volMsg.AddUInt64("free_size", info.freeSize);
+					BMessage volMsg;
+					volMsg.AddInt32("device_id", info.deviceID);
+					volMsg.AddString("device_name", info.deviceName);
+					volMsg.AddString("mount_point", info.mountPoint);
+					volMsg.AddString("fs_type", info.fileSystemType);
+					volMsg.AddUInt64("total_size", info.totalSize);
+					volMsg.AddUInt64("free_size", info.freeSize);
 
-					 updateMsg.AddMessage("volume", &volMsg);
-				 }
+					updateMsg.AddMessage("volume", &volMsg);
+				}
+				view->fLocker.Unlock();
 			}
-			view->fLocker.Unlock();
 		}
 
 		target.SendMessage(&updateMsg);
