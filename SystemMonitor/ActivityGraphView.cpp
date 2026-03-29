@@ -230,7 +230,7 @@ ActivityGraphView::_DrawHistory()
 
 			// Force a full redraw if we don't have enough history yet to scroll
 			// or if we just started receiving data.
-			if (fHistory->ItemCount() <= 1) {
+			if (fHistory->Start() == fHistory->End()) {
 				fullRedraw = true;
 			}
 
