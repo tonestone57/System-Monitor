@@ -80,6 +80,8 @@ DiskView::DiskView()
 	addHeader(B_TRANSLATE("Free"), fFreeWidth, SORT_DISK_BY_FREE, B_ALIGN_RIGHT);
 	addHeader(B_TRANSLATE("Activity"), fPercentWidth, SORT_DISK_BY_PERCENT, B_ALIGN_CENTER);
 
+	BLayoutBuilder::Group<>(headerView).AddGlue();
+
 	headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
 	fDiskListView = new BListView("disk_list", B_SINGLE_SELECTION_LIST, B_WILL_DRAW | B_NAVIGABLE);
