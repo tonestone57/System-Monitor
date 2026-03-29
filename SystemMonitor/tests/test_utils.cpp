@@ -71,6 +71,27 @@ void test_get_memory_usage() {
     MockIgnoredPages() = 0;
 }
 
+void test_get_cached_memory_bytes() {
+    system_info info;
+
+    // Test with zeros
+    info.cached_pages = 0;
+    info.block_cache_pages = 0;
+    assert(GetCachedMemoryBytes(info) == 0);
+
+    // Test with some values
+    info.cached_pages = 100;
+    info.block_cache_pages = 200;
+    // (100 + 200) * 4096 = 300 * 4096 = 1228800
+    assert(GetCachedMemoryBytes(info) == 300ULL * B_PAGE_SIZE);
+    assert(GetCachedMemoryBytes(info) == 1228800ULL);
+
+    // Test with large values
+    info.cached_pages = 1000000;
+    info.block_cache_pages = 1000000;
+    assert(GetCachedMemoryBytes(info) == 2000000ULL * B_PAGE_SIZE);
+}
+
 void test_get_locale() {
     // Test default case (both LC_ALL and LANG unset)
     pid_t pid = fork();
@@ -243,6 +264,7 @@ int main() {
     test_get_core_count();
     test_get_locale();
     test_get_memory_usage();
+    test_get_cached_memory_bytes();
 
     std::cout << "All Utils tests passed!" << std::endl;
     return 0;
