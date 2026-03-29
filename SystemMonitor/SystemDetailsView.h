@@ -34,6 +34,7 @@ private:
 	BString _GetCPUFeatures();
 	BString _GetRamSize(system_info* sysInfo);
 	BString _GetRamUsage(system_info* sysInfo);
+	BString _GetCachedUsage(system_info* sysInfo);
 	BString _GetSwapUsage(system_info* sysInfo);
 	BString _GetKernelDateTime(system_info* sysInfo);
 	BString _GetUptime();
