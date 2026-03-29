@@ -34,6 +34,7 @@ typedef int32 status_t;
 #define B_WILL_DRAW 1
 #define B_PULSE_NEEDED 2
 #define B_NAVIGATION_BASE_COLOR (color_which)1
+#define B_SUPPORTS_LAYOUT 8
 #define B_DOCUMENT_BACKGROUND_COLOR 2
 #define B_DOCUMENT_TEXT_COLOR 3
 #define B_TRUNCATE_MIDDLE 1

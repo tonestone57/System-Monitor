@@ -78,6 +78,7 @@ DiskView::DiskView()
 	addHeader(B_TRANSLATE("Total"), fTotalWidth, SORT_DISK_BY_TOTAL, B_ALIGN_RIGHT);
 	addHeader(B_TRANSLATE("Used"), fUsedWidth, SORT_DISK_BY_USED, B_ALIGN_RIGHT);
 	addHeader(B_TRANSLATE("Free"), fFreeWidth, SORT_DISK_BY_FREE, B_ALIGN_RIGHT);
+	addHeader(B_TRANSLATE("Activity"), fPercentWidth, SORT_DISK_BY_PERCENT, B_ALIGN_CENTER);
 
 	headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
@@ -356,7 +357,7 @@ void DiskView::UpdateData(BMessage* message)
 		fFreeWidth = kBaseDiskFreeWidth * scale;
 		fPercentWidth = kBaseDiskPercentWidth * scale;
 
-		UpdateHeaderWidths(fHeaders, { fDeviceWidth, fMountWidth, fFSWidth, fTotalWidth, fUsedWidth, fFreeWidth });
+		UpdateHeaderWidths(fHeaders, { fDeviceWidth, fMountWidth, fFSWidth, fTotalWidth, fUsedWidth, fFreeWidth, fPercentWidth });
 	}
 
 	for (int32 i = 0; i < count; i++) {
@@ -425,6 +426,7 @@ void DiskView::_SortItems()
 		case SORT_DISK_BY_TOTAL: fDiskListView->SortItems(DiskListItem::CompareTotal); break;
 		case SORT_DISK_BY_USED: fDiskListView->SortItems(DiskListItem::CompareUsed); break;
 		case SORT_DISK_BY_FREE: fDiskListView->SortItems(DiskListItem::CompareFree); break;
+		case SORT_DISK_BY_PERCENT: fDiskListView->SortItems(DiskListItem::CompareUsage); break;
 	}
 }
 
