@@ -228,6 +228,12 @@ ActivityGraphView::_DrawHistory()
 					fullRedraw = false;
 			}
 
+			// Force a full redraw if we don't have enough history yet to scroll
+			// or if we just started receiving data.
+			if (fHistory->ItemCount() <= 1) {
+				fullRedraw = true;
+			}
+
 			rgb_color drawColor = fColor;
 			if (fSystemColor != (color_which)-1) {
 				drawColor = ui_color(fSystemColor);

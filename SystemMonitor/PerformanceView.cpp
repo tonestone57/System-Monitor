@@ -60,7 +60,8 @@ public:
 			.Add(_CreateCard(B_TRANSLATE("CPU"), fCpuGraph, &fCpuInfoText))
 			.Add(_CreateCard(B_TRANSLATE("Memory"), fMemGraph, &fMemInfoText))
 			.Add(_CreateCard(B_TRANSLATE("Network"), fNetGraph, &fNetInfoText))
-			.AddGlue();
+			.AddGlue()
+			.End();
 
 		SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 	}
@@ -111,7 +112,8 @@ private:
 		borderBox->SetBorder(B_PLAIN_BORDER);
 		BLayoutBuilder::Group<>(borderBox, B_HORIZONTAL, 0)
 			.SetInsets(1)
-			.Add(content);
+			.Add(content)
+			.End();
 
 		BStringView* labelView = new BStringView(NULL, label);
 		labelView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
@@ -132,6 +134,7 @@ private:
 				.Add(labelView)
 				.Add(infoText)
 				.AddGlue()
+			.End()
 			.End();
 
 		card->SetExplicitMinSize(BSize(62, 62));
