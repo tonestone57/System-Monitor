@@ -26,7 +26,7 @@
 class SummaryView : public BView {
 public:
 	SummaryView(SystemStats* stats)
-		: BView("SummaryView", B_WILL_DRAW),
+		: BView("SummaryView", B_WILL_DRAW | B_SUPPORTS_LAYOUT),
 		  fCpuInfoText(NULL), fMemInfoText(NULL), fNetInfoText(NULL), fStats(stats)
 	{
 		SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
@@ -54,6 +54,7 @@ public:
 		fNetGraph->SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 		fNetGraph->SetExplicitMinSize(BSize(60, 60));
 
+		SetExplicitMinSize(BSize(150, B_SIZE_UNSET));
 		BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
 			.SetInsets(B_USE_DEFAULT_SPACING)
 			.Add(_CreateCard(B_TRANSLATE("CPU"), fCpuGraph, &fCpuInfoText))
@@ -101,10 +102,11 @@ public:
 
 private:
 	BView* _CreateCard(const char* label, BView* content, BStringView** infoTextOut) {
-		BView* card = new BView(NULL, B_WILL_DRAW);
+		BView* card = new BView(NULL, B_WILL_DRAW | B_SUPPORTS_LAYOUT);
 		card->SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 
 		BBox* borderBox = new BBox("border");
+		borderBox->SetExplicitMinSize(BSize(62, 62));
 		borderBox->SetBorder(B_PLAIN_BORDER);
 		BLayoutBuilder::Group<>(borderBox, B_HORIZONTAL, 0)
 			.SetInsets(1)
@@ -131,6 +133,7 @@ private:
 				.AddGlue()
 			.End();
 
+		card->SetExplicitMinSize(BSize(62, 62));
 		card->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 		return card;
 	}
