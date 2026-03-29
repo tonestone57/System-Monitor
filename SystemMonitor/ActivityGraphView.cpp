@@ -11,7 +11,7 @@
 #include <vector>
 
 ActivityGraphView::ActivityGraphView(const char* name, rgb_color color, color_which systemColor)
-	: BView(name, B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE | B_FRAME_EVENTS),
+	: BView(name, B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE | B_FRAME_EVENTS | B_SUPPORTS_LAYOUT),
 	fColor(color),
 	fSystemColor(systemColor),
 	fOffscreen(NULL),

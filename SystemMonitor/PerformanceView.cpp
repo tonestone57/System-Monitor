@@ -106,6 +106,7 @@ private:
 		card->SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 
 		BBox* borderBox = new BBox("border");
+		borderBox->SetFlags(borderBox->Flags() | B_SUPPORTS_LAYOUT);
 		borderBox->SetExplicitMinSize(BSize(62, 62));
 		borderBox->SetBorder(B_PLAIN_BORDER);
 		BLayoutBuilder::Group<>(borderBox, B_HORIZONTAL, 0)
@@ -153,7 +154,7 @@ private:
 // ---------------------------------------------------------------------------
 
 PerformanceView::PerformanceView()
-	: BView("PerformanceView", B_WILL_DRAW | B_PULSE_NEEDED)
+	: BView("PerformanceView", B_WILL_DRAW | B_PULSE_NEEDED | B_SUPPORTS_LAYOUT)
 {
 	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 

@@ -16,7 +16,7 @@
 #define B_TRANSLATION_CONTEXT "CPUView"
 
 CPUView::CPUView()
-	: BView("CPUView", B_WILL_DRAW | B_PULSE_NEEDED),
+	: BView("CPUView", B_WILL_DRAW | B_PULSE_NEEDED | B_SUPPORTS_LAYOUT),
 	  fSpeedValue(NULL),
 	  fProcessesValue(NULL),
 	  fThreadsValue(NULL),
