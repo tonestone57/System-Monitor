@@ -49,6 +49,7 @@ private:
 	BTextView*   fCPUFeaturesView;
 	BStringView* fMemSizeView;
 	BStringView* fMemUsageView;
+	BStringView* fCachedUsageView;
 	BStringView* fSwapUsageView;
 	BStringView* fGPUInfoView;
 	BStringView* fDisplayInfoView;

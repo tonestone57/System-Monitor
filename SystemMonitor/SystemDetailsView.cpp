@@ -45,6 +45,7 @@ SystemDetailsView::SystemDetailsView()
 	  fCPUFeaturesView(NULL),
 	  fMemSizeView(NULL),
 	  fMemUsageView(NULL),
+	  fCachedUsageView(NULL),
 	  fSwapUsageView(NULL),
 	  fGPUInfoView(NULL),
 	  fDisplayInfoView(NULL),
@@ -83,6 +84,7 @@ SystemDetailsView::SystemDetailsView()
 	// Memory size and usage
 	fMemSizeView = _CreateLabel("memlabel", _GetRamSize(&sysInfo));
 	fMemUsageView = _CreateSubtext("ramusagetext", _GetRamUsage(&sysInfo));
+	fCachedUsageView = _CreateSubtext("cachedtext", _GetCachedUsage(&sysInfo));
 	fSwapUsageView = _CreateSubtext("swaptext", _GetSwapUsage(&sysInfo));
 
 	// Disk Usage
@@ -197,15 +199,16 @@ BGroupView* detailsGroup = new BGroupView(B_VERTICAL);
 		// Memory:
 		.Add(fMemSizeView, 0, 13)
 		.Add(fMemUsageView, 1, 13)
-		.Add(fSwapUsageView, 1, 14)
+		.Add(fCachedUsageView, 1, 14)
+		.Add(fSwapUsageView, 1, 15)
 		// Disk:
-		.Add(diskLabel, 0, 15)
-		.Add(fDiskUsageView, 1, 15)
+		.Add(diskLabel, 0, 16)
+		.Add(fDiskUsageView, 1, 16)
 		// Local IP:
-		.Add(fIPLabelView, 0, 16)
-		.Add(fIPInfoView, 1, 16);
+		.Add(fIPLabelView, 0, 17)
+		.Add(fIPInfoView, 1, 17);
 
-	int row = 17;
+	int row = 18;
 	if (fBatteryLabelView) {
 		layoutBuilder.Add(fBatteryLabelView, 0, row)
 			.Add(fBatteryInfoView, 1, row);
@@ -248,6 +251,7 @@ void SystemDetailsView::Pulse()
 	get_system_info(&sysInfo);
 
 	fMemUsageView->SetText(_GetRamUsage(&sysInfo));
+	fCachedUsageView->SetText(_GetCachedUsage(&sysInfo));
 	fSwapUsageView->SetText(_GetSwapUsage(&sysInfo));
 	fUptimeView->SetText(_GetUptime());
 
@@ -281,7 +285,7 @@ void SystemDetailsView::_UpdateLabel(BStringView* label)
 {
 	label->SetExplicitAlignment(BAlignment(B_ALIGN_RIGHT, B_ALIGN_VERTICAL_UNSET));
 	BFont font(be_bold_font);
-	font.SetSize(font.Size() + 2);
+	font.SetSize(font.Size() + 3);
 	label->SetFont(&font, B_FONT_ALL);
 	label->SetHighColor(139, 0, 0, 255);
 	BString text = label->Text();
@@ -303,7 +307,7 @@ void SystemDetailsView::_UpdateSubtext(BStringView* subtext)
 {
 	subtext->SetExplicitAlignment(BAlignment(B_ALIGN_LEFT, B_ALIGN_VERTICAL_UNSET));
 	BFont font(be_plain_font);
-	font.SetSize(font.Size() + 1);
+	font.SetSize(font.Size() + 2);
 	subtext->SetFont(&font, B_FONT_ALL);
 	subtext->SetHighColor(0, 0, 0, 255);
 }
@@ -313,7 +317,7 @@ void SystemDetailsView::_UpdateText(BTextView* textView)
 	textView->SetExplicitAlignment(BAlignment(B_ALIGN_LEFT, B_ALIGN_TOP));
 	rgb_color black = {0, 0, 0, 255};
 	BFont font(be_plain_font);
-	font.SetSize(font.Size() + 1);
+	font.SetSize(font.Size() + 2);
 	textView->SetFontAndColor(&font, B_FONT_ALL, &black);
 	textView->SetColorSpace(B_RGBA32);
 	textView->MakeResizable(false);
@@ -340,8 +344,8 @@ BString SystemDetailsView::_GetABIVersion()
 BString SystemDetailsView::_GetCPUCount(system_info* sysInfo)
 {
 	static BStringFormat format(B_TRANSLATE_COMMENT(
-		"{0, plural, one{# Logical Core} other{# Logical Cores}}",
-		"\"1 Logical Core\" or \"6 Logical Cores\""));
+		"{0, plural, one{# CPU Core} other{# CPU Cores}}",
+		"\"1 CPU Core\" or \"6 CPU Cores\""));
 
 	BString processorLabel;
 	format.Format(processorLabel, sysInfo->cpu_count);
@@ -394,6 +398,16 @@ BString SystemDetailsView::_GetRamUsage(system_info* sysInfo)
 	}
 
 	return ramUsage;
+}
+
+BString SystemDetailsView::_GetCachedUsage(system_info* sysInfo)
+{
+	uint64 cachedBytes = static_cast<uint64>(sysInfo->cached_pages + sysInfo->block_cache_pages) * B_PAGE_SIZE;
+	BString cachedStr;
+	::FormatBytes(cachedStr, cachedBytes);
+	BString cachedUsage;
+	cachedUsage.SetToFormat(B_TRANSLATE("Cached: %s"), cachedStr.String());
+	return cachedUsage;
 }
 
 BString SystemDetailsView::_GetSwapUsage(system_info* sysInfo)
