@@ -150,6 +150,8 @@ ProcessView::ProcessView()
 	addHeader(B_TRANSLATE("Priority"), fPriorityWidth, SORT_BY_PRIORITY);
 	addHeader(B_TRANSLATE("User"), fUserWidth, SORT_BY_USER);
 
+	BLayoutBuilder::Group<>(headerView).AddGlue();
+
 	headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
 	BLayoutBuilder::Group<>(this, B_VERTICAL, 0)

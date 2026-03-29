@@ -84,6 +84,8 @@ NetworkView::NetworkView()
 	addHeader(B_TRANSLATE("TX Speed"), fTxSpeedWidth, SORT_NET_BY_TX_SPEED, B_ALIGN_RIGHT);
 	addHeader(B_TRANSLATE("RX Speed"), fRxSpeedWidth, SORT_NET_BY_RX_SPEED, B_ALIGN_RIGHT);
 
+	BLayoutBuilder::Group<>(headerView).AddGlue();
+
 	headerView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 20 * scale));
 
 	fInterfaceListView = new BListView("interface_list", B_SINGLE_SELECTION_LIST, B_WILL_DRAW | B_NAVIGABLE);
