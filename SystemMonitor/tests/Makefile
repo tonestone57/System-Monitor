@@ -2,9 +2,12 @@
 CXX = g++
 CXXFLAGS = -O3 -std=c++11 -Wall -Wno-multichar -I. -Imocks
 
-TARGETS = benchmark_disk_poll benchmark_process_map benchmark_thread_scanning benchmark_vector_resize_with_reserve benchmark_active_skip benchmark_activity_draw benchmark_activity_valueat benchmark_activity_getvalues test_circular_buffer test_utils test_data_history test_format_bytes benchmark_battery_cache benchmark_process_view_visibility benchmark_process_filter test_cpu_usage test_disk_list_item test_process_list_item
+TARGETS = benchmark_disk_poll benchmark_process_map benchmark_thread_scanning benchmark_vector_resize_with_reserve benchmark_active_skip benchmark_activity_draw benchmark_activity_valueat benchmark_activity_getvalues test_circular_buffer test_utils test_data_history test_format_bytes benchmark_battery_cache benchmark_process_view_visibility benchmark_process_filter test_cpu_usage test_disk_list_item test_process_list_item test_network_info_strlcpy
 
 all: $(TARGETS)
+
+test_network_info_strlcpy: test_network_info_strlcpy.cpp HaikuMocks.o
+	$(CXX) $(CXXFLAGS) -I.. -o $@ $^
 
 HaikuMocks.o: HaikuMocks.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<

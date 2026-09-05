@@ -341,8 +341,9 @@ int32 NetworkView::UpdateThread(void* data)
 		BNetworkInterface interface;
 
 		while (roster.GetNextInterface(&cookie, interface) == B_OK) {
-			NetworkInfo info;
-			strlcpy(info.name, interface.Name(), sizeof(info.name));
+			NetworkInfo info = {};
+			const char* ifName = interface.Name();
+			strlcpy(info.name, ifName != nullptr ? ifName : "", sizeof(info.name));
 
 			// Determine Type
 			BString typeStr = B_TRANSLATE("Ethernet");
@@ -352,7 +353,8 @@ int32 NetworkView::UpdateThread(void* data)
 			} else if (interface.Flags() & IFF_POINTOPOINT) {
 				typeStr = B_TRANSLATE("Point-to-Point");
 			}
-			strlcpy(info.typeStr, typeStr.String(), sizeof(info.typeStr));
+			const char* typeCStr = typeStr.String();
+			strlcpy(info.typeStr, typeCStr != nullptr ? typeCStr : "", sizeof(info.typeStr));
 
 			// Determine Address
 			BString addressStr = B_TRANSLATE("N/A");
@@ -366,7 +368,8 @@ int32 NetworkView::UpdateThread(void* data)
 					}
 				}
 			}
-			strlcpy(info.addressStr, addressStr.String(), sizeof(info.addressStr));
+			const char* addrCStr = addressStr.String();
+			strlcpy(info.addressStr, addrCStr != nullptr ? addrCStr : "", sizeof(info.addressStr));
 
 			// Get Stats
 			ifreq_stats stats;
