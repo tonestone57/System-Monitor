@@ -383,7 +383,7 @@ BString GetBatteryCapacity()
 		char buffer[1024];
 		ssize_t bytesRead = read(batFd, buffer, sizeof(buffer) - 1);
 
-		if (bytesRead > 0) {
+		if (bytesRead > 0 && static_cast<size_t>(bytesRead) < sizeof(buffer)) {
 			buffer[bytesRead] = '\0';
 			BString state(buffer);
 			BString capacityStr;
