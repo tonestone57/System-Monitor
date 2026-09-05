@@ -343,10 +343,7 @@ int32 NetworkView::UpdateThread(void* data)
 		while (roster.GetNextInterface(&cookie, interface) == B_OK) {
 			NetworkInfo info;
 			const char* ifName = interface.Name();
-			if (ifName != NULL)
-				strlcpy(info.name, ifName, sizeof(info.name));
-			else
-				info.name[0] = '\0';
+			strlcpy(info.name, ifName != nullptr ? ifName : "", sizeof(info.name));
 
 			// Determine Type
 			BString typeStr = B_TRANSLATE("Ethernet");
@@ -357,7 +354,9 @@ int32 NetworkView::UpdateThread(void* data)
 				typeStr = B_TRANSLATE("Point-to-Point");
 			}
 			const char* typeCStr = typeStr.String();
-			strlcpy(info.typeStr, typeCStr != nullptr ? typeCStr : "", sizeof(info.typeStr));
+			if (typeCStr == NULL)
+				typeCStr = "";
+			strlcpy(info.typeStr, typeCStr, sizeof(info.typeStr));
 
 			// Determine Address
 			BString addressStr = B_TRANSLATE("N/A");

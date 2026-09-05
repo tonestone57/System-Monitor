@@ -37,6 +37,14 @@ void test_network_info_strlcpy_truncation()
 	assert(strlen(info.name) == 0);
 	assert(info.name[0] == '\0');
 
+	// 5. Test null typeStr pointer handling
+	const char* nullType = nullptr;
+	if (nullType == nullptr)
+		nullType = "";
+	strlcpy(info.typeStr, nullType, sizeof(info.typeStr));
+	assert(strlen(info.typeStr) == 0);
+	assert(info.typeStr[0] == '\0');
+
 	std::cout << "test_network_info_strlcpy passed!" << std::endl;
 }
 
