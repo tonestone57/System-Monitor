@@ -86,9 +86,11 @@ public:
 			return true;
 
 		char idStr[32];
-		snprintf(idStr, sizeof(idStr), "%" B_PRId32, info.id);
-		if (strcasestr(idStr, searchText) != NULL)
-			return true;
+		int res = snprintf(idStr, sizeof(idStr), "%" B_PRId32, info.id);
+		if (res >= 0 && (size_t)res < sizeof(idStr)) {
+			if (strcasestr(idStr, searchText) != NULL)
+				return true;
+		}
 
 		return false;
 	}
