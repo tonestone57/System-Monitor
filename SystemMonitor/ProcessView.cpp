@@ -433,9 +433,11 @@ bool ProcessView::_MatchesFilter(const ProcessInfo& info, const char* searchText
 		return true;
 
 	char idStr[32];
-	snprintf(idStr, sizeof(idStr), "%" B_PRId32, info.id);
-	if (strcasestr(idStr, searchText) != NULL)
-		return true;
+	int res = snprintf(idStr, sizeof(idStr), "%" B_PRId32, info.id);
+	if (res >= 0 && (size_t)res < sizeof(idStr)) {
+		if (strcasestr(idStr, searchText) != NULL)
+			return true;
+	}
 
 	return false;
 }
@@ -656,8 +658,8 @@ int32 ProcessView::UpdateThread(void* data)
 				if (teamInfo.uid == cachedInfo->uid
 					&& strncmp(teamInfo.args, cachedInfo->args, 64) == 0) {
 					cached = true;
-					strlcpy(currentProc.name, cachedInfo->name, B_OS_NAME_LENGTH);
-					strlcpy(currentProc.userName, cachedInfo->userName, B_OS_NAME_LENGTH);
+						strlcpy(currentProc.name, cachedInfo->name, sizeof(currentProc.name));
+						strlcpy(currentProc.userName, cachedInfo->userName, sizeof(currentProc.userName));
 					strlcpy(currentProc.args, cachedInfo->args, sizeof(currentProc.args));
 					cachedInfo->generation = view->fCurrentGeneration;
 
@@ -671,24 +673,24 @@ int32 ProcessView::UpdateThread(void* data)
 				if (get_next_image_info(teamInfo.team, &imgCookie, &imgInfo) == B_OK) {
 					const char* leafName = strrchr(imgInfo.name, '/');
 					if (leafName != NULL)
-						strlcpy(currentProc.name, leafName + 1, B_OS_NAME_LENGTH);
+						strlcpy(currentProc.name, leafName + 1, sizeof(currentProc.name));
 					else
-						strlcpy(currentProc.name, imgInfo.name, B_OS_NAME_LENGTH);
+						strlcpy(currentProc.name, imgInfo.name, sizeof(currentProc.name));
 				} else {
-					strlcpy(currentProc.name, teamInfo.args, B_OS_NAME_LENGTH);
+					strlcpy(currentProc.name, teamInfo.args, sizeof(currentProc.name));
 					if (strlen(currentProc.name) == 0)
-						strlcpy(currentProc.name, "system_daemon", B_OS_NAME_LENGTH);
+						strlcpy(currentProc.name, "system_daemon", sizeof(currentProc.name));
 				}
 
 				BString userName = view->GetUserName(currentProc.userID, pwdBuffer);
-				strlcpy(currentProc.userName, userName.String(), B_OS_NAME_LENGTH);
+				strlcpy(currentProc.userName, userName.String(), sizeof(currentProc.userName));
 
 				strlcpy(currentProc.args, teamInfo.args, sizeof(currentProc.args));
 
 				CachedTeamInfo info;
-				strlcpy(info.name, currentProc.name, B_OS_NAME_LENGTH);
-				strlcpy(info.userName, currentProc.userName, B_OS_NAME_LENGTH);
-				strlcpy(info.args, teamInfo.args, 64);
+				strlcpy(info.name, currentProc.name, sizeof(info.name));
+				strlcpy(info.userName, currentProc.userName, sizeof(info.userName));
+				strlcpy(info.args, teamInfo.args, sizeof(info.args));
 				info.uid = teamInfo.uid;
 				info.generation = view->fCurrentGeneration;
 				// Initialization for new cache entry (memory updated later)
