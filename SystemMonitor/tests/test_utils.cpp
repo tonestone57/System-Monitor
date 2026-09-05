@@ -189,6 +189,12 @@ void test_get_locale() {
     }
 }
 
+void test_get_battery_capacity() {
+    // Calling GetBatteryCapacity() in non-battery / mock Linux environment returns "Unknown" or valid string
+    BString capacity = GetBatteryCapacity();
+    assert(!capacity.IsEmpty());
+}
+
 int main() {
     std::cout << "Testing Utils.cpp..." << std::endl;
 
@@ -271,6 +277,7 @@ int main() {
     test_get_locale();
     test_get_memory_usage();
     test_get_cached_memory_bytes();
+    test_get_battery_capacity();
 
     std::cout << "All Utils tests passed!" << std::endl;
     return 0;
