@@ -342,7 +342,11 @@ int32 NetworkView::UpdateThread(void* data)
 
 		while (roster.GetNextInterface(&cookie, interface) == B_OK) {
 			NetworkInfo info;
-			strlcpy(info.name, interface.Name(), sizeof(info.name));
+			const char* ifName = interface.Name();
+			if (ifName != NULL)
+				strlcpy(info.name, ifName, sizeof(info.name));
+			else
+				info.name[0] = '\0';
 
 			// Determine Type
 			BString typeStr = B_TRANSLATE("Ethernet");
