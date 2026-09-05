@@ -17,5 +17,9 @@ benchmark_process_filter
 test_cpu_usage
 test_disk_list_item
 test_process_list_item
+test_process_filter_safety
+test_network_info
+test_strlcpy_bounds
+test_network_info_strlcpy
 systemmonitor/tests/benchmark_activity_getvalues
 benchmark_activity_getvalues
