@@ -354,7 +354,9 @@ int32 NetworkView::UpdateThread(void* data)
 				typeStr = B_TRANSLATE("Point-to-Point");
 			}
 			const char* typeCStr = typeStr.String();
-			strlcpy(info.typeStr, typeCStr != nullptr ? typeCStr : "", sizeof(info.typeStr));
+			if (typeCStr == NULL)
+				typeCStr = "";
+			strlcpy(info.typeStr, typeCStr, sizeof(info.typeStr));
 
 			// Determine Address
 			BString addressStr = B_TRANSLATE("N/A");
