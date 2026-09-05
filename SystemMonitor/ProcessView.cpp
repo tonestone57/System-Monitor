@@ -683,7 +683,8 @@ int32 ProcessView::UpdateThread(void* data)
 				}
 
 				BString userName = view->GetUserName(currentProc.userID, pwdBuffer);
-				strlcpy(currentProc.userName, userName.String(), sizeof(currentProc.userName));
+				const char* userCStr = userName.String();
+				strlcpy(currentProc.userName, userCStr != nullptr ? userCStr : "", sizeof(currentProc.userName));
 
 				strlcpy(currentProc.args, teamInfo.args, sizeof(currentProc.args));
 
