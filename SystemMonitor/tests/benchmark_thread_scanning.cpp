@@ -157,6 +157,7 @@ status_t get_thread_info(thread_id thread, thread_info *info) {
                 info->thread = th.id;
                 info->team = t.id;
                 info->state = th.state;
+                info->priority = 10;
                 return B_OK;
             }
         }
@@ -178,14 +179,17 @@ status_t get_team_usage_info(team_id team, int32_t who, team_usage_info *info) {
 
 // --- Benchmark Logic ---
 
+#include <unordered_set>
+
 struct CachedTeamInfo {
     bigtime_t cpuTime;
     thread_id lastRunningThread;
+    int32_t lastPriority;
 };
 
 std::map<team_id, CachedTeamInfo> fCachedTeamInfo;
 
-void RunBenchmark(bool useSkipScan, bool useLastRunningThread) {
+void RunBenchmark(bool useSkipScan, bool useLastRunningThread, bool useHiddenSkip, const std::unordered_set<team_id>& visibleTeams) {
     gSyscallCount = 0;
     int32_t cookie = 0;
     team_info teamInfo;
@@ -197,9 +201,12 @@ void RunBenchmark(bool useSkipScan, bool useLastRunningThread) {
             cached = true;
             cachedInfo = &fCachedTeamInfo[teamInfo.team];
         } else {
-             fCachedTeamInfo[teamInfo.team] = CachedTeamInfo{0, -1};
+             fCachedTeamInfo[teamInfo.team] = CachedTeamInfo{0, -1, 10};
              cachedInfo = &fCachedTeamInfo[teamInfo.team];
         }
+
+        int32_t teamPriority = 10;
+        bool priorityFound = false;
 
         // Simulate logic
         if (teamInfo.team == 1) {
@@ -225,27 +232,59 @@ void RunBenchmark(bool useSkipScan, bool useLastRunningThread) {
                 skipScan = true;
             }
 
+            // OPTIMIZATION 3: Skip scan if non-visible process
+            bool isVisible = visibleTeams.find(teamInfo.team) != visibleTeams.end();
+            if (useHiddenSkip && cached && !isVisible) {
+                skipScan = true;
+                teamPriority = cachedInfo->lastPriority;
+                priorityFound = true;
+            }
+
             // OPTIMIZATION 2: Check last running thread
-            if (!skipScan && useLastRunningThread && cached && cachedInfo->lastRunningThread != -1) {
+            if (skipScan && cached && cachedInfo->lastRunningThread != -1 && !priorityFound) {
                  thread_info lastInfo;
                  if (get_thread_info(cachedInfo->lastRunningThread, &lastInfo) == B_OK
-                     && lastInfo.team == teamInfo.team
-                     && lastInfo.state == B_THREAD_RUNNING) {
-                     skipScan = true; // Found running, skipping scan!
+                     && lastInfo.team == teamInfo.team) {
+                     teamPriority = lastInfo.priority;
+                     priorityFound = true;
                  }
             }
 
-            if (!skipScan) {
-                int32_t tCookie = 0;
-                thread_info tInfo;
-                while (get_next_thread_info(teamInfo.team, &tCookie, &tInfo) == B_OK) {
-                    if (tInfo.state == B_THREAD_RUNNING) {
-                        if (useLastRunningThread) {
-                            cachedInfo->lastRunningThread = tInfo.thread;
+            if (!skipScan || !priorityFound) {
+                if (cached && cachedInfo->lastRunningThread != -1) {
+                     thread_info lastInfo;
+                     if (get_thread_info(cachedInfo->lastRunningThread, &lastInfo) == B_OK
+                         && lastInfo.team == teamInfo.team) {
+                         if (!priorityFound) {
+                             teamPriority = lastInfo.priority;
+                             priorityFound = true;
+                         }
+                         if (lastInfo.state == B_THREAD_RUNNING) {
+                             skipScan = true; // Found running, skipping scan!
+                         }
+                     }
+                }
+
+                if (!skipScan || !priorityFound) {
+                    int32_t tCookie = 0;
+                    thread_info tInfo;
+                    while (get_next_thread_info(teamInfo.team, &tCookie, &tInfo) == B_OK) {
+                        if (!priorityFound) {
+                            teamPriority = tInfo.priority;
+                            priorityFound = true;
                         }
-                        break;
+                        if (tInfo.state == B_THREAD_RUNNING) {
+                            if (useLastRunningThread) {
+                                cachedInfo->lastRunningThread = tInfo.thread;
+                            }
+                            break;
+                        }
                     }
                 }
+            }
+
+            if (priorityFound) {
+                cachedInfo->lastPriority = teamPriority;
             }
         }
     }
@@ -254,43 +293,40 @@ void RunBenchmark(bool useSkipScan, bool useLastRunningThread) {
 int main() {
     SetupMockTeams();
 
-    // 1. Warmup (populate cache) with FULL optimization enabled to populate lastRunningThread
-    // Note: To be fair, we should warmup differently for different runs, but cache population is same.
-    // However, to measure "steady state", we should run once to populate cache.
-    RunBenchmark(true, true);
+    // Visible teams: Kernel (1) and active teams 91-95 (so 96-100 active teams are off-screen/hidden)
+    std::unordered_set<team_id> visibleTeams;
+    visibleTeams.insert(1);
+    for (int i = 91; i <= 95; ++i) visibleTeams.insert(i);
 
-    // 2. Advance time for Active teams only
+    // 1. Warmup (populate cache)
+    RunBenchmark(true, true, true, visibleTeams);
+
+    // 2. Advance time for Active teams (both visible 91-95 and hidden 96-100)
     for(auto& t : gTeams) {
         if (t.id > 90) { // Active
             t.user_time += 100; // Simulated CPU usage
         }
     }
 
-    // Reset Syscall Count
-    gSyscallCount = 0;
-
-    // 3. Measure Baseline (SkipScan=ON, LastThread=OFF)
-    // This represents the state BEFORE this task.
+    // 3. Measure Baseline (HiddenSkip = OFF)
     long syscallsBaseline = 0;
     {
-        // Copy cache state to ensure fair comparison?
-        // No, let's just run it. But wait, lastRunningThread won't be used.
         auto cacheSnapshot = fCachedTeamInfo;
-        RunBenchmark(true, false);
+        RunBenchmark(true, true, false, visibleTeams);
         syscallsBaseline = gSyscallCount;
-        fCachedTeamInfo = cacheSnapshot; // Restore cache
+        fCachedTeamInfo = cacheSnapshot;
     }
 
-    // 4. Measure New Optimization (SkipScan=ON, LastThread=ON)
+    // 4. Measure New Optimization (HiddenSkip = ON)
     long syscallsOptimized = 0;
     {
         gSyscallCount = 0;
-        RunBenchmark(true, true);
+        RunBenchmark(true, true, true, visibleTeams);
         syscallsOptimized = gSyscallCount;
     }
 
-    std::cout << "Baseline (Existing Optimization): " << syscallsBaseline << std::endl;
-    std::cout << "New Optimization (Last Thread Cache): " << syscallsOptimized << std::endl;
+    std::cout << "Baseline (Without Non-Visible Skip): " << syscallsBaseline << std::endl;
+    std::cout << "New Optimization (With Non-Visible Skip): " << syscallsOptimized << std::endl;
     std::cout << "Reduction: " << (syscallsBaseline - syscallsOptimized) << " ("
               << (100.0 * (syscallsBaseline - syscallsOptimized) / syscallsBaseline) << "%)" << std::endl;
 

@@ -697,6 +697,7 @@ int32 ProcessView::UpdateThread(void* data)
 				info.memoryGeneration = 0;
 				info.cpuTime = 0;
 				info.lastRunningThread = -1;
+				info.lastPriority = 10;
 
 				if (cachedInfo != nullptr) {
 					*cachedInfo = info;
@@ -763,6 +764,13 @@ int32 ProcessView::UpdateThread(void* data)
 					skipThreadScan = true;
 				}
 
+				bool isVisible = visibleTeams.find(teamInfo.team) != visibleTeams.end();
+				if (cached && !isVisible) {
+					skipThreadScan = true;
+					teamPriority = cachedInfo->lastPriority;
+					priorityFound = true;
+				}
+
 				if (skipThreadScan && cached && cachedInfo->lastRunningThread != -1) {
 					thread_info lastInfo;
 					if (get_thread_info(cachedInfo->lastRunningThread, &lastInfo) == B_OK && lastInfo.team == teamInfo.team) {
@@ -805,6 +813,10 @@ int32 ProcessView::UpdateThread(void* data)
 						}
 					}
 				}
+			}
+
+			if (cachedInfo != nullptr && priorityFound) {
+				cachedInfo->lastPriority = teamPriority;
 			}
 
 			currentProc.priority = teamPriority;

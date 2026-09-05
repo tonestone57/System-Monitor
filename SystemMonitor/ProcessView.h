@@ -121,6 +121,7 @@ private:
 		int32 memoryGeneration;
 		bigtime_t cpuTime;
 		thread_id lastRunningThread;
+		int32 lastPriority;
 	};
 
 	std::unordered_map<thread_id, ThreadState> fThreadTimeMap;
