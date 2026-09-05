@@ -261,6 +261,12 @@ int main() {
     assert(FormatSpeed(1024, 1000000) == "1.00 KiB/s");
     assert(FormatSpeed(1024, 500000) == "2.00 KiB/s");
 
+    // Test microSecondsDelta <= 0 edge cases
+    assert(FormatSpeed(0, 0) == "0 B/s");
+    assert(FormatSpeed(100, 0) == "0 B/s");
+    assert(FormatSpeed(0, -1000) == "0 B/s");
+    assert(FormatSpeed(100, -500) == "0 B/s");
+
     test_get_core_count();
     test_get_locale();
     test_get_memory_usage();
