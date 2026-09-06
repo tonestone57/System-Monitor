@@ -526,6 +526,23 @@ void ProcessView::FilterRows()
 
 	_RestoreSelection(selectedID);
 
+	BRect bounds = fProcessListView->Bounds();
+	std::unordered_set<team_id> newVisibleTeams;
+	for (int32 i = 0; i < fProcessListView->CountItems(); i++) {
+		BRect frame = fProcessListView->ItemFrame(i);
+		if (frame.Intersects(bounds)) {
+			ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(i));
+			if (item) newVisibleTeams.insert(item->TeamID());
+		} else if (frame.top > bounds.bottom) {
+			break;
+		}
+	}
+
+	if (fLocker.Lock()) {
+		fVisibleTeams = std::move(newVisibleTeams);
+		fLocker.Unlock();
+	}
+
 	fProcessListView->Invalidate();
 }
 
@@ -640,6 +657,23 @@ void ProcessView::Update(BMessage* message)
 
 	_RestoreSelection(selectedID);
 
+	BRect bounds = fProcessListView->Bounds();
+	std::unordered_set<team_id> newVisibleTeams;
+	for (int32 i = 0; i < fProcessListView->CountItems(); i++) {
+		BRect frame = fProcessListView->ItemFrame(i);
+		if (frame.Intersects(bounds)) {
+			ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(i));
+			if (item) newVisibleTeams.insert(item->TeamID());
+		} else if (frame.top > bounds.bottom) {
+			break;
+		}
+	}
+
+	if (fLocker.Lock()) {
+		fVisibleTeams = std::move(newVisibleTeams);
+		fLocker.Unlock();
+	}
+
 	fProcessListView->Invalidate();
 }
 
@@ -677,18 +711,9 @@ int32 ProcessView::UpdateThread(void* data)
 		if (totalPossibleCoreTime <= 0) totalPossibleCoreTime = 1.0f;
 
 		std::unordered_set<team_id> visibleTeams;
-		if (view->LockLooper()) {
-			BRect bounds = view->fProcessListView->Bounds();
-			for (int32 i = 0; i < view->fProcessListView->CountItems(); i++) {
-				BRect frame = view->fProcessListView->ItemFrame(i);
-				if (frame.Intersects(bounds)) {
-					ProcessListItem* item = static_cast<ProcessListItem*>(view->fProcessListView->ItemAt(i));
-					if (item) visibleTeams.insert(item->TeamID());
-				} else if (frame.top > bounds.bottom) {
-					break; // Items are ordered top to bottom
-				}
-			}
-			view->UnlockLooper();
+		if (view->fLocker.Lock()) {
+			visibleTeams = view->fVisibleTeams;
+			view->fLocker.Unlock();
 		}
 
 		int32 cookie = 0;

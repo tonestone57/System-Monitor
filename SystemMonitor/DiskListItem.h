@@ -10,8 +10,12 @@
 #include <cstring>
 #include <Volume.h>
 #include <Bitmap.h>
+#include <Catalog.h>
 #include "DiskView.h"
 #include "Utils.h"
+
+#undef B_TRANSLATION_CONTEXT
+#define B_TRANSLATION_CONTEXT "DiskListItem"
 
 class DiskListItem : public BListItem {
 public:

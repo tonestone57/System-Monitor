@@ -163,7 +163,8 @@ ActivityGraphView::_OffscreenView()
 void
 ActivityGraphView::AddValue(bigtime_t time, int64 value)
 {
-	fHistory->AddValue(time, value);
+	if (fHistory)
+		fHistory->AddValue(time, value);
 	Invalidate();
 }
 
@@ -180,6 +181,8 @@ void
 ActivityGraphView::SetManualScale(int64 min, int64 max)
 {
 	fManualScale = true;
+	if (min > max)
+		std::swap(min, max);
 	fManualMin = min;
 	fManualMax = max;
 	Invalidate();
@@ -230,7 +233,7 @@ ActivityGraphView::_DrawHistory()
 
 			// Force a full redraw if we don't have enough history yet to scroll
 			// or if we just started receiving data.
-			if (fHistory->Start() == fHistory->End()) {
+			if (fHistory == NULL || fHistory->Start() == fHistory->End()) {
 				fullRedraw = true;
 			}
 
@@ -246,9 +249,12 @@ ActivityGraphView::_DrawHistory()
 			if (fManualScale) {
 				min = fManualMin;
 				max = fManualMax;
-			} else {
+			} else if (fHistory != NULL) {
 				min = fHistory->MinimumValue();
 				max = fHistory->MaximumValue();
+			} else {
+				min = 0;
+				max = 100;
 			}
 			int64 range = max - min;
 
@@ -301,8 +307,9 @@ ActivityGraphView::_DrawHistory()
 					// Bottom-left corner for polygon fill
 					points[0] = BPoint(frame.left, frame.bottom);
 
-					std::vector<int64> values(steps);
-					fHistory->GetValues(values.data(), steps, now - (steps - 1) * timeStep, timeStep);
+					std::vector<int64> values(steps, 0);
+					if (fHistory != NULL)
+						fHistory->GetValues(values.data(), steps, now - (steps - 1) * timeStep, timeStep);
 
 					for (uint32 i = 0; i < steps; i++) {
 						int64 value = values[i];
@@ -420,15 +427,16 @@ ActivityGraphView::_DrawHistory()
 					// Bottom-start corner for partial polygon fill
 					points[0] = BPoint(startI, frame.bottom);
 
-					std::vector<int64> values(count);
-					fHistory->GetValues(values.data(), count, fLastRefresh - static_cast<bigtime_t>(steps - 1 - startI) * timeStep, timeStep);
+					std::vector<int64> values(count, 0);
+					if (fHistory != NULL)
+						fHistory->GetValues(values.data(), count, fLastRefresh - static_cast<bigtime_t>(steps - 1 - startI) * timeStep, timeStep);
 
 					for (int32 j = 0; j < count; j++) {
 						int32 i = startI + j;
 						// For the very last pixel, use 'now' for maximum smoothness
 						bigtime_t t;
 						int64 value;
-						if (i == static_cast<int32>(steps) - 1) {
+						if (i == static_cast<int32>(steps) - 1 && fHistory != NULL) {
 							t = now;
 							value = fHistory->ValueAt(t, NULL);
 						} else {

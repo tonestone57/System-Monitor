@@ -152,7 +152,7 @@ DataHistory::GetValues(int64* outValues, int32 count, bigtime_t startTime, bigti
 
 	// Fast path: if startTime is way after the last item
 	data_item* lastItem = fBuffer.ItemAt(right);
-	if (lastItem->time <= startTime) {
+	if (lastItem != NULL && lastItem->time <= startTime) {
 		for (int i = 0; i < count; ++i) {
 			outValues[i] = lastItem->value;
 		}
@@ -166,10 +166,11 @@ DataHistory::GetValues(int64* outValues, int32 count, bigtime_t startTime, bigti
 	while (left <= r) {
 		int32 mid = (left + r) / 2;
 		data_item* item = fBuffer.ItemAt(mid);
-		if (item->time > startTime) {
+		if (item != NULL && item->time > startTime) {
 			r = mid - 1;
 		} else {
-			index = mid;
+			if (item != NULL)
+				index = mid;
 			left = mid + 1;
 		}
 	}
@@ -186,7 +187,9 @@ DataHistory::GetValues(int64* outValues, int32 count, bigtime_t startTime, bigti
 			nextItem = fBuffer.ItemAt(index + 1);
 		}
 
-		if (item->time > time) {
+		if (item == NULL) {
+			outValues[i] = 0;
+		} else if (item->time > time) {
 			outValues[i] = 0;
 		} else if (nextItem == NULL) {
 			outValues[i] = item->value;

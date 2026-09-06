@@ -1,6 +1,7 @@
 #include "CPUView.h"
 #include <Autolock.h>
 #include <cstdio>
+#include <cmath>
 #include <String.h>
 #include <kernel/OS.h>
 #include <LayoutBuilder.h>
