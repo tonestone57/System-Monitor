@@ -14,6 +14,7 @@ test_format_bytes
 benchmark_battery_cache
 benchmark_process_view_visibility
 benchmark_process_filter
+benchmark_priority_set
 test_cpu_usage
 test_disk_list_item
 test_process_list_item
