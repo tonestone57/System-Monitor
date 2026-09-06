@@ -63,10 +63,13 @@ ActivityGraphView::MessageReceived(BMessage* message)
 		case B_MOUSE_WHEEL_CHANGED: {
 			float deltaY;
 			if (message->FindFloat("be:wheel_delta_y", &deltaY) == B_OK) {
-				if (deltaY > 0)
+				if (deltaY > 0) {
 					fResolution *= 2;
-				else
+				} else if (deltaY < 0) {
 					fResolution /= 2;
+				} else {
+					break;
+				}
 
 				if (fResolution < 10000) fResolution = 10000;
 				if (fResolution > 60000000) fResolution = 60000000;

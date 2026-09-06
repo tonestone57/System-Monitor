@@ -311,6 +311,8 @@ void ProcessView::Hide()
 void ProcessView::Show()
 {
 	fIsHidden = false;
+	if (fQuitSem >= 0)
+		release_sem(fQuitSem);
 	BView::Show();
 }
 
@@ -730,7 +732,10 @@ int32 ProcessView::UpdateThread(void* data)
 
 		bigtime_t currentSystemTime = system_time();
 		bigtime_t systemTimeDelta = currentSystemTime - view->fLastSystemTime;
-		if (systemTimeDelta <= 0) systemTimeDelta = 1;
+		if (systemTimeDelta <= 0 || systemTimeDelta > 5 * view->fRefreshInterval.load()) {
+			systemTimeDelta = view->fRefreshInterval.load();
+			if (systemTimeDelta <= 0) systemTimeDelta = 1;
+		}
 		view->fLastSystemTime = currentSystemTime;
 
 		float totalPossibleCoreTime = coreCount * systemTimeDelta;

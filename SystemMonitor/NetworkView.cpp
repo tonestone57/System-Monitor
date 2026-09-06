@@ -177,6 +177,20 @@ void NetworkView::MessageReceived(BMessage* message)
 	}
 }
 
+void NetworkView::Hide()
+{
+	fPerformanceViewVisible = false;
+	BView::Hide();
+}
+
+void NetworkView::Show()
+{
+	fPerformanceViewVisible = true;
+	if (fScanSem >= 0)
+		release_sem(fScanSem);
+	BView::Show();
+}
+
 void NetworkView::UpdateData(BMessage* message)
 {
 	BAutolock locker(fLocker);
