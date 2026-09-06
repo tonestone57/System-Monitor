@@ -183,6 +183,7 @@ public:
     BRect(float l, float t, float r, float b) : left(l), top(t), right(r), bottom(b) {}
     float Width() const { return right - left; }
     float Height() const { return bottom - top; }
+    BPoint LeftTop() const { return BPoint(left, top); }
     float left, top, right, bottom;
 };
 

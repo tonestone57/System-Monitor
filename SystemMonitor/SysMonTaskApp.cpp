@@ -173,10 +173,13 @@ void MainWindow::MessageReceived(BMessage* message) {
 		case MSG_ABOUT_REQUESTED:
 			{
 				if (fAboutWindow.IsValid()) {
-					BWindow* window = nullptr;
-					if (fAboutWindow.Target(reinterpret_cast<BLooper**>(&window)) != NULL && window != NULL) {
-						window->Activate(true);
-						break;
+					BLooper* looper = nullptr;
+					if (fAboutWindow.Target(&looper) != NULL && looper != NULL) {
+						BWindow* window = dynamic_cast<BWindow*>(looper);
+						if (window != NULL) {
+							window->Activate(true);
+							break;
+						}
 					}
 				}
 				AboutWindow* about = new AboutWindow();

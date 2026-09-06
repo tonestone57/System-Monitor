@@ -81,21 +81,30 @@ public:
 
 			if (fCpuInfoText) {
 				BString cpuStr;
-				cpuStr.SetToFormat("%.0f%% %.2f GHz", fStats->cpuUsage, fStats->cpuFrequency / 1000000.0f / 1000.0f);
+				if (fStats->cpuFrequency > 0) {
+					BString freqStr = ::FormatHertz(fStats->cpuFrequency);
+					cpuStr.SetToFormat(B_TRANSLATE("%.0f%% %s"), fStats->cpuUsage, freqStr.String());
+				} else {
+					cpuStr.SetToFormat("%.0f%%", fStats->cpuUsage);
+				}
 				fCpuInfoText->SetText(cpuStr.String());
 			}
 
 			if (fMemInfoText) {
 				BString memStr;
-				float usedGB = fStats->memoryUsage * fStats->memoryTotal / 100.0f / (1024.0f * 1024.0f * 1024.0f);
-				float totalGB = fStats->memoryTotal / (1024.0f * 1024.0f * 1024.0f);
-				memStr.SetToFormat("%.1f/%.1f GB (%.0f%%)", usedGB, totalGB, fStats->memoryUsage);
+				uint64 usedBytes = static_cast<uint64>(fStats->memoryUsage * fStats->memoryTotal / 100.0f);
+				BString usedStr, totalStr;
+				::FormatBytes(usedStr, usedBytes);
+				::FormatBytes(totalStr, fStats->memoryTotal);
+				memStr.SetToFormat(B_TRANSLATE("%s / %s (%.0f%%)"), usedStr.String(), totalStr.String(), fStats->memoryUsage);
 				fMemInfoText->SetText(memStr.String());
 			}
 
 			if (fNetInfoText) {
+				BString txStr = FormatSpeed(static_cast<uint64>(fStats->uploadSpeed), 1000000);
+				BString rxStr = FormatSpeed(static_cast<uint64>(fStats->downloadSpeed), 1000000);
 				BString netStr;
-				netStr.SetToFormat("S: %.0f R: %.0f Kbps", fStats->uploadSpeed, fStats->downloadSpeed);
+				netStr.SetToFormat(B_TRANSLATE("S: %s R: %s"), txStr.String(), rxStr.String());
 				fNetInfoText->SetText(netStr.String());
 			}
 		}
