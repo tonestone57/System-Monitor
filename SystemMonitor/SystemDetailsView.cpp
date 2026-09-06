@@ -321,6 +321,7 @@ void SystemDetailsView::_UpdateSubtext(BStringView* subtext)
 
 void SystemDetailsView::_UpdateText(BTextView* textView)
 {
+	textView->SetFlags(textView->Flags() | B_SUPPORTS_LAYOUT);
 	textView->SetExplicitAlignment(BAlignment(B_ALIGN_LEFT, B_ALIGN_TOP));
 	rgb_color textColor = ui_color(B_DOCUMENT_TEXT_COLOR);
 	BFont font(be_plain_font);
