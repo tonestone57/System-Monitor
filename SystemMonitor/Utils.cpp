@@ -217,30 +217,27 @@ uint64 GetCpuFrequency()
 
 BString GetCPUBrandString()
 {
-	static BString sCachedBrand;
-	if (sCachedBrand.Length() > 0) return sCachedBrand;
-
+	static const BString sCachedBrand = []() -> BString {
 #if defined(__x86_64__) || defined(__i386__)
-	char brand[49] = {};
-	unsigned int regs[4];
+		char brand[49] = {};
+		unsigned int regs[4];
 
-	// Check if CPU supports extended function 0x80000000
-	if (__get_cpuid(0x80000000, &regs[0], &regs[1], &regs[2], &regs[3])) {
-		if (regs[0] >= 0x80000004) {
-			for (int i = 0; i < 3; ++i) {
-				__get_cpuid(0x80000002 + i, &regs[0], &regs[1], &regs[2], &regs[3]);
-				memcpy(brand + i * 16, regs, sizeof(regs));
-			}
-			BString brandStr(brand);
-			brandStr.Trim();
-			if (brandStr.Length() > 0) {
-				sCachedBrand = brandStr;
-				return sCachedBrand;
+		if (__get_cpuid(0x80000000, &regs[0], &regs[1], &regs[2], &regs[3])) {
+			if (regs[0] >= 0x80000004) {
+				for (int i = 0; i < 3; ++i) {
+					__get_cpuid(0x80000002 + i, &regs[0], &regs[1], &regs[2], &regs[3]);
+					memcpy(brand + i * 16, regs, sizeof(regs));
+				}
+				BString brandStr(brand);
+				brandStr.Trim();
+				if (brandStr.Length() > 0) {
+					return brandStr;
+				}
 			}
 		}
-	}
 #endif
-	sCachedBrand = B_TRANSLATE("Unknown CPU");
+		return B_TRANSLATE("Unknown CPU");
+	}();
 	return sCachedBrand;
 }
 
@@ -257,57 +254,55 @@ int32 GetCoreCount()
 
 BString GetOSVersion()
 {
-	static BString sCachedVersion;
-	if (sCachedVersion.Length() > 0) return sCachedVersion;
+	static const BString sCachedVersion = []() -> BString {
+		BString revision;
+		struct utsname u;
+		uname(&u);
 
-	BString revision;
-	struct utsname u;
-	uname(&u);
+		system_info sysInfo;
+		if (get_system_info(&sysInfo) == B_OK) {
+			const char* haikuRev = __get_haiku_revision();
+			BString revStr(haikuRev);
+			if (strncmp(haikuRev, "hrev", 4) != 0) {
+				revStr = "hrev";
+				revStr << haikuRev;
+			}
 
-	system_info sysInfo;
-	if (get_system_info(&sysInfo) == B_OK) {
-		const char* haikuRev = __get_haiku_revision();
-		BString revStr(haikuRev);
-		if (strncmp(haikuRev, "hrev", 4) != 0) {
-			revStr = "hrev";
-			revStr << haikuRev;
+			revision.SetToFormat(B_TRANSLATE("Haiku %s (%s)"),
+				u.machine, revStr.String());
+		} else {
+			revision << u.sysname << " " << u.machine << " " << u.release;
 		}
-
-		revision.SetToFormat(B_TRANSLATE("Haiku %s (%s)"),
-			u.machine, revStr.String());
-	} else {
-		revision << u.sysname << " " << u.machine << " " << u.release;
-	}
-	sCachedVersion = revision;
+		return revision;
+	}();
 	return sCachedVersion;
 }
 
 BString GetABIVersion()
 {
-	static BString sCachedABI;
-	if (sCachedABI.Length() > 0) return sCachedABI;
+	static const BString sCachedABI = []() -> BString {
+		BString abiVersion;
+		BPath path;
+		if (find_directory(B_BEOS_LIB_DIRECTORY, &path) == B_OK) {
+			path.Append("libbe.so");
 
-	BString abiVersion;
-	BPath path;
-	if (find_directory(B_BEOS_LIB_DIRECTORY, &path) == B_OK) {
-		path.Append("libbe.so");
-
-		BAppFileInfo appFileInfo;
-		version_info versionInfo;
-		BFile file;
-		if (file.SetTo(path.Path(), B_READ_ONLY) == B_OK
-			&& appFileInfo.SetTo(&file) == B_OK
-			&& appFileInfo.GetVersionInfo(&versionInfo, B_APP_VERSION_KIND) == B_OK
-			&& versionInfo.short_info[0] != '\0') {
-			abiVersion = versionInfo.short_info;
+			BAppFileInfo appFileInfo;
+			version_info versionInfo;
+			BFile file;
+			if (file.SetTo(path.Path(), B_READ_ONLY) == B_OK
+				&& appFileInfo.SetTo(&file) == B_OK
+				&& appFileInfo.GetVersionInfo(&versionInfo, B_APP_VERSION_KIND) == B_OK
+				&& versionInfo.short_info[0] != '\0') {
+				abiVersion = versionInfo.short_info;
+			}
 		}
-	}
 
-	if (abiVersion.IsEmpty())
-		abiVersion = B_TRANSLATE("Unknown");
+		if (abiVersion.IsEmpty())
+			abiVersion = B_TRANSLATE("Unknown");
 
-	abiVersion << " (" << B_HAIKU_ABI_NAME << ")";
-	sCachedABI = abiVersion;
+		abiVersion << " (" << B_HAIKU_ABI_NAME << ")";
+		return abiVersion;
+	}();
 	return sCachedABI;
 }
 
@@ -510,61 +505,56 @@ static const char *kAMDExtFeatures[32] = {
 
 BString GetCPUFeatures()
 {
-	static BString sCachedFeatures;
-	static bool sFeaturesCached = false;
-	if (sFeaturesCached) return sCachedFeatures;
-
+	static const BString sCachedFeatures = []() -> BString {
 #if defined(__i386__) || defined(__x86_64__)
-	BString features;
-	unsigned int eax, ebx, ecx, edx;
+		BString features;
+		unsigned int eax, ebx, ecx, edx;
 
-	if (__get_cpuid(1, &eax, &ebx, &ecx, &edx) == 1) {
-		for (int i = 0; i < 32; i++) {
-			if ((edx & (1 << i)) && kFeatures[i]) {
-				if (features.Length() > 0)
-					features << " ";
-				features << kFeatures[i];
-			}
-		}
-		for (int i = 0; i < 32; i++) {
-			if ((ecx & (1 << i)) && kExtendedFeatures[i]) {
-				if (features.Length() > 0)
-					features << " ";
-				features << kExtendedFeatures[i];
-			}
-		}
-	}
-
-	if (__get_cpuid(0x80000001, &eax, &ebx, &ecx, &edx) == 1) {
-		for (int i = 0; i < 32; i++) {
-			if ((edx & (1 << i)) && kAMDExtFeatures[i]) {
-				if (features.Length() > 0)
-					features << " ";
-				features << kAMDExtFeatures[i];
-			}
-		}
-	}
-
-	if (__get_cpuid_max(0, NULL) >= 7) {
-		if (__get_cpuid_count(7, 0, &eax, &ebx, &ecx, &edx) == 1) {
+		if (__get_cpuid(1, &eax, &ebx, &ecx, &edx) == 1) {
 			for (int i = 0; i < 32; i++) {
-				if ((ebx & (1 << i)) && kLeaf7Features[i]) {
+				if ((edx & (1 << i)) && kFeatures[i]) {
 					if (features.Length() > 0)
 						features << " ";
-					features << kLeaf7Features[i];
+					features << kFeatures[i];
+				}
+			}
+			for (int i = 0; i < 32; i++) {
+				if ((ecx & (1 << i)) && kExtendedFeatures[i]) {
+					if (features.Length() > 0)
+						features << " ";
+					features << kExtendedFeatures[i];
 				}
 			}
 		}
-	}
 
-	sCachedFeatures = features;
-	sFeaturesCached = true;
-	return sCachedFeatures;
+		if (__get_cpuid(0x80000001, &eax, &ebx, &ecx, &edx) == 1) {
+			for (int i = 0; i < 32; i++) {
+				if ((edx & (1 << i)) && kAMDExtFeatures[i]) {
+					if (features.Length() > 0)
+						features << " ";
+					features << kAMDExtFeatures[i];
+				}
+			}
+		}
+
+		if (__get_cpuid_max(0, NULL) >= 7) {
+			if (__get_cpuid_count(7, 0, &eax, &ebx, &ecx, &edx) == 1) {
+				for (int i = 0; i < 32; i++) {
+					if ((ebx & (1 << i)) && kLeaf7Features[i]) {
+						if (features.Length() > 0)
+							features << " ";
+						features << kLeaf7Features[i];
+					}
+				}
+			}
+		}
+
+		return features;
 #else
-	sCachedFeatures = B_TRANSLATE("Not available on this architecture");
-	sFeaturesCached = true;
-	return sCachedFeatures;
+		return BString(B_TRANSLATE("Not available on this architecture"));
 #endif
+	}();
+	return sCachedFeatures;
 }
 
 BString GetDisplayInfo()

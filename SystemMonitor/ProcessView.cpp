@@ -71,6 +71,17 @@ public:
 			}
 		}
 	}
+
+	virtual void KeyDown(const char* bytes, int32 numBytes) {
+		if (numBytes == 1 && bytes[0] == B_DELETE) {
+			if (Target()) {
+				BMessage msg(MSG_KILL_PROCESS);
+				Window()->PostMessage(&msg, Target());
+			}
+			return;
+		}
+		BListView::KeyDown(bytes, numBytes);
+	}
 };
 
 ProcessView::ProcessView()
@@ -760,7 +771,16 @@ int32 ProcessView::UpdateThread(void* data)
 					else
 						strlcpy(currentProc.name, imgInfo.name, sizeof(currentProc.name));
 				} else {
-					strlcpy(currentProc.name, teamInfo.args, sizeof(currentProc.name));
+					const char* leafName = strrchr(teamInfo.args, '/');
+					if (leafName != NULL)
+						strlcpy(currentProc.name, leafName + 1, sizeof(currentProc.name));
+					else
+						strlcpy(currentProc.name, teamInfo.args, sizeof(currentProc.name));
+
+					char* space = strchr(currentProc.name, ' ');
+					if (space != NULL)
+						*space = '\0';
+
 					if (strlen(currentProc.name) == 0)
 						strlcpy(currentProc.name, "system_daemon", sizeof(currentProc.name));
 				}

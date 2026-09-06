@@ -56,7 +56,7 @@ private:
 	BStringView* fDisplayInfoView;
 	BStringView* fDiskUsageView;
 	BStringView* fKernelDateTimeView;
-	BTextView*   fUptimeView;
+	BStringView* fUptimeView;
 	BStringView* fPackagesLabelView;
 	BStringView* fPackagesInfoView;
 	BStringView* fShellLabelView;
