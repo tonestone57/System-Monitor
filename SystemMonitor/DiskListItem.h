@@ -74,14 +74,14 @@ public:
 		if (IsSelected() || complete) {
 			rgb_color color = IsSelected()
 				? ui_color(B_LIST_SELECTED_BACKGROUND_COLOR)
-				: rgb_color{255, 255, 255, 255};
+				: ui_color(B_LIST_BACKGROUND_COLOR);
 			owner->SetHighColor(color);
 			owner->FillRect(itemRect);
 		}
 
 		rgb_color textColor = IsSelected()
 			? ui_color(B_LIST_SELECTED_ITEM_TEXT_COLOR)
-			: rgb_color{0, 0, 0, 255};
+			: ui_color(B_LIST_ITEM_TEXT_COLOR);
 		owner->SetHighColor(textColor);
 
 		font_height fh;
@@ -99,7 +99,7 @@ public:
 		BRect iconRect(x, itemRect.top + (itemRect.Height() - 16) / 2, x + 16, itemRect.top + (itemRect.Height() - 16) / 2 + 16);
 		owner->SetHighColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 		owner->FillRect(iconRect);
-		owner->SetHighColor({0, 0, 0, 255}); // Black border
+		owner->SetHighColor(make_color(0, 0, 0, 255)); // Black border
 		//owner->StrokeRect(iconRect);
 		owner->SetHighColor(textColor); // Restore text color
 
@@ -127,7 +127,7 @@ public:
 				BRect fillRect = barRect;
 				fillRect.right = fillRect.left + (barWidth * (fPercent / 100.0));
 
-				rgb_color customColor = {255, 207, 0, 255};
+				rgb_color customColor = make_color(255, 207, 0, 255);
 				owner->SetHighColor(customColor);
 				owner->FillRect(fillRect);
 			}
@@ -135,7 +135,7 @@ public:
 			// Percentage text in the center of the bar
 			// Set drawing mode to ensure text is visible over background
 			owner->SetDrawingMode(B_OP_OVER);
-			rgb_color blackColor = {0, 0, 0, 255};
+			rgb_color blackColor = make_color(0, 0, 0, 255);
 			owner->SetHighColor(blackColor);
 			BString percentStr;
 			percentStr.SetToFormat("%.0f%%", fPercent);

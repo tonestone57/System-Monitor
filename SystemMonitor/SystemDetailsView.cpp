@@ -254,6 +254,7 @@ void SystemDetailsView::Pulse()
 	fCachedUsageView->SetText(_GetCachedUsage(&sysInfo));
 	fSwapUsageView->SetText(_GetSwapUsage(&sysInfo));
 	fUptimeView->SetText(_GetUptime());
+	_UpdateText(fUptimeView);
 
 	BString packages;
 	GetPackageCount(packages);
@@ -287,7 +288,7 @@ void SystemDetailsView::_UpdateLabel(BStringView* label)
 	BFont font(be_bold_font);
 	font.SetSize(font.Size() + 3);
 	label->SetFont(&font, B_FONT_ALL);
-	label->SetHighColor(139, 0, 0, 255);
+	label->SetHighColor(make_color(139, 0, 0, 255));
 	BString text = label->Text();
 	text.ToUpper();
 	if (!text.EndsWith(":")) {
@@ -309,16 +310,16 @@ void SystemDetailsView::_UpdateSubtext(BStringView* subtext)
 	BFont font(be_plain_font);
 	font.SetSize(font.Size() + 2);
 	subtext->SetFont(&font, B_FONT_ALL);
-	subtext->SetHighColor(0, 0, 0, 255);
+	subtext->SetHighColor(ui_color(B_DOCUMENT_TEXT_COLOR));
 }
 
 void SystemDetailsView::_UpdateText(BTextView* textView)
 {
 	textView->SetExplicitAlignment(BAlignment(B_ALIGN_LEFT, B_ALIGN_TOP));
-	rgb_color black = {0, 0, 0, 255};
+	rgb_color textColor = ui_color(B_DOCUMENT_TEXT_COLOR);
 	BFont font(be_plain_font);
 	font.SetSize(font.Size() + 2);
-	textView->SetFontAndColor(&font, B_FONT_ALL, &black);
+	textView->SetFontAndColor(&font, B_FONT_ALL, &textColor);
 	textView->SetColorSpace(B_RGBA32);
 	textView->MakeResizable(false);
 	textView->MakeEditable(false);
