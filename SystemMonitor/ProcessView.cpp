@@ -338,6 +338,15 @@ void ProcessView::KillSelectedProcess() {
 	ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
 	if (!item) return;
 
+	uid_t myUid = getuid();
+	if (myUid != 0 && myUid != item->Info().userID) {
+		BAlert* permAlert = new BAlert(B_TRANSLATE("Permission Denied"),
+			B_TRANSLATE("You do not have permission to kill this process."),
+			B_TRANSLATE("OK"), NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+		permAlert->Go(NULL);
+		return;
+	}
+
 	team_id team = item->TeamID();
 
 	BString alertMsg;

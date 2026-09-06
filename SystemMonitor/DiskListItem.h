@@ -24,9 +24,14 @@ public:
 		const BString& device, const BString& mount, const BString& fs,
 		uint64 total, uint64 used, uint64 free, double percent,
 		const BFont* font, DiskView* view)
-		: BListItem(), fGeneration(0), fDeviceID(deviceID), fView(view)
+		: BListItem(), fGeneration(0), fDeviceID(deviceID), fView(view), fIcon(NULL)
 	{
+		_UpdateIcon();
 		Update(device, mount, fs, total, used, free, percent, font, true);
+	}
+
+	virtual ~DiskListItem() {
+		delete fIcon;
 	}
 
 	void SetGeneration(int32 generation) { fGeneration = generation; }
@@ -99,12 +104,16 @@ public:
 			x += width;
 		};
 
-		// Draw placeholder icon
-		BRect iconRect(x, itemRect.top + (itemRect.Height() - 16) / 2, x + 16, itemRect.top + (itemRect.Height() - 16) / 2 + 16);
-		owner->SetHighColor(ui_color(B_PANEL_BACKGROUND_COLOR));
-		owner->FillRect(iconRect);
-		owner->SetHighColor(make_color(0, 0, 0, 255)); // Black border
-		//owner->StrokeRect(iconRect);
+		// Draw volume icon or placeholder
+		BRect iconRect(x, itemRect.top + (itemRect.Height() - 16) / 2, x + 15, itemRect.top + (itemRect.Height() - 16) / 2 + 15);
+		if (fIcon != NULL) {
+			owner->SetDrawingMode(B_OP_OVER);
+			owner->DrawBitmap(fIcon, iconRect.LeftTop());
+			owner->SetDrawingMode(B_OP_COPY);
+		} else {
+			owner->SetHighColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+			owner->FillRect(iconRect);
+		}
 		owner->SetHighColor(textColor); // Restore text color
 
 		float deviceStringX = x + 20; // Icon width (16) + padding (4)
@@ -198,6 +207,19 @@ public:
 	}
 
 private:
+	void _UpdateIcon() {
+		if (fIcon != NULL) return;
+		BVolume volume(fDeviceID);
+		if (volume.InitCheck() == B_OK) {
+			BBitmap* icon = new(std::nothrow) BBitmap(BRect(0, 0, 15, 15), B_RGBA32);
+			if (icon != NULL && icon->InitCheck() == B_OK && volume.GetIcon(icon, B_MINI_ICON) == B_OK) {
+				fIcon = icon;
+			} else {
+				delete icon;
+			}
+		}
+	}
+
 	BString  fDevice, fMount, fFS;
 	uint64   fTotal, fUsed, fFree;
 	double   fPercent;
@@ -206,6 +228,7 @@ private:
 	int32    fGeneration;
 	dev_t    fDeviceID;
 	DiskView* fView;
+	BBitmap* fIcon;
 };
 
 #endif // DISKLISTITEM_H

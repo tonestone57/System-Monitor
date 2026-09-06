@@ -72,7 +72,7 @@ public:
 		if (priorityChanged) {
 			if (fInfo.priority <= B_LOW_PRIORITY) fCachedPriority = B_TRANSLATE("Low");
 			else if (fInfo.priority <= B_NORMAL_PRIORITY) fCachedPriority = B_TRANSLATE("Normal");
-			else if (fInfo.priority <= B_DISPLAY_PRIORITY) fCachedPriority = B_TRANSLATE("High");
+			else if (fInfo.priority <= B_URGENT_DISPLAY_PRIORITY) fCachedPriority = B_TRANSLATE("High");
 			else if (fInfo.priority <= B_REAL_TIME_DISPLAY_PRIORITY) fCachedPriority = B_TRANSLATE("Real-Time");
 			else fCachedPriority.SetToFormat("%" B_PRId32, fInfo.priority);
 		}

@@ -35,6 +35,7 @@ public:
     void DrawString(const char* s, BPoint p) {}
     void SetDrawingMode(int) {}
     void DrawBitmap(void* bitmap, BPoint p) {}
+    void DrawBitmap(void* bitmap, BRect r) {}
     void Invalidate() {}
 };
 #endif

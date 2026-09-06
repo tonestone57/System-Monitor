@@ -17,7 +17,7 @@
 #define B_TRANSLATION_CONTEXT "CPUView"
 
 CPUView::CPUView()
-	: BView("CPUView", B_WILL_DRAW | B_PULSE_NEEDED | B_SUPPORTS_LAYOUT),
+	: BView("CPUView", B_WILL_DRAW | B_SUPPORTS_LAYOUT),
 	  fSpeedValue(NULL),
 	  fProcessesValue(NULL),
 	  fThreadsValue(NULL),
@@ -52,7 +52,7 @@ void CPUView::CreateLayout()
 	fModelName->SetAlignment(B_ALIGN_RIGHT);
 
 	// Utilization Header
-	BStringView* utilLabel = new BStringView("util_label", B_TRANSLATE("% Utilisation"));
+	BStringView* utilLabel = new BStringView("util_label", B_TRANSLATE("% Utilization"));
 	BStringView* maxUtilLabel = new BStringView("max_util", "100%");
 	maxUtilLabel->SetAlignment(B_ALIGN_RIGHT);
 
@@ -153,7 +153,6 @@ CPUView::~CPUView() {
 }
 
 void CPUView::AttachedToWindow() {
-	SetFlags(Flags() | B_PULSE_NEEDED);
 	UpdateData(); // Initial data fetch
 	BView::AttachedToWindow();
 }

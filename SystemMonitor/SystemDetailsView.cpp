@@ -256,6 +256,8 @@ void SystemDetailsView::Pulse()
 		fCachedUsageView->SetText(_GetCachedUsage(&sysInfo));
 	if (fSwapUsageView)
 		fSwapUsageView->SetText(_GetSwapUsage(&sysInfo));
+	if (fDiskUsageView)
+		fDiskUsageView->SetText(_GetDiskUsage());
 	if (fUptimeView) {
 		fUptimeView->SetText(_GetUptime());
 		_UpdateText(fUptimeView);

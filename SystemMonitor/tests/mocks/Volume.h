@@ -5,6 +5,7 @@ public:
     BVolume() {}
     BVolume(int device) {}
     int GetIcon(class BBitmap* icon, int which) const { return -1; }
+    int InitCheck() const { return 0; }
 public:
     int Device() const { return 0; }
 };
