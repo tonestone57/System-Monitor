@@ -79,7 +79,7 @@ public:
 
 	status_t InitCheck() const
 	{
-		return fBuffer != NULL ? B_OK : B_NO_MEMORY;
+		return (fSize == 0 || fBuffer != NULL) ? B_OK : B_NO_MEMORY;
 	}
 
 	status_t SetSize(uint32 size)

@@ -97,9 +97,7 @@ SystemDetailsView::SystemDetailsView()
 
 	// Uptime
 	BStringView* uptimeLabel = _CreateLabel("uptimelabel", B_TRANSLATE("Time running"));
-	fUptimeView = new BTextView("uptimetext");
-	fUptimeView->SetText(_GetUptime());
-	_UpdateText(fUptimeView);
+	fUptimeView = _CreateSubtext("uptimetext", _GetUptime());
 
 	// Now comes the layout
 
@@ -258,10 +256,8 @@ void SystemDetailsView::Pulse()
 		fSwapUsageView->SetText(_GetSwapUsage(&sysInfo));
 	if (fDiskUsageView)
 		fDiskUsageView->SetText(_GetDiskUsage());
-	if (fUptimeView) {
+	if (fUptimeView)
 		fUptimeView->SetText(_GetUptime());
-		_UpdateText(fUptimeView);
-	}
 
 	BString packages;
 	GetPackageCount(packages);

@@ -298,12 +298,17 @@ void NetworkView::UpdateData(BMessage* message)
 
 	// Update graphs
 	if (fUploadGraph && fDownloadGraph) {
-		bigtime_t dt = currentTime - fLastTotalUpdateTime;
-		if (dt <= 0)
-			dt = 1000000;
+		if (fLastTotalUpdateTime == 0) {
+			fUploadSpeed = 0.0f;
+			fDownloadSpeed = 0.0f;
+		} else {
+			bigtime_t dt = currentTime - fLastTotalUpdateTime;
+			if (dt <= 0)
+				dt = 1000000;
 
-		fUploadSpeed = totalSentDelta * 1000000.0 / dt;
-		fDownloadSpeed = totalReceivedDelta * 1000000.0 / dt;
+			fUploadSpeed = totalSentDelta * 1000000.0 / dt;
+			fDownloadSpeed = totalReceivedDelta * 1000000.0 / dt;
+		}
 
 		fUploadGraph->AddValue(currentTime, fUploadSpeed);
 		fDownloadGraph->AddValue(currentTime, fDownloadSpeed);

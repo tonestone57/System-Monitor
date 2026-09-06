@@ -44,6 +44,7 @@ void
 ActivityGraphView::SetAutoScale()
 {
 	fManualScale = false;
+	fLastRangeValid = false;
 	Invalidate();
 }
 
@@ -185,6 +186,7 @@ ActivityGraphView::SetManualScale(int64 min, int64 max)
 		std::swap(min, max);
 	fManualMin = min;
 	fManualMax = max;
+	fLastRangeValid = false;
 	Invalidate();
 }
 

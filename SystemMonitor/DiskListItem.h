@@ -62,7 +62,7 @@ public:
 			fTruncatedDevice = fDevice;
 			if (font && fView)
 				font->TruncateString(&fTruncatedDevice, B_TRUNCATE_MIDDLE,
-					fView->DeviceWidth() - 10);
+					fView->DeviceWidth() - 25);
 		}
 		if (mountChanged) {
 			fTruncatedMount = fMount;

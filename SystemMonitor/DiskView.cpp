@@ -351,7 +351,7 @@ void DiskView::UpdateData(BMessage* message)
 		volMsg.FindUInt64("total_size", &totalSize);
 		volMsg.FindUInt64("free_size", &freeSize);
 
-		uint64 usedSize = totalSize - freeSize;
+		uint64 usedSize = (totalSize >= freeSize) ? totalSize - freeSize : 0;
 		double usagePercent = 0.0;
 		if (totalSize > 0) {
 			usagePercent = static_cast<double>(usedSize) / totalSize * 100.0;

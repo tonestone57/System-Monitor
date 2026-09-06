@@ -142,7 +142,7 @@ DataHistory::ValueAt(bigtime_t time, int32* hintIndex)
 void
 DataHistory::GetValues(int64* outValues, int32 count, bigtime_t startTime, bigtime_t timeStep)
 {
-	if (count <= 0) return;
+	if (outValues == NULL || count <= 0) return;
 
 	int32 right = (int32)fBuffer.CountItems() - 1;
 	if (right < 0) {
