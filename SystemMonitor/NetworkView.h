@@ -55,6 +55,8 @@ public:
 	virtual void AttachedToWindow();
 	virtual void DetachedFromWindow();
 	virtual void MessageReceived(BMessage* message);
+	virtual void Hide();
+	virtual void Show();
 
 	float GetUploadSpeed();
 	float GetDownloadSpeed();

@@ -49,6 +49,8 @@ public:
 	virtual void DetachedFromWindow();
 	virtual void MessageReceived(BMessage* message);
 	virtual void Draw(BRect updateRect);
+	virtual void Hide();
+	virtual void Show();
 
 	void SetRefreshInterval(bigtime_t interval);
 	void SetPerformanceViewVisible(bool visible) { fPerformanceViewVisible = visible; }

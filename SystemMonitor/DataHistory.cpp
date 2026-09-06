@@ -54,13 +54,13 @@ DataHistory::AddValue(bigtime_t time, int64 value)
 int64
 DataHistory::ValueAt(bigtime_t time, int32* hintIndex)
 {
-	int32 left = 0;
-	if (hintIndex != NULL && *hintIndex >= 0)
-		left = *hintIndex;
-
 	int32 right = (int32)fBuffer.CountItems() - 1;
-	if (left > right)
+	if (right < 0)
 		return 0;
+
+	int32 left = 0;
+	if (hintIndex != NULL && *hintIndex >= 0 && *hintIndex <= right)
+		left = *hintIndex;
 
 	// Fast path: sequentially progressing time is often in the same or next interval
 	data_item* item = fBuffer.ItemAt(left);

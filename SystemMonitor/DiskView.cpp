@@ -399,6 +399,20 @@ void DiskView::Draw(BRect updateRect)
 	BView::Draw(updateRect);
 }
 
+void DiskView::Hide()
+{
+	fPerformanceViewVisible = false;
+	BView::Hide();
+}
+
+void DiskView::Show()
+{
+	fPerformanceViewVisible = true;
+	if (fScanSem >= 0)
+		release_sem(fScanSem);
+	BView::Show();
+}
+
 void DiskView::_SortItems()
 {
 	DiskListItem::sSortAscending = fSortAscending;

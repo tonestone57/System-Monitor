@@ -22,6 +22,9 @@
 #include <unistd.h>
 #include <Messenger.h>
 #include <Window.h>
+#ifdef __HAIKU__
+#include <LocaleRoster.h>
+#endif
 
 extern "C" const char* __get_haiku_revision();
 
@@ -457,9 +460,22 @@ BString GetLocale()
 		}
 		buffer[i] = '\0';
 		locale = buffer;
-	} else {
-		locale = "en_US.UTF-8";
 	}
+
+#ifdef __HAIKU__
+	if (locale.IsEmpty()) {
+		BLocale defaultLocale;
+		if (BLocaleRoster::Default() != NULL && BLocaleRoster::Default()->GetDefaultLocale(&defaultLocale) == B_OK) {
+			BLanguage language;
+			if (defaultLocale.GetLanguage(&language) == B_OK) {
+				locale = language.Name();
+			}
+		}
+	}
+#endif
+
+	if (locale.IsEmpty())
+		locale = "en_US.UTF-8";
 
 	return locale;
 }

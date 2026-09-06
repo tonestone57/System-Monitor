@@ -227,6 +227,16 @@ void test_value_at_duplicate_timestamps() {
     printf("test_value_at_duplicate_timestamps passed\n");
 }
 
+void test_value_at_stale_hint() {
+    DataHistory history(1000, 10);
+    history.AddValue(100, 500);
+    history.AddValue(200, 600);
+
+    int32 staleHint = 50; // Stale hint index out of bounds
+    assert(history.ValueAt(150, &staleHint) == 550);
+    printf("test_value_at_stale_hint passed\n");
+}
+
 int main() {
     printf("Starting DataHistory tests...\n");
     test_constructor();
@@ -242,6 +252,7 @@ int main() {
     test_value_at_binary_search();
     test_value_at_fast_path();
     test_value_at_duplicate_timestamps();
+    test_value_at_stale_hint();
     printf("All DataHistory tests passed!\n");
     return 0;
 }
