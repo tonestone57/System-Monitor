@@ -774,7 +774,7 @@ int32 ProcessView::UpdateThread(void* data)
 					priorityFound = true;
 				}
 
-				if (skipThreadScan && cached && cachedInfo->lastRunningThread != -1) {
+				if (skipThreadScan && !priorityFound && cached && cachedInfo->lastRunningThread != -1) {
 					thread_info lastInfo;
 					if (get_thread_info(cachedInfo->lastRunningThread, &lastInfo) == B_OK && lastInfo.team == teamInfo.team) {
 						teamPriority = lastInfo.priority;
