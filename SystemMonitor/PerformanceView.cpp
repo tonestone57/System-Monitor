@@ -92,7 +92,7 @@ public:
 
 			if (fMemInfoText) {
 				BString memStr;
-				uint64 usedBytes = static_cast<uint64>(fStats->memoryUsage * fStats->memoryTotal / 100.0f);
+				uint64 usedBytes = fStats->memoryUsed;
 				BString usedStr, totalStr;
 				::FormatBytes(usedStr, usedBytes);
 				::FormatBytes(totalStr, fStats->memoryTotal);
@@ -232,6 +232,7 @@ PerformanceView::Pulse()
 
 	uint64 used, total, physical;
 	GetMemoryUsage(used, total, physical);
+	fStats.memoryUsed    = used;
 	fStats.memoryTotal   = total;
 
 	if (fSummaryView)

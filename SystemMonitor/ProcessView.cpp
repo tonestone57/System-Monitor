@@ -339,6 +339,12 @@ void ProcessView::ShowContextMenu(BPoint screenPoint) {
 	if (selection < 0) return;
 
 	fContextMenu->SetTargetForItems(this);
+	for (int32 i = 0; i < fContextMenu->CountItems(); i++) {
+		BMenuItem* item = fContextMenu->ItemAt(i);
+		if (item && item->Submenu()) {
+			item->Submenu()->SetTargetForItems(this);
+		}
+	}
 	fContextMenu->Go(screenPoint, true, true, true);
 }
 
