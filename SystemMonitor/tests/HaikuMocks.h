@@ -66,6 +66,11 @@ typedef struct {
     uint8_t alpha;
 } rgb_color;
 
+inline rgb_color make_color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255) {
+    rgb_color c = {red, green, blue, alpha};
+    return c;
+}
+
 typedef int32 color_which;
 
 class BString {

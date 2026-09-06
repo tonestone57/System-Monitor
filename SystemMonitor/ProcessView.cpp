@@ -356,7 +356,22 @@ void ProcessView::SuspendSelectedProcess() {
 	if (selection < 0) return;
 	ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
 	if (!item) return;
-	send_signal(item->TeamID(), SIGSTOP);
+
+	uid_t myUid = getuid();
+	if (myUid != 0 && myUid != item->Info().userID) {
+		BAlert* permAlert = new BAlert(B_TRANSLATE("Permission Denied"),
+			B_TRANSLATE("You do not have permission to suspend this process."),
+			B_TRANSLATE("OK"), NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+		permAlert->Go(NULL);
+		return;
+	}
+
+	if (send_signal(item->TeamID(), SIGSTOP) != B_OK) {
+		BAlert* errAlert = new BAlert(B_TRANSLATE("Error"),
+			B_TRANSLATE("Failed to suspend process."),
+			B_TRANSLATE("OK"), NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+		errAlert->Go(NULL);
+	}
 }
 
 void ProcessView::ResumeSelectedProcess() {
@@ -364,7 +379,22 @@ void ProcessView::ResumeSelectedProcess() {
 	if (selection < 0) return;
 	ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
 	if (!item) return;
-	send_signal(item->TeamID(), SIGCONT);
+
+	uid_t myUid = getuid();
+	if (myUid != 0 && myUid != item->Info().userID) {
+		BAlert* permAlert = new BAlert(B_TRANSLATE("Permission Denied"),
+			B_TRANSLATE("You do not have permission to resume this process."),
+			B_TRANSLATE("OK"), NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+		permAlert->Go(NULL);
+		return;
+	}
+
+	if (send_signal(item->TeamID(), SIGCONT) != B_OK) {
+		BAlert* errAlert = new BAlert(B_TRANSLATE("Error"),
+			B_TRANSLATE("Failed to resume process."),
+			B_TRANSLATE("OK"), NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+		errAlert->Go(NULL);
+	}
 }
 
 void ProcessView::SetSelectedProcessPriority(int32 priority) {
@@ -373,13 +403,32 @@ void ProcessView::SetSelectedProcessPriority(int32 priority) {
 	ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(selection));
 	if (!item) return;
 
+	uid_t myUid = getuid();
+	if (myUid != 0 && myUid != item->Info().userID) {
+		BAlert* permAlert = new BAlert(B_TRANSLATE("Permission Denied"),
+			B_TRANSLATE("You do not have permission to change the priority of this process."),
+			B_TRANSLATE("OK"), NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+		permAlert->Go(NULL);
+		return;
+	}
+
 	team_id team = item->TeamID();
 	thread_info tInfo;
 	int32 cookie = 0;
+	bool failed = false;
 	while (get_next_thread_info(team, &cookie, &tInfo) == B_OK) {
 		if (tInfo.priority != priority) {
-			set_thread_priority(tInfo.thread, priority);
+			if (set_thread_priority(tInfo.thread, priority) != B_OK) {
+				failed = true;
+			}
 		}
+	}
+
+	if (failed) {
+		BAlert* errAlert = new BAlert(B_TRANSLATE("Error"),
+			B_TRANSLATE("Failed to set priority for one or more threads."),
+			B_TRANSLATE("OK"), NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+		errAlert->Go(NULL);
 	}
 }
 
@@ -658,8 +707,8 @@ int32 ProcessView::UpdateThread(void* data)
 				if (teamInfo.uid == cachedInfo->uid
 					&& strncmp(teamInfo.args, cachedInfo->args, 64) == 0) {
 					cached = true;
-						strlcpy(currentProc.name, cachedInfo->name, sizeof(currentProc.name));
-						strlcpy(currentProc.userName, cachedInfo->userName, sizeof(currentProc.userName));
+					strlcpy(currentProc.name, cachedInfo->name, sizeof(currentProc.name));
+					strlcpy(currentProc.userName, cachedInfo->userName, sizeof(currentProc.userName));
 					strlcpy(currentProc.args, cachedInfo->args, sizeof(currentProc.args));
 					cachedInfo->generation = view->fCurrentGeneration;
 
