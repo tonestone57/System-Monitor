@@ -252,12 +252,12 @@ int32 DiskView::UpdateThread(void* data)
 		BMessage updateMsg(kMsgDiskDataUpdate);
 
 		std::vector<dev_t> volumesToPoll;
-		if (view->fLocker.Lock()) {
+		{
+			BAutolock locker(view->fLocker);
 			volumesToPoll.reserve(view->fVolumeCache.size());
 			for (const auto& pair : view->fVolumeCache) {
 				 volumesToPoll.push_back(pair.first);
 			}
-			view->fLocker.Unlock();
 		}
 
 		for (auto dev : volumesToPoll) {
@@ -269,7 +269,8 @@ int32 DiskView::UpdateThread(void* data)
 			uint64 freeSize = static_cast<uint64>(fsInfo.free_blocks) * fsInfo.block_size;
 			const char* deviceName = (strlen(fsInfo.volume_name) > 0) ? fsInfo.volume_name : fsInfo.device_name;
 
-			if (view->fLocker.Lock()) {
+			{
+				BAutolock locker(view->fLocker);
 				auto it = view->fVolumeCache.find(dev);
 				if (it != view->fVolumeCache.end()) {
 					it->second.totalSize = totalSize;
@@ -288,7 +289,6 @@ int32 DiskView::UpdateThread(void* data)
 
 					updateMsg.AddMessage("volume", &volMsg);
 				}
-				view->fLocker.Unlock();
 			}
 		}
 
@@ -299,10 +299,9 @@ int32 DiskView::UpdateThread(void* data)
 
 void DiskView::UpdateData(BMessage* message)
 {
-	fLocker.Lock();
+	BAutolock locker(fLocker);
 
 	if (!fDiskListView) {
-		fLocker.Unlock();
 		return;
 	}
 
@@ -386,8 +385,6 @@ void DiskView::UpdateData(BMessage* message)
 	_RestoreSelection(selectedID);
 
 	fDiskListView->Invalidate();
-
-	fLocker.Unlock();
 }
 
 void DiskView::Draw(BRect updateRect)
@@ -424,9 +421,10 @@ void DiskView::_RestoreSelection(dev_t selectedID)
 
 void DiskView::_ScanVolumes()
 {
-	fLocker.Lock();
-	fVolumeCache.clear();
-	fLocker.Unlock();
+	{
+		BAutolock locker(fLocker);
+		fVolumeCache.clear();
+	}
 
 	BVolumeRoster volRoster;
 	BVolume volume;
@@ -437,9 +435,8 @@ void DiskView::_ScanVolumes()
 
 		DiskInfo info;
 		if (GetDiskInfo(volume, info) == B_OK) {
-			 fLocker.Lock();
+			 BAutolock locker(fLocker);
 			 fVolumeCache[info.deviceID] = info;
-			 fLocker.Unlock();
 		}
 	}
 }

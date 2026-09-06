@@ -250,24 +250,32 @@ void SystemDetailsView::Pulse()
 	system_info sysInfo;
 	get_system_info(&sysInfo);
 
-	fMemUsageView->SetText(_GetRamUsage(&sysInfo));
-	fCachedUsageView->SetText(_GetCachedUsage(&sysInfo));
-	fSwapUsageView->SetText(_GetSwapUsage(&sysInfo));
-	fUptimeView->SetText(_GetUptime());
-	_UpdateText(fUptimeView);
+	if (fMemUsageView)
+		fMemUsageView->SetText(_GetRamUsage(&sysInfo));
+	if (fCachedUsageView)
+		fCachedUsageView->SetText(_GetCachedUsage(&sysInfo));
+	if (fSwapUsageView)
+		fSwapUsageView->SetText(_GetSwapUsage(&sysInfo));
+	if (fUptimeView) {
+		fUptimeView->SetText(_GetUptime());
+		_UpdateText(fUptimeView);
+	}
 
 	BString packages;
 	GetPackageCount(packages);
-	fPackagesInfoView->SetText(packages.String());
+	if (fPackagesInfoView)
+		fPackagesInfoView->SetText(packages.String());
 
-	fIPInfoView->SetText(GetLocalIPAddress());
+	if (fIPInfoView)
+		fIPInfoView->SetText(GetLocalIPAddress());
 
 	if (fBatteryInfoView) {
 		BString battery = GetBatteryCapacity();
 		fBatteryInfoView->SetText(battery.String());
 	}
 
-	fLocaleInfoView->SetText(GetLocale());
+	if (fLocaleInfoView)
+		fLocaleInfoView->SetText(GetLocale());
 }
 
 void SystemDetailsView::MessageReceived(BMessage* message)

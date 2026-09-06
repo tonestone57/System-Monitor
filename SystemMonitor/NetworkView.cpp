@@ -171,7 +171,7 @@ void NetworkView::MessageReceived(BMessage* message)
 
 void NetworkView::UpdateData(BMessage* message)
 {
-	fLocker.Lock();
+	BAutolock locker(fLocker);
 
 	// Preserve selection
 	int32 selection = fInterfaceListView->CurrentSelection();
@@ -309,8 +309,6 @@ void NetworkView::UpdateData(BMessage* message)
 		fDownloadGraph->AddValue(currentTime, fDownloadSpeed);
 		fLastTotalUpdateTime = currentTime;
 	}
-
-	fLocker.Unlock();
 }
 
 int32 NetworkView::UpdateThread(void* data)

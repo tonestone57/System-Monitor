@@ -7,8 +7,12 @@
 #include <View.h>
 #include <InterfaceDefs.h>
 #include <cstring>
+#include <Catalog.h>
 #include "ProcessView.h"
 #include "Utils.h"
+
+#undef B_TRANSLATION_CONTEXT
+#define B_TRANSLATION_CONTEXT "ProcessListItem"
 
 class ProcessListItem : public BListItem {
 public:

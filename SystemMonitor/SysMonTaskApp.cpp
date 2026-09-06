@@ -14,6 +14,7 @@
 #include <String.h>
 #include <Font.h>
 #include <Rect.h>
+#include <Screen.h>
 #include <Button.h>
 
 #undef B_TRANSLATION_CONTEXT
@@ -242,8 +243,11 @@ void MainWindow::LoadSettings() {
 			if (settings.Unflatten(&file) == B_OK) {
 				BRect frame;
 				if (settings.FindRect("window_frame", &frame) == B_OK) {
-					MoveTo(frame.LeftTop());
-					ResizeTo(frame.Width(), frame.Height());
+					BScreen screen(this);
+					if (screen.IsValid() && screen.Frame().Intersects(frame)) {
+						MoveTo(frame.LeftTop());
+						ResizeTo(frame.Width(), frame.Height());
+					}
 				}
 
 				if (fProcessView)

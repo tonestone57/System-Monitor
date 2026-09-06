@@ -102,6 +102,8 @@ private:
 
 	BListView* fProcessListView;
 	BPopUpMenu* fContextMenu;
+	BLocker fLocker;
+	std::unordered_set<team_id> fVisibleTeams;
 	BTextControl* fSearchControl;
 
 	struct ThreadState {
