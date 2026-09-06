@@ -109,57 +109,67 @@ public:
 		drawRight(fCachedRxSpeed, fView->RxSpeedWidth());
 	}
 
+	static bool sSortAscending;
+
 	static int CompareName(const void* a, const void* b) {
 		const InterfaceListItem* i1 = *static_cast<const InterfaceListItem* const*>(a);
 		const InterfaceListItem* i2 = *static_cast<const InterfaceListItem* const*>(b);
-		return strcasecmp(i1->fName.String(), i2->fName.String());
+		int result = strcasecmp(i1->fName.String(), i2->fName.String());
+		return sSortAscending ? result : -result;
 	}
 	static int CompareType(const void* a, const void* b) {
 		const InterfaceListItem* i1 = *static_cast<const InterfaceListItem* const*>(a);
 		const InterfaceListItem* i2 = *static_cast<const InterfaceListItem* const*>(b);
-		return strcasecmp(i1->fType.String(), i2->fType.String());
+		int result = strcasecmp(i1->fType.String(), i2->fType.String());
+		return sSortAscending ? result : -result;
 	}
 	static int CompareAddr(const void* a, const void* b) {
 		const InterfaceListItem* i1 = *static_cast<const InterfaceListItem* const*>(a);
 		const InterfaceListItem* i2 = *static_cast<const InterfaceListItem* const*>(b);
-		return strcasecmp(i1->fAddr.String(), i2->fAddr.String());
+		int result = strcasecmp(i1->fAddr.String(), i2->fAddr.String());
+		return sSortAscending ? result : -result;
 	}
 	static int CompareSent(const void* a, const void* b) {
 		const InterfaceListItem* i1 = *static_cast<const InterfaceListItem* const*>(a);
 		const InterfaceListItem* i2 = *static_cast<const InterfaceListItem* const*>(b);
-		if (i1->fSent > i2->fSent) return -1;
-		if (i1->fSent < i2->fSent) return  1;
-		return 0;
+		int result = 0;
+		if (i1->fSent > i2->fSent) result = -1;
+		else if (i1->fSent < i2->fSent) result = 1;
+		return sSortAscending ? -result : result;
 	}
 	static int CompareRecv(const void* a, const void* b) {
 		const InterfaceListItem* i1 = *static_cast<const InterfaceListItem* const*>(a);
 		const InterfaceListItem* i2 = *static_cast<const InterfaceListItem* const*>(b);
-		if (i1->fRecv > i2->fRecv) return -1;
-		if (i1->fRecv < i2->fRecv) return  1;
-		return 0;
+		int result = 0;
+		if (i1->fRecv > i2->fRecv) result = -1;
+		else if (i1->fRecv < i2->fRecv) result = 1;
+		return sSortAscending ? -result : result;
 	}
 	static int CompareTxSpeed(const void* a, const void* b) {
 		const InterfaceListItem* i1 = *static_cast<const InterfaceListItem* const*>(a);
 		const InterfaceListItem* i2 = *static_cast<const InterfaceListItem* const*>(b);
-		if (i1->fTxSpeed > i2->fTxSpeed) return -1;
-		if (i1->fTxSpeed < i2->fTxSpeed) return  1;
-		return 0;
+		int result = 0;
+		if (i1->fTxSpeed > i2->fTxSpeed) result = -1;
+		else if (i1->fTxSpeed < i2->fTxSpeed) result = 1;
+		return sSortAscending ? -result : result;
 	}
 	static int CompareRxSpeed(const void* a, const void* b) {
 		const InterfaceListItem* i1 = *static_cast<const InterfaceListItem* const*>(a);
 		const InterfaceListItem* i2 = *static_cast<const InterfaceListItem* const*>(b);
-		if (i1->fRxSpeed > i2->fRxSpeed) return -1;
-		if (i1->fRxSpeed < i2->fRxSpeed) return  1;
-		return 0;
+		int result = 0;
+		if (i1->fRxSpeed > i2->fRxSpeed) result = -1;
+		else if (i1->fRxSpeed < i2->fRxSpeed) result = 1;
+		return sSortAscending ? -result : result;
 	}
 	static int CompareSpeed(const void* a, const void* b) {
 		const InterfaceListItem* i1 = *static_cast<const InterfaceListItem* const*>(a);
 		const InterfaceListItem* i2 = *static_cast<const InterfaceListItem* const*>(b);
 		uint64 s1 = i1->fTxSpeed + i1->fRxSpeed;
 		uint64 s2 = i2->fTxSpeed + i2->fRxSpeed;
-		if (s1 > s2) return -1;
-		if (s1 < s2) return  1;
-		return 0;
+		int result = 0;
+		if (s1 > s2) result = -1;
+		else if (s1 < s2) result = 1;
+		return sSortAscending ? -result : result;
 	}
 
 private:

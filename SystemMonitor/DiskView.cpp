@@ -20,6 +20,7 @@
 #include <vector>
 #include "DiskListItem.h"
 
+bool DiskListItem::sSortAscending = true;
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "DiskView"
@@ -41,7 +42,8 @@ DiskView::DiskView()
 	  fPerformanceViewVisible(true),
 	  fRefreshInterval(1000000),
 	  fListGeneration(0),
-	  fSortMode(SORT_DISK_BY_DEVICE)
+	  fSortMode(SORT_DISK_BY_DEVICE),
+	  fSortAscending(true)
 {
 	SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 	fScanSem = create_sem(0, "disk scan sem");
@@ -148,7 +150,12 @@ void DiskView::MessageReceived(BMessage* message)
 	} else if (message->what == MSG_HEADER_CLICKED) {
 		int32 mode;
 		if (message->FindInt32("mode", &mode) == B_OK) {
-			fSortMode = (DiskSortMode)mode;
+			if (fSortMode == (DiskSortMode)mode) {
+				fSortAscending = !fSortAscending;
+			} else {
+				fSortMode = (DiskSortMode)mode;
+				fSortAscending = (fSortMode == SORT_DISK_BY_DEVICE || fSortMode == SORT_DISK_BY_MOUNT || fSortMode == SORT_DISK_BY_FS);
+			}
 			_SortItems();
 			fDiskListView->Invalidate();
 		}
@@ -394,6 +401,7 @@ void DiskView::Draw(BRect updateRect)
 
 void DiskView::_SortItems()
 {
+	DiskListItem::sSortAscending = fSortAscending;
 	switch (fSortMode) {
 		case SORT_DISK_BY_DEVICE: default: fDiskListView->SortItems(DiskListItem::CompareDevice); break;
 		case SORT_DISK_BY_MOUNT: fDiskListView->SortItems(DiskListItem::CompareMount); break;

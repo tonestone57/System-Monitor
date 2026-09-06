@@ -90,6 +90,7 @@ private:
 	float fPercentWidth;
 
 	DiskSortMode fSortMode;
+	bool fSortAscending;
 
 	void _SortItems();
 	void _RestoreSelection(dev_t selectedID);
