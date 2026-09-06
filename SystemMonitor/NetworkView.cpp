@@ -234,7 +234,8 @@ void NetworkView::UpdateData(BMessage* message)
 	for (int32 i = 0; i < count; i++) {
 		const NetworkInfo* info;
 		ssize_t size;
-		if (message->FindData("net_info", B_RAW_TYPE, i, reinterpret_cast<const void**>(&info), &size) == B_OK) {
+		if (message->FindData("net_info", B_RAW_TYPE, i, reinterpret_cast<const void**>(&info), &size) == B_OK
+			&& size >= static_cast<ssize_t>(sizeof(NetworkInfo))) {
 
 			BString name(info->name);
 

@@ -100,6 +100,7 @@ DataHistory::ValueAt(bigtime_t time, int32* hintIndex)
 		}
 	}
 
+	left = 0;
 	while (left <= right) {
 		int32 index = (left + right) / 2;
 		item = fBuffer.ItemAt(index);
