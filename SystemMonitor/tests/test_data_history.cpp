@@ -237,6 +237,21 @@ void test_value_at_stale_hint() {
     printf("test_value_at_stale_hint passed\n");
 }
 
+void test_value_at_hint_ahead_of_target() {
+    DataHistory history(1000, 10);
+    history.AddValue(100, 500);
+    history.AddValue(200, 600);
+    history.AddValue(300, 700);
+    history.AddValue(400, 800);
+    history.AddValue(500, 900);
+
+    int32 hint = 4; // Hint points to timestamp 500
+    // Query a time (250) earlier than the hint timestamp (500)
+    assert(history.ValueAt(250, &hint) == 650);
+    assert(hint == 1);
+    printf("test_value_at_hint_ahead_of_target passed\n");
+}
+
 int main() {
     printf("Starting DataHistory tests...\n");
     test_constructor();
@@ -253,6 +268,7 @@ int main() {
     test_value_at_fast_path();
     test_value_at_duplicate_timestamps();
     test_value_at_stale_hint();
+    test_value_at_hint_ahead_of_target();
     printf("All DataHistory tests passed!\n");
     return 0;
 }

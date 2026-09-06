@@ -419,73 +419,76 @@ ActivityGraphView::_DrawHistory()
 				if (startI < 0) startI = 0;
 				int32 endI = steps - 1;
 				int32 count = endI - startI + 1;
-				// points[0] = start-bottom, points[1...count] = data, points[count+1] = end-bottom
-				int32 polyCount = count + 2;
 
-				try {
-					if (fPoints.capacity() < static_cast<size_t>(polyCount))
-						fPoints.reserve(polyCount + 64);
-					if (fPoints.size() < static_cast<size_t>(polyCount))
-						fPoints.resize(polyCount);
+				if (count > 0) {
+					// points[0] = start-bottom, points[1...count] = data, points[count+1] = end-bottom
+					int32 polyCount = count + 2;
 
-					BPoint* points = fPoints.data();
+					try {
+						if (fPoints.capacity() < static_cast<size_t>(polyCount))
+							fPoints.reserve(polyCount + 64);
+						if (fPoints.size() < static_cast<size_t>(polyCount))
+							fPoints.resize(polyCount);
 
-					// Bottom-start corner for partial polygon fill
-					points[0] = BPoint(startI, frame.bottom);
+						BPoint* points = fPoints.data();
 
-					std::vector<int64> values(count, 0);
-					if (fHistory != NULL)
-						fHistory->GetValues(values.data(), count, fLastRefresh - static_cast<bigtime_t>(steps - 1 - startI) * timeStep, timeStep);
+						// Bottom-start corner for partial polygon fill
+						points[0] = BPoint(startI, frame.bottom);
 
-					for (int32 j = 0; j < count; j++) {
-						int32 i = startI + j;
-						// For the very last pixel, use 'now' for maximum smoothness
-						bigtime_t t;
-						int64 value;
-						if (i == static_cast<int32>(steps) - 1 && fHistory != NULL) {
-							t = now;
-							value = fHistory->ValueAt(t, NULL);
-						} else {
-							value = values[j];
+						std::vector<int64> values(count, 0);
+						if (fHistory != NULL)
+							fHistory->GetValues(values.data(), count, fLastRefresh - static_cast<bigtime_t>(steps - 1 - startI) * timeStep, timeStep);
+
+						for (int32 j = 0; j < count; j++) {
+							int32 i = startI + j;
+							// For the very last pixel, use 'now' for maximum smoothness
+							bigtime_t t;
+							int64 value;
+							if (i == static_cast<int32>(steps) - 1 && fHistory != NULL) {
+								t = now;
+								value = fHistory->ValueAt(t, NULL);
+							} else {
+								value = values[j];
+							}
+
+							float y;
+							if (range == 0) {
+								if (min == 0) y = frame.Height();
+								else y = frame.Height() / 2;
+							} else
+								y = frame.Height() - (value - min) * frame.Height() / range;
+							// Offset by 1 to leave room for the bottom-start corner at points[0]
+							points[j+1] = BPoint(i, y);
+						}
+						// Bottom-end corner for partial polygon fill
+						points[polyCount-1] = BPoint(endI, frame.bottom);
+
+						// Fill
+						if (fDrawFill) {
+							view->SetDrawingMode(B_OP_ALPHA);
+							rgb_color fillColor = drawColor;
+							fillColor.alpha = 100;
+							if (fFillColor.alpha != 0) {
+								fillColor = fFillColor;
+							}
+							view->SetHighColor(fillColor);
+							view->FillPolygon(points, polyCount);
 						}
 
-						float y;
-						if (range == 0) {
-							if (min == 0) y = frame.Height();
-							else y = frame.Height() / 2;
-						} else
-							y = frame.Height() - (value - min) * frame.Height() / range;
-						// Offset by 1 to leave room for the bottom-start corner at points[0]
-						points[j+1] = BPoint(i, y);
-					}
-					// Bottom-end corner for partial polygon fill
-					points[polyCount-1] = BPoint(endI, frame.bottom);
-
-					// Fill
-					if (fDrawFill) {
-						view->SetDrawingMode(B_OP_ALPHA);
-						rgb_color fillColor = drawColor;
-						fillColor.alpha = 100;
-						if (fFillColor.alpha != 0) {
-							fillColor = fFillColor;
+						// Stroke
+						view->SetDrawingMode(B_OP_COPY);
+						view->SetHighColor(drawColor);
+						view->SetPenSize(1.5);
+						if (count > 1) {
+							view->BeginLineArray(count - 1);
+							for (int32 j = 0; j < count - 1; j++) {
+								view->AddLine(points[j+1], points[j+2], drawColor);
+							}
+							view->EndLineArray();
 						}
-						view->SetHighColor(fillColor);
-						view->FillPolygon(points, polyCount);
+					} catch (const std::bad_alloc&) {
+						// Ignore
 					}
-
-					// Stroke
-					view->SetDrawingMode(B_OP_COPY);
-					view->SetHighColor(drawColor);
-					view->SetPenSize(1.5);
-					if (count > 1) {
-						view->BeginLineArray(count - 1);
-						for (int32 j = 0; j < count - 1; j++) {
-							view->AddLine(points[j+1], points[j+2], drawColor);
-						}
-						view->EndLineArray();
-					}
-				} catch (const std::bad_alloc&) {
-					// Ignore
 				}
 
 				view->ConstrainClippingRegion(NULL); // Reset clipping

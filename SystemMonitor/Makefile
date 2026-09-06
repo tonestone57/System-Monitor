@@ -44,7 +44,7 @@ EXTRA_INCLUDES = /boot/system/develop/headers/os
 LDFLAGS =
 
 # Specify the level of optimization
-OPTIMIZE := NONE
+OPTIMIZE := FULL
 
 # Specify the level of localization
 LOCALES =

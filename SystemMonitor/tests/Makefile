@@ -42,8 +42,8 @@ benchmark_activity_getvalues: benchmark_activity_getvalues.cpp
 test_circular_buffer: test_circular_buffer.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-test_utils: test_utils.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $< ../Utils.cpp
+test_utils: test_utils.cpp ../Utils.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 benchmark_disk_poll: benchmark_disk_poll.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
