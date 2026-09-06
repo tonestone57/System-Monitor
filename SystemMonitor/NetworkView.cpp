@@ -18,6 +18,8 @@
 #include <Catalog.h>
 #include <ScrollView.h>
 
+bool InterfaceListItem::sSortAscending = false;
+
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "NetworkView"
 
@@ -43,7 +45,8 @@ NetworkView::NetworkView()
 	fPerformanceViewVisible(true),
 	fRefreshInterval(1000000),
 	fListGeneration(0),
-	fSortMode(SORT_NET_BY_TX_SPEED)
+	fSortMode(SORT_NET_BY_TX_SPEED),
+	fSortAscending(false)
 {
 	SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 	fScanSem = create_sem(0, "network scan sem");
@@ -160,7 +163,12 @@ void NetworkView::MessageReceived(BMessage* message)
 	} else if (message->what == MSG_HEADER_CLICKED) {
 		int32 mode;
 		if (message->FindInt32("mode", &mode) == B_OK) {
-			fSortMode = (NetworkSortMode)mode;
+			if (fSortMode == (NetworkSortMode)mode) {
+				fSortAscending = !fSortAscending;
+			} else {
+				fSortMode = (NetworkSortMode)mode;
+				fSortAscending = (fSortMode == SORT_NET_BY_NAME || fSortMode == SORT_NET_BY_TYPE || fSortMode == SORT_NET_BY_ADDR);
+			}
 			_SortItems();
 			fInterfaceListView->Invalidate();
 		}
@@ -409,6 +417,7 @@ float NetworkView::GetDownloadSpeed()
 
 void NetworkView::_SortItems()
 {
+	InterfaceListItem::sSortAscending = fSortAscending;
 	switch (fSortMode) {
 		case SORT_NET_BY_NAME: fInterfaceListView->SortItems(InterfaceListItem::CompareName); break;
 		case SORT_NET_BY_TYPE: fInterfaceListView->SortItems(InterfaceListItem::CompareType); break;

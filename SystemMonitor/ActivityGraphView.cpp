@@ -399,11 +399,12 @@ ActivityGraphView::_DrawHistory()
 					BFont viewFont;
 					view->GetFont(&viewFont);
 					float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
-					int64 startK = (int64)ceilf((newArea.left + fScrollOffset) / gridSpacing);
+					int64 startK = (int64)ceilf((newArea.left - (frame.right - fScrollOffset)) / gridSpacing);
 					for (int64 k = startK; ; k++) {
-						float x = k * gridSpacing - fScrollOffset;
+						float x = frame.right - fScrollOffset + k * gridSpacing;
 						if (x > newArea.right) break;
-						view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
+						if (x >= newArea.left)
+							view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
 					}
 				}
 

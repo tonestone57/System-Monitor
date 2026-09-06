@@ -162,48 +162,57 @@ public:
 		x += fView->PercentWidth();
 	}
 
+	static bool sSortAscending;
+
 	static int CompareDevice(const void* a, const void* b) {
 		const DiskListItem* i1 = *static_cast<const DiskListItem* const*>(a);
 		const DiskListItem* i2 = *static_cast<const DiskListItem* const*>(b);
-		return strcasecmp(i1->fDevice.String(), i2->fDevice.String());
+		int result = strcasecmp(i1->fDevice.String(), i2->fDevice.String());
+		return sSortAscending ? result : -result;
 	}
 	static int CompareMount(const void* a, const void* b) {
 		const DiskListItem* i1 = *static_cast<const DiskListItem* const*>(a);
 		const DiskListItem* i2 = *static_cast<const DiskListItem* const*>(b);
-		return strcasecmp(i1->fMount.String(), i2->fMount.String());
+		int result = strcasecmp(i1->fMount.String(), i2->fMount.String());
+		return sSortAscending ? result : -result;
 	}
 	static int CompareFS(const void* a, const void* b) {
 		const DiskListItem* i1 = *static_cast<const DiskListItem* const*>(a);
 		const DiskListItem* i2 = *static_cast<const DiskListItem* const*>(b);
-		return strcasecmp(i1->fFS.String(), i2->fFS.String());
+		int result = strcasecmp(i1->fFS.String(), i2->fFS.String());
+		return sSortAscending ? result : -result;
 	}
 	static int CompareTotal(const void* a, const void* b) {
 		const DiskListItem* i1 = *static_cast<const DiskListItem* const*>(a);
 		const DiskListItem* i2 = *static_cast<const DiskListItem* const*>(b);
-		if (i1->fTotal > i2->fTotal) return -1;
-		if (i1->fTotal < i2->fTotal) return  1;
-		return 0;
+		int result = 0;
+		if (i1->fTotal > i2->fTotal) result = -1;
+		else if (i1->fTotal < i2->fTotal) result = 1;
+		return sSortAscending ? -result : result;
 	}
 	static int CompareUsed(const void* a, const void* b) {
 		const DiskListItem* i1 = *static_cast<const DiskListItem* const*>(a);
 		const DiskListItem* i2 = *static_cast<const DiskListItem* const*>(b);
-		if (i1->fUsed > i2->fUsed) return -1;
-		if (i1->fUsed < i2->fUsed) return  1;
-		return 0;
+		int result = 0;
+		if (i1->fUsed > i2->fUsed) result = -1;
+		else if (i1->fUsed < i2->fUsed) result = 1;
+		return sSortAscending ? -result : result;
 	}
 	static int CompareFree(const void* a, const void* b) {
 		const DiskListItem* i1 = *static_cast<const DiskListItem* const*>(a);
 		const DiskListItem* i2 = *static_cast<const DiskListItem* const*>(b);
-		if (i1->fFree > i2->fFree) return -1;
-		if (i1->fFree < i2->fFree) return  1;
-		return 0;
+		int result = 0;
+		if (i1->fFree > i2->fFree) result = -1;
+		else if (i1->fFree < i2->fFree) result = 1;
+		return sSortAscending ? -result : result;
 	}
 	static int CompareUsage(const void* a, const void* b) {
 		const DiskListItem* i1 = *static_cast<const DiskListItem* const*>(a);
 		const DiskListItem* i2 = *static_cast<const DiskListItem* const*>(b);
-		if (i1->fPercent > i2->fPercent) return -1;
-		if (i1->fPercent < i2->fPercent) return  1;
-		return 0;
+		int result = 0;
+		if (i1->fPercent > i2->fPercent) result = -1;
+		else if (i1->fPercent < i2->fPercent) result = 1;
+		return sSortAscending ? -result : result;
 	}
 
 private:

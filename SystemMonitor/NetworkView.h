@@ -115,6 +115,7 @@ private:
 	float fRxSpeedWidth;
 
 	NetworkSortMode fSortMode;
+	bool fSortAscending;
 
 	void _SortItems();
 	void _RestoreSelection(const BString& selectedName);
