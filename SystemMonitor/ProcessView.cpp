@@ -763,7 +763,7 @@ int32 ProcessView::UpdateThread(void* data)
 		int32 cookie = 0;
 		team_info teamInfo;
 		while (get_next_team_info(&cookie, &teamInfo) == B_OK) {
-			ProcessInfo currentProc;
+			ProcessInfo currentProc{};
 			currentProc.id = teamInfo.team;
 			currentProc.userID = teamInfo.uid;
 

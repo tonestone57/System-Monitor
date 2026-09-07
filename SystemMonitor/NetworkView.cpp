@@ -369,7 +369,7 @@ int32 NetworkView::UpdateThread(void* data)
 		BNetworkInterface interface;
 
 		while (roster.GetNextInterface(&cookie, interface) == B_OK) {
-			NetworkInfo info;
+			NetworkInfo info{};
 			const char* ifName = interface.Name();
 			strlcpy(info.name, ifName != nullptr ? ifName : "", sizeof(info.name));
 

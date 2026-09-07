@@ -294,7 +294,7 @@ int32 DiskView::UpdateThread(void* data)
 						const DiskInfo& info = it->second;
 
 						BMessage volMsg;
-						volMsg.AddInt32("device_id", info.deviceID);
+						volMsg.AddInt32("device_id", static_cast<int32>(info.deviceID));
 						volMsg.AddString("device_name", info.deviceName);
 						volMsg.AddString("mount_point", info.mountPoint);
 						volMsg.AddString("fs_type", info.fileSystemType);
