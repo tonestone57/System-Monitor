@@ -87,8 +87,21 @@ int main() {
     assert(buffer.CountItems() == 0);
     assert(buffer.ItemAt(0) == NULL);
 
+    // Test AddItem on zero-sized buffer
+    buffer.AddItem(42);
+    assert(buffer.CountItems() == 0);
+    assert(buffer.IsEmpty());
+
     // Test SetSize idempotent call
     assert(buffer.SetSize(0) == B_OK);
+
+    // Test Zero-sized constructor AddItem
+    CircularBuffer<int> zeroBuffer(0);
+    assert(zeroBuffer.Size() == 0);
+    assert(zeroBuffer.CountItems() == 0);
+    zeroBuffer.AddItem(99);
+    assert(zeroBuffer.CountItems() == 0);
+    assert(zeroBuffer.IsEmpty());
 
     // Test MakeEmpty
     buffer.MakeEmpty();

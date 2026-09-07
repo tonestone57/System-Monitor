@@ -340,7 +340,7 @@ void SystemDetailsView::_UpdateText(BTextView* textView)
 BString SystemDetailsView::_GetOSVersion()
 {
 	BString revision = GetOSVersion();
-	revision << " (" << GetABIVersion() << ")";
+	revision << " (" << _GetABIVersion() << ")";
 	return revision;
 }
 

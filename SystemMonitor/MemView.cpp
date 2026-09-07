@@ -108,7 +108,8 @@ void MemView::Pulse()
 
 void MemView::UpdateData()
 {
-	fLocker.Lock();
+	if (!fLocker.Lock())
+		return;
 
 	uint64 usedBytes, totalBytes, physical;
 	GetMemoryUsage(usedBytes, totalBytes, physical);
@@ -168,12 +169,16 @@ void MemView::UpdateData()
 float MemView::GetCurrentUsage()
 {
 	BAutolock locker(fLocker);
+	if (!locker.IsLocked())
+		return 0.0f;
 	return fCurrentUsage;
 }
 
 void MemView::SetRefreshInterval(bigtime_t interval)
 {
 	BAutolock locker(fLocker);
-	if (fCacheGraphView)
-		fCacheGraphView->SetRefreshInterval(interval);
+	if (locker.IsLocked()) {
+		if (fCacheGraphView)
+			fCacheGraphView->SetRefreshInterval(interval);
+	}
 }

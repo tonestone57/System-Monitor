@@ -343,7 +343,7 @@ public:
 
 class BLocker {
 public:
-    void Lock() {}
+    bool Lock() { return true; }
     void Unlock() {}
 };
 

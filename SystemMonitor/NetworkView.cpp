@@ -194,6 +194,8 @@ void NetworkView::Show()
 void NetworkView::UpdateData(BMessage* message)
 {
 	BAutolock locker(fLocker);
+	if (!locker.IsLocked())
+		return;
 
 	// Preserve selection
 	int32 selection = fInterfaceListView->CurrentSelection();
@@ -421,12 +423,16 @@ int32 NetworkView::UpdateThread(void* data)
 float NetworkView::GetUploadSpeed()
 {
 	BAutolock locker(fLocker);
+	if (!locker.IsLocked())
+		return 0.0f;
 	return fUploadSpeed;
 }
 
 float NetworkView::GetDownloadSpeed()
 {
 	BAutolock locker(fLocker);
+	if (!locker.IsLocked())
+		return 0.0f;
 	return fDownloadSpeed;
 }
 
@@ -452,10 +458,12 @@ void NetworkView::SetRefreshInterval(bigtime_t interval)
 		release_sem(fScanSem);
 
 	BAutolock locker(fLocker);
-	if (fUploadGraph)
-		fUploadGraph->SetRefreshInterval(interval);
-	if (fDownloadGraph)
-		fDownloadGraph->SetRefreshInterval(interval);
+	if (locker.IsLocked()) {
+		if (fUploadGraph)
+			fUploadGraph->SetRefreshInterval(interval);
+		if (fDownloadGraph)
+			fDownloadGraph->SetRefreshInterval(interval);
+	}
 }
 
 void NetworkView::_RestoreSelection(const BString& selectedName)

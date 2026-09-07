@@ -169,18 +169,20 @@ void DiskView::MessageReceived(BMessage* message)
 					if (volume.InitCheck() == B_OK && volume.Capacity() > 0) {
 						DiskInfo info;
 						if (GetDiskInfo(volume, info) == B_OK) {
-							fLocker.Lock();
-							fVolumeCache[info.deviceID] = info;
-							fLocker.Unlock();
+							if (fLocker.Lock()) {
+								fVolumeCache[info.deviceID] = info;
+								fLocker.Unlock();
+							}
 						}
 					}
 				}
 			} else if (opcode == B_DEVICE_UNMOUNTED) {
 				dev_t device;
 				if (message->FindInt32("device", &device) == B_OK) {
-					fLocker.Lock();
-					fVolumeCache.erase(device);
-					fLocker.Unlock();
+					if (fLocker.Lock()) {
+						fVolumeCache.erase(device);
+						fLocker.Unlock();
+					}
 				}
 			}
 		}
@@ -261,9 +263,11 @@ int32 DiskView::UpdateThread(void* data)
 		std::vector<dev_t> volumesToPoll;
 		{
 			BAutolock locker(view->fLocker);
-			volumesToPoll.reserve(view->fVolumeCache.size());
-			for (const auto& pair : view->fVolumeCache) {
-				 volumesToPoll.push_back(pair.first);
+			if (locker.IsLocked()) {
+				volumesToPoll.reserve(view->fVolumeCache.size());
+				for (const auto& pair : view->fVolumeCache) {
+					 volumesToPoll.push_back(pair.first);
+				}
 			}
 		}
 
@@ -278,23 +282,25 @@ int32 DiskView::UpdateThread(void* data)
 
 			{
 				BAutolock locker(view->fLocker);
-				auto it = view->fVolumeCache.find(dev);
-				if (it != view->fVolumeCache.end()) {
-					it->second.totalSize = totalSize;
-					it->second.freeSize = freeSize;
-					it->second.deviceName = deviceName;
+				if (locker.IsLocked()) {
+					auto it = view->fVolumeCache.find(dev);
+					if (it != view->fVolumeCache.end()) {
+						it->second.totalSize = totalSize;
+						it->second.freeSize = freeSize;
+						it->second.deviceName = deviceName;
 
-					const DiskInfo& info = it->second;
+						const DiskInfo& info = it->second;
 
-					BMessage volMsg;
-					volMsg.AddInt32("device_id", info.deviceID);
-					volMsg.AddString("device_name", info.deviceName);
-					volMsg.AddString("mount_point", info.mountPoint);
-					volMsg.AddString("fs_type", info.fileSystemType);
-					volMsg.AddUInt64("total_size", info.totalSize);
-					volMsg.AddUInt64("free_size", info.freeSize);
+						BMessage volMsg;
+						volMsg.AddInt32("device_id", info.deviceID);
+						volMsg.AddString("device_name", info.deviceName);
+						volMsg.AddString("mount_point", info.mountPoint);
+						volMsg.AddString("fs_type", info.fileSystemType);
+						volMsg.AddUInt64("total_size", info.totalSize);
+						volMsg.AddUInt64("free_size", info.freeSize);
 
-					updateMsg.AddMessage("volume", &volMsg);
+						updateMsg.AddMessage("volume", &volMsg);
+					}
 				}
 			}
 		}
@@ -307,6 +313,8 @@ int32 DiskView::UpdateThread(void* data)
 void DiskView::UpdateData(BMessage* message)
 {
 	BAutolock locker(fLocker);
+	if (!locker.IsLocked())
+		return;
 
 	if (!fDiskListView) {
 		return;
@@ -445,7 +453,8 @@ void DiskView::_ScanVolumes()
 {
 	{
 		BAutolock locker(fLocker);
-		fVolumeCache.clear();
+		if (locker.IsLocked())
+			fVolumeCache.clear();
 	}
 
 	BVolumeRoster volRoster;
@@ -458,7 +467,8 @@ void DiskView::_ScanVolumes()
 		DiskInfo info;
 		if (GetDiskInfo(volume, info) == B_OK) {
 			 BAutolock locker(fLocker);
-			 fVolumeCache[info.deviceID] = info;
+			 if (locker.IsLocked())
+				 fVolumeCache[info.deviceID] = info;
 		}
 	}
 }
