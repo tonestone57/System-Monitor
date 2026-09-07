@@ -295,7 +295,8 @@ void MainWindow::LoadSettings() {
 }
 
 SysMonTaskApp::SysMonTaskApp()
-	: BApplication("application/x-vnd.HaikuSysMonTask") {
+	: BApplication("application/x-vnd.HaikuSysMonTask"),
+	  mainWindow(nullptr) {
 	// Constructor
 }
 
