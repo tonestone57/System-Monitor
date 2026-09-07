@@ -225,7 +225,7 @@ status_t DiskView::GetDiskInfo(BVolume& volume, DiskInfo& info) {
 	if (status != B_OK) {
 		return status;
 	}
-	info.mountPoint = mountPath.Path();
+	info.mountPoint = (mountPath.Path() != NULL) ? mountPath.Path() : "";
 
 	char volumeName[B_FILE_NAME_LENGTH];
 	if (volume.GetName(volumeName) == B_OK && strlen(volumeName) > 0) {

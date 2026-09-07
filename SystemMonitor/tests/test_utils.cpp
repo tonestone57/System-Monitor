@@ -195,6 +195,11 @@ void test_get_battery_capacity() {
     assert(!capacity.IsEmpty());
 }
 
+void test_get_os_version() {
+    BString osVersion = GetOSVersion();
+    assert(!osVersion.IsEmpty());
+}
+
 int main() {
     std::cout << "Testing Utils.cpp..." << std::endl;
 
@@ -278,6 +283,7 @@ int main() {
     test_get_memory_usage();
     test_get_cached_memory_bytes();
     test_get_battery_capacity();
+    test_get_os_version();
 
     std::cout << "All Utils tests passed!" << std::endl;
     return 0;

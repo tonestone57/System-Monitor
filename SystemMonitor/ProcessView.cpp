@@ -772,7 +772,7 @@ int32 ProcessView::UpdateThread(void* data)
 			if (it != view->fCachedTeamInfo.end()) {
 				cachedInfo = &it->second;
 				if (teamInfo.uid == cachedInfo->uid
-					&& strncmp(teamInfo.args, cachedInfo->args, 64) == 0) {
+					&& strncmp(teamInfo.args, cachedInfo->args, sizeof(cachedInfo->args)) == 0) {
 					cached = true;
 					strlcpy(currentProc.name, cachedInfo->name, sizeof(currentProc.name));
 					strlcpy(currentProc.userName, cachedInfo->userName, sizeof(currentProc.userName));

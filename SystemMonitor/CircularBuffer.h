@@ -59,10 +59,11 @@ public:
 				return *this;
 			}
 
-			for (uint32 i = 0; i < other.fSize; i++) {
-				newBuffer[i] = other.fBuffer[i];
+			for (uint32 i = 0; i < other.fIn; i++) {
+				uint32 sourceIndex = (other.fFirst + i) % other.fSize;
+				newBuffer[i] = other.fBuffer[sourceIndex];
 			}
-			fFirst = other.fFirst;
+			fFirst = 0;
 			fIn = other.fIn;
 		} else {
 			fFirst = 0;

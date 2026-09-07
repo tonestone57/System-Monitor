@@ -268,8 +268,11 @@ BString GetOSVersion()
 		system_info sysInfo;
 		if (get_system_info(&sysInfo) == B_OK) {
 			const char* haikuRev = __get_haiku_revision();
+			if (haikuRev == NULL)
+				haikuRev = "";
+
 			BString revStr(haikuRev);
-			if (strncmp(haikuRev, "hrev", 4) != 0) {
+			if (haikuRev[0] != '\0' && strncmp(haikuRev, "hrev", 4) != 0) {
 				revStr = "hrev";
 				revStr << haikuRev;
 			}
@@ -318,7 +321,9 @@ BString GetGPUInfo()
 	if (screen.IsValid()) {
 		accelerant_device_info info{};
 		if (screen.GetDeviceInfo(&info) == B_OK) {
-			return BString(info.name);
+			char nameBuf[sizeof(info.name) + 1] = {};
+			memcpy(nameBuf, info.name, sizeof(info.name));
+			return BString(nameBuf);
 		}
 	}
 	return BString(B_TRANSLATE("Unknown"));
