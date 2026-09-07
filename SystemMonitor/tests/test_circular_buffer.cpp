@@ -87,6 +87,9 @@ int main() {
     assert(buffer.CountItems() == 0);
     assert(buffer.ItemAt(0) == NULL);
 
+    // Test SetSize idempotent call
+    assert(buffer.SetSize(0) == B_OK);
+
     // Test MakeEmpty
     buffer.MakeEmpty();
     assert(buffer.IsEmpty());

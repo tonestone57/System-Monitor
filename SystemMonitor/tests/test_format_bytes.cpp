@@ -66,6 +66,9 @@ int main() {
     test_format_double(1024.0, 2, "1.00 KiB");
     test_format_double(1024.0 * 1024.0 * 1024.0 * 1.25, 3, "1.250 GiB");
 
+    // Negative double input bounds safety
+    test_format_double(-50.0, 2, "0 B");
+
     if (sFailures > 0) {
         printf("FAILED: %d test cases failed!\n", sFailures);
         return 1;
