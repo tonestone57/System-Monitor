@@ -731,6 +731,8 @@ int32 ProcessView::UpdateThread(void* data)
 
 	const int32 coreCount = GetCoreCount();
 
+	std::unordered_set<team_id> visibleTeams;
+
 	while (!view->fTerminated) {
 		if (view->fIsHidden) {
 			status_t err = acquire_sem_etc(view->fQuitSem, 1, B_RELATIVE_TIMEOUT, view->fRefreshInterval);
@@ -752,7 +754,7 @@ int32 ProcessView::UpdateThread(void* data)
 		float totalPossibleCoreTime = coreCount * systemTimeDelta;
 		if (totalPossibleCoreTime <= 0) totalPossibleCoreTime = 1.0f;
 
-		std::unordered_set<team_id> visibleTeams;
+		visibleTeams.clear();
 		if (view->fLocker.Lock()) {
 			visibleTeams = view->fVisibleTeams;
 			view->fLocker.Unlock();
@@ -892,7 +894,7 @@ int32 ProcessView::UpdateThread(void* data)
 					skipThreadScan = true;
 				}
 
-				bool isVisible = visibleTeams.find(teamInfo.team) != visibleTeams.end();
+				bool isVisible = visibleTeams.empty() || visibleTeams.find(teamInfo.team) != visibleTeams.end();
 				if (cachedInfo != nullptr && !isVisible) {
 					skipThreadScan = true;
 					teamPriority = cachedInfo->lastPriority;
@@ -959,7 +961,7 @@ int32 ProcessView::UpdateThread(void* data)
 			currentProc.cpuUsage = teamCpuPercent;
 
 			// Optimize memory calculation: Skip calculation if off-screen or throttled
-			bool isVisibleMem = visibleTeams.find(teamInfo.team) != visibleTeams.end();
+			bool isVisibleMem = visibleTeams.empty() || visibleTeams.find(teamInfo.team) != visibleTeams.end();
 			if (cachedInfo != nullptr && !isVisibleMem) {
 				memoryNeedsUpdate = false;
 				currentProc.memoryUsageBytes = cachedInfo->memoryUsage;

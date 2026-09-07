@@ -152,7 +152,7 @@ SystemDetailsView::SystemDetailsView()
 	fLocaleLabelView = _CreateLabel("localelabel", B_TRANSLATE("Locale"));
 	fLocaleInfoView = _CreateSubtext("localetext", GetLocale());
 
-BGroupView* detailsGroup = new BGroupView(B_VERTICAL);
+	BGroupView* detailsGroup = new BGroupView(B_VERTICAL);
 	detailsGroup->SetViewUIColor(B_DOCUMENT_BACKGROUND_COLOR);
 
 	auto layoutBuilder = BLayoutBuilder::Group<>(detailsGroup, B_VERTICAL)
