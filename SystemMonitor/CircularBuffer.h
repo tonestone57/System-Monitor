@@ -22,9 +22,10 @@ public:
 		fFirst(0),
 		fIn(0),
 		fSize(0),
-		fBuffer(NULL)
+		fBuffer(NULL),
+		fInitStatus(B_OK)
 	{
-		SetSize(size);
+		fInitStatus = SetSize(size);
 	}
 
 	CircularBuffer(const CircularBuffer& other)
@@ -32,7 +33,8 @@ public:
 		fFirst(0),
 		fIn(0),
 		fSize(0),
-		fBuffer(NULL)
+		fBuffer(NULL),
+		fInitStatus(B_OK)
 	{
 		*this = other;
 	}
@@ -48,23 +50,20 @@ public:
 			return *this;
 
 		Type* newBuffer = NULL;
-		if (other.fSize > 0) {
+		if (other.fSize > 0 && other.fBuffer != NULL) {
 			newBuffer = new(std::nothrow) Type[other.fSize];
 			if (newBuffer == NULL) {
 				// Allocation failed, and we needed a buffer.
-				// Retain old state.
+				// Retain old state and update init status.
+				fInitStatus = B_NO_MEMORY;
 				return *this;
 			}
 
-			// Linearize data from other to newBuffer
-			uint32 count = other.CountItems();
-			for (uint32 i = 0; i < count; i++) {
-				Type* item = other.ItemAt(i);
-				if (item)
-					newBuffer[i] = *item;
+			for (uint32 i = 0; i < other.fSize; i++) {
+				newBuffer[i] = other.fBuffer[i];
 			}
-			fFirst = 0;
-			fIn = count;
+			fFirst = other.fFirst;
+			fIn = other.fIn;
 		} else {
 			fFirst = 0;
 			fIn = 0;
@@ -73,19 +72,20 @@ public:
 		delete[] fBuffer;
 		fBuffer = newBuffer;
 		fSize = other.fSize;
+		fInitStatus = B_OK;
 
 		return *this;
 	}
 
 	status_t InitCheck() const
 	{
-		return (fSize == 0 || fBuffer != NULL) ? B_OK : B_NO_MEMORY;
+		return fInitStatus;
 	}
 
 	status_t SetSize(uint32 size)
 	{
 		if (fSize == size)
-			return B_OK;
+			return fInitStatus;
 
 		if (size == 0) {
 			delete[] fBuffer;
@@ -93,12 +93,15 @@ public:
 			fSize = 0;
 			fFirst = 0;
 			fIn = 0;
+			fInitStatus = B_OK;
 			return B_OK;
 		}
 
 		Type* newBuffer = new(std::nothrow) Type[size];
-		if (newBuffer == NULL)
+		if (newBuffer == NULL) {
+			fInitStatus = B_NO_MEMORY;
 			return B_NO_MEMORY;
+		}
 
 		if (fBuffer != NULL && fSize > 0) {
 			// Preserve existing data
@@ -123,6 +126,7 @@ public:
 		delete[] fBuffer;
 		fBuffer = newBuffer;
 		fSize = size;
+		fInitStatus = B_OK;
 
 		return B_OK;
 	}
@@ -179,6 +183,7 @@ private:
 	uint32		fIn;
 	uint32		fSize;
 	Type*		fBuffer;
+	status_t	fInitStatus;
 };
 
 

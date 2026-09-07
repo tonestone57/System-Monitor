@@ -140,7 +140,7 @@ SystemDetailsView::SystemDetailsView()
 
 	// Battery
 	BString battery = GetBatteryCapacity();
-	if (!battery.IsEmpty()) {
+	if (!battery.IsEmpty() && battery != B_TRANSLATE("Unknown")) {
 		fBatteryLabelView = _CreateLabel("batterylabel", B_TRANSLATE("Battery"));
 		fBatteryInfoView = _CreateSubtext("batterytext", battery.String());
 	} else {
