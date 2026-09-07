@@ -8,7 +8,7 @@
 #define B_TRANSLATION_CONTEXT "SystemTab"
 
 SystemTab::SystemTab()
-	: BView("SystemTab", B_WILL_DRAW)
+	: BView("SystemTab", B_WILL_DRAW | B_SUPPORTS_LAYOUT)
 {
 	SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
 

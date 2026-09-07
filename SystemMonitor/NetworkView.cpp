@@ -33,7 +33,7 @@ const float kBaseNetRxSpeedWidth = 90;
 
 
 NetworkView::NetworkView()
-	: BView("NetworkView", B_WILL_DRAW),
+	: BView("NetworkView", B_WILL_DRAW | B_SUPPORTS_LAYOUT),
 	fDownloadGraph(NULL),
 	fUploadGraph(NULL),
 	fLastTotalUpdateTime(0),

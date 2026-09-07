@@ -35,7 +35,7 @@ const float kBaseDiskPercentWidth = 80;
 
 
 DiskView::DiskView()
-	: BView("DiskView", B_WILL_DRAW),
+	: BView("DiskView", B_WILL_DRAW | B_SUPPORTS_LAYOUT),
 	  fUpdateThread(-1),
 	  fScanSem(-1),
 	  fTerminated(false),

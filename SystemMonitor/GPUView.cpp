@@ -13,7 +13,7 @@
 #define B_TRANSLATION_CONTEXT "GPUView"
 
 GPUView::GPUView()
-	: BView("GPUView", B_WILL_DRAW | B_PULSE_NEEDED),
+	: BView("GPUView", B_WILL_DRAW | B_PULSE_NEEDED | B_SUPPORTS_LAYOUT),
 	  fCachedWidth(-1),
 	  fCachedHeight(-1)
 {

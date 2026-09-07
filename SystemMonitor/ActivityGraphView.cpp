@@ -436,8 +436,10 @@ ActivityGraphView::_DrawHistory()
 						points[0] = BPoint(startI, frame.bottom);
 
 						std::vector<int64> values(count, 0);
-						if (fHistory != NULL)
-							fHistory->GetValues(values.data(), count, fLastRefresh - static_cast<bigtime_t>(steps - 1 - startI) * timeStep, timeStep);
+						if (fHistory != NULL) {
+							bigtime_t offset = (static_cast<bigtime_t>(steps - 1) - static_cast<bigtime_t>(startI)) * timeStep;
+							fHistory->GetValues(values.data(), count, fLastRefresh - offset, timeStep);
+						}
 
 						for (int32 j = 0; j < count; j++) {
 							int32 i = startI + j;
