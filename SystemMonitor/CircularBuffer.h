@@ -50,7 +50,7 @@ public:
 			return *this;
 
 		Type* newBuffer = NULL;
-		if (other.fSize > 0) {
+		if (other.fSize > 0 && other.fBuffer != NULL) {
 			newBuffer = new(std::nothrow) Type[other.fSize];
 			if (newBuffer == NULL) {
 				// Allocation failed, and we needed a buffer.
@@ -59,15 +59,11 @@ public:
 				return *this;
 			}
 
-			// Linearize data from other to newBuffer
-			uint32 count = other.CountItems();
-			for (uint32 i = 0; i < count; i++) {
-				Type* item = other.ItemAt(i);
-				if (item)
-					newBuffer[i] = *item;
+			for (uint32 i = 0; i < other.fSize; i++) {
+				newBuffer[i] = other.fBuffer[i];
 			}
-			fFirst = 0;
-			fIn = count;
+			fFirst = other.fFirst;
+			fIn = other.fIn;
 		} else {
 			fFirst = 0;
 			fIn = 0;
