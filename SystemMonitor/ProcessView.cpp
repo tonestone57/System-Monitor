@@ -882,7 +882,7 @@ int32 ProcessView::UpdateThread(void* data)
 				}
 
 				bool isVisible = visibleTeams.find(teamInfo.team) != visibleTeams.end();
-				if (cached && !isVisible) {
+				if (cachedInfo != nullptr && !isVisible) {
 					skipThreadScan = true;
 					teamPriority = cachedInfo->lastPriority;
 					priorityFound = true;
@@ -947,12 +947,13 @@ int32 ProcessView::UpdateThread(void* data)
 			if (teamCpuPercent > 100.0f) teamCpuPercent = 100.0f;
 			currentProc.cpuUsage = teamCpuPercent;
 
-			if (cached) {
-				// Optimize memory calculation: Skip calculation if off-screen or throttled
-				bool isVisible = visibleTeams.find(teamInfo.team) != visibleTeams.end();
-				if (!isVisible) {
-					memoryNeedsUpdate = false;
-				} else if (cachedInfo->cachedAreaCount == teamInfo.area_count
+			// Optimize memory calculation: Skip calculation if off-screen or throttled
+			bool isVisibleMem = visibleTeams.find(teamInfo.team) != visibleTeams.end();
+			if (cachedInfo != nullptr && !isVisibleMem) {
+				memoryNeedsUpdate = false;
+				currentProc.memoryUsageBytes = cachedInfo->memoryUsage;
+			} else if (cached) {
+				if (cachedInfo->cachedAreaCount == teamInfo.area_count
 					&& (view->fCurrentGeneration - cachedInfo->memoryGeneration < kMemoryCacheGenerations)) {
 					memoryNeedsUpdate = false;
 				}

@@ -63,7 +63,7 @@ void RunBenchmark(bool useSkipScan, bool useLastRunningThread, bool useHiddenSki
 
             // OPTIMIZATION 3: Skip scan if non-visible process
             bool isVisible = visibleTeams.find(teamInfo.team) != visibleTeams.end();
-            if (useHiddenSkip && cached && !isVisible) {
+            if (useHiddenSkip && cachedInfo != nullptr && !isVisible) {
                 skipScan = true;
                 teamPriority = cachedInfo->lastPriority;
                 priorityFound = true;
