@@ -90,8 +90,9 @@ ActivityGraphView::FrameResized(float width, float /*height*/)
 {
 	_UpdateOffscreenBitmap();
 
+	float safeWidth = (width > 0.0f) ? width : 0.0f;
 	// Pre-allocate points vector to avoid frequent reallocations during window growth
-	size_t needed = static_cast<size_t>(width) + 128;
+	size_t needed = static_cast<size_t>(safeWidth) + 128;
 	if (fPoints.capacity() < needed) {
 		fPoints.reserve(std::max(needed, fPoints.capacity() * 2));
 	}
@@ -220,7 +221,8 @@ ActivityGraphView::_DrawHistory()
 		viewBounds = view->Bounds();
 		BRect frame = viewBounds;
 
-		uint32 steps = static_cast<uint32>(frame.Width()) + 1;
+		float frameWidth = frame.Width() > 0.0f ? frame.Width() : 0.0f;
+		uint32 steps = static_cast<uint32>(frameWidth) + 1;
 		if (steps > 0) {
 			bigtime_t now = system_time();
 			bigtime_t timeStep = fResolution;
