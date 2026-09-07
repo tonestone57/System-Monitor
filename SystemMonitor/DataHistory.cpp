@@ -1,9 +1,18 @@
 #include "DataHistory.h"
 #include <limits.h>
 
+static uint32
+CalculateInitialBufferSize(bigtime_t memorize, bigtime_t interval)
+{
+	if (memorize <= 0 || interval <= 0)
+		return 100;
+	uint32 size = static_cast<uint32>(memorize / interval);
+	return size == 0 ? 1 : size;
+}
+
 DataHistory::DataHistory(bigtime_t memorize, bigtime_t interval)
 	:
-	fBuffer(memorize > 0 && interval > 0 ? memorize / interval : 100),
+	fBuffer(CalculateInitialBufferSize(memorize, interval)),
 	fRefreshInterval(interval),
 	fNextSeq(0)
 {

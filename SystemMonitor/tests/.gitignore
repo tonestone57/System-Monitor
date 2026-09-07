@@ -23,3 +23,4 @@ test_strlcpy_bounds
 test_network_info_strlcpy
 systemmonitor/tests/benchmark_activity_getvalues
 benchmark_activity_getvalues
+benchmark_priority_set

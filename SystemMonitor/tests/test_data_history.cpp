@@ -19,6 +19,16 @@ void test_constructor() {
     assert(history.MinimumValue() == 0);
     assert(history.Start() == 0);
     assert(history.End() == 0);
+
+    // Test small or zero memorize/interval ratio (memorize < interval)
+    // Minimum size should be enforced to at least 1
+    DataHistory historySmallRatio(50, 100);
+    for (int i = 1; i <= 15; i++) {
+        historySmallRatio.AddValue(i * 100, i * 10);
+    }
+    // Items added: 15 items to buffer of size 1 -> 14 evicted, item 15 remains (value 150)
+    assert(historySmallRatio.MinimumValue() == 150);
+    assert(historySmallRatio.MaximumValue() == 150);
 }
 
 void test_add_value_and_min_max() {
