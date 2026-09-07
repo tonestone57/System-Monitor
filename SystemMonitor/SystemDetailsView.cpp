@@ -36,7 +36,7 @@
 #define B_TRANSLATION_CONTEXT "SystemDetailsView"
 
 SystemDetailsView::SystemDetailsView()
-	: BView("SystemDetailsView", B_WILL_DRAW | B_PULSE_NEEDED),
+	: BView("SystemDetailsView", B_WILL_DRAW | B_PULSE_NEEDED | B_SUPPORTS_LAYOUT),
 	  fVersionLabelView(NULL),
 	  fVersionInfoView(NULL),
 	  fCPULabelView(NULL),

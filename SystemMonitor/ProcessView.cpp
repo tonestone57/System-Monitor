@@ -85,7 +85,7 @@ public:
 };
 
 ProcessView::ProcessView()
-	: BView("ProcessView", B_WILL_DRAW),
+	: BView("ProcessView", B_WILL_DRAW | B_SUPPORTS_LAYOUT),
 	  fLastSystemTime(0),
 	  fRefreshInterval(1000000),
 	  fUpdateThread(B_ERROR),

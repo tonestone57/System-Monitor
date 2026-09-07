@@ -20,7 +20,7 @@
 
 // MemView Implementation
 MemView::MemView()
-	: BView("MemoryView", B_WILL_DRAW),
+	: BView("MemoryView", B_WILL_DRAW | B_SUPPORTS_LAYOUT),
 	  fCacheGraphView(NULL),
 	  fCurrentUsage(0.0f),
 	  fLastUsedBytes(0),
