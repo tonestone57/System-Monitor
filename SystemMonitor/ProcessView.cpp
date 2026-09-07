@@ -263,10 +263,21 @@ void ProcessView::MessageReceived(BMessage* message)
 			int32 team;
 			if (message->FindInt32("which", &button_index) == B_OK && button_index == 0) {
 				if (message->FindInt32("team_id", &team) == B_OK) {
-					if (kill_team(static_cast<team_id>(team)) != B_OK) {
-						BAlert* errAlert = new BAlert(B_TRANSLATE("Error"), B_TRANSLATE("Failed to kill process."), B_TRANSLATE("OK"),
-													  NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
-						errAlert->Go(NULL);
+					team_info tinfo;
+					if (get_team_info(static_cast<team_id>(team), &tinfo) == B_OK) {
+						uid_t myUid = getuid();
+						if (myUid != 0 && myUid != tinfo.uid) {
+							BAlert* permAlert = new BAlert(B_TRANSLATE("Permission Denied"),
+								B_TRANSLATE("You do not have permission to kill this process."),
+								B_TRANSLATE("OK"), NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+							permAlert->Go(NULL);
+							break;
+						}
+						if (kill_team(static_cast<team_id>(team)) != B_OK) {
+							BAlert* errAlert = new BAlert(B_TRANSLATE("Error"), B_TRANSLATE("Failed to kill process."), B_TRANSLATE("OK"),
+														  NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+							errAlert->Go(NULL);
+						}
 					}
 				}
 			}

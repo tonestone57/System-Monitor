@@ -111,7 +111,10 @@ public:
 			owner->DrawBitmap(fIcon, iconRect.LeftTop());
 			owner->SetDrawingMode(B_OP_COPY);
 		} else {
-			owner->SetHighColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+			rgb_color color = IsSelected()
+				? ui_color(B_LIST_SELECTED_BACKGROUND_COLOR)
+				: ui_color(B_LIST_BACKGROUND_COLOR);
+			owner->SetHighColor(color);
 			owner->FillRect(iconRect);
 		}
 		owner->SetHighColor(textColor); // Restore text color

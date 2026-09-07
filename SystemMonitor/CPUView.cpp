@@ -212,7 +212,8 @@ void CPUView::GetCPUUsage(bigtime_t now, float& overallUsage)
 
 void CPUView::UpdateData()
 {
-	fLocker.Lock();
+	if (!fLocker.Lock())
+		return;
 	const bigtime_t now = system_time();
 
 	float overallUsage;
@@ -261,15 +262,19 @@ void CPUView::UpdateData()
 float CPUView::GetCurrentUsage()
 {
 	BAutolock locker(fLocker);
+	if (!locker.IsLocked())
+		return 0.0f;
 	return fCurrentUsage;
 }
 
 void CPUView::SetRefreshInterval(bigtime_t interval)
 {
 	BAutolock locker(fLocker);
-	for (auto* graph : fCoreGraphs) {
-		if (graph)
-			graph->SetRefreshInterval(interval);
+	if (locker.IsLocked()) {
+		for (auto* graph : fCoreGraphs) {
+			if (graph)
+				graph->SetRefreshInterval(interval);
+		}
 	}
 }
 

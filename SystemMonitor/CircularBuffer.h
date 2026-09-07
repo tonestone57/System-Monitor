@@ -157,7 +157,7 @@ public:
 
 	void AddItem(const Type& item)
 	{
-		if (fSize == 0)
+		if (fBuffer == NULL || fSize == 0)
 			return;
 
 		uint32 index;
@@ -169,8 +169,7 @@ public:
 			fFirst = (fFirst + 1) % fSize;
 		}
 
-		if (fBuffer != NULL)
-			fBuffer[index] = item;
+		fBuffer[index] = item;
 	}
 
 	uint32 Size() const
