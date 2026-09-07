@@ -268,7 +268,9 @@ void MainWindow::LoadSettings() {
 
 				int32 activeTab;
 				if (fMainTabView && settings.FindInt32("active_tab", &activeTab) == B_OK) {
-					fMainTabView->Select(activeTab);
+					if (activeTab >= 0 && activeTab < fMainTabView->CountTabs()) {
+						fMainTabView->Select(activeTab);
+					}
 				}
 			}
 		}

@@ -21,6 +21,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <Messenger.h>
+#include <atomic>
 #include <Window.h>
 #ifdef __HAIKU__
 #include <LocaleRoster.h>
@@ -342,11 +343,10 @@ void GetPackageCount(BString& out)
 			if (dir.InitCheck() != B_OK) return 0;
 			int count = 0;
 			BEntry entry;
+			char leafBuf[B_FILE_NAME_LENGTH];
 			while (dir.GetNextEntry(&entry) == B_OK) {
-				BPath p;
-				entry.GetPath(&p);
-				if (p.InitCheck() == B_OK) {
-					BString name(p.Leaf());
+				if (entry.GetName(leafBuf) == B_OK) {
+					BString name(leafBuf);
 					if (name.EndsWith(".hpkg")) count++;
 				}
 			}
@@ -412,12 +412,13 @@ BString GetBatteryCapacity()
 		return BString();
 	};
 
-	static int sCachedBatteryIndex = -1;
+	static std::atomic<int> sCachedBatteryIndex{-1};
 
+	int cachedIdx = sCachedBatteryIndex.load();
 	// Fast path: try cached index first
-	if (sCachedBatteryIndex >= 0) {
+	if (cachedIdx >= 0) {
 		BString path;
-		path.SetToFormat("/dev/power/acpi_battery/%d/state", sCachedBatteryIndex);
+		path.SetToFormat("/dev/power/acpi_battery/%d/state", cachedIdx);
 		int batFd = open(path.String(), O_RDONLY);
 		if (batFd >= 0) {
 			BString capacity = ReadBatteryCapacity(batFd);
@@ -426,9 +427,9 @@ BString GetBatteryCapacity()
 				return capacity;
 			}
 			// If reading failed (e.g. battery removed), invalidate cache and fall through
-			sCachedBatteryIndex = -1;
+			sCachedBatteryIndex.store(-1);
 		} else {
-			sCachedBatteryIndex = -1;
+			sCachedBatteryIndex.store(-1);
 		}
 	}
 
@@ -441,7 +442,7 @@ BString GetBatteryCapacity()
 			BString capacity = ReadBatteryCapacity(batFd);
 			close(batFd);
 			if (!capacity.IsEmpty()) {
-				sCachedBatteryIndex = i;
+				sCachedBatteryIndex.store(i);
 				return capacity;
 			}
 		}

@@ -241,6 +241,8 @@ int32 DiskView::UpdateThread(void* data)
 	DiskView* view = static_cast<DiskView*>(data);
 	BMessenger target(view);
 
+	std::vector<dev_t> volumesToPoll;
+
 	while (!view->fTerminated) {
 		status_t err = acquire_sem_etc(view->fScanSem, 1, B_RELATIVE_TIMEOUT, view->fRefreshInterval);
 		if (err != B_OK && err != B_TIMED_OUT && err != B_INTERRUPTED)
@@ -260,7 +262,7 @@ int32 DiskView::UpdateThread(void* data)
 
 		BMessage updateMsg(kMsgDiskDataUpdate);
 
-		std::vector<dev_t> volumesToPoll;
+		volumesToPoll.clear();
 		{
 			BAutolock locker(view->fLocker);
 			if (locker.IsLocked()) {
