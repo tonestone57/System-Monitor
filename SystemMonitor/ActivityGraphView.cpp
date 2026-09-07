@@ -292,8 +292,9 @@ ActivityGraphView::_DrawHistory()
 					BFont viewFont;
 					view->GetFont(&viewFont);
 					float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
+					if (gridSpacing <= 0.0f) gridSpacing = 60.0f;
 					for (float x = 0; x < frame.Width(); x += gridSpacing) {
-						 view->StrokeLine(BPoint(x, frame.top), BPoint(x, frame.bottom));
+						 view->StrokeLine(BPoint(frame.left + x, frame.top), BPoint(frame.left + x, frame.bottom));
 					}
 				}
 
@@ -327,7 +328,7 @@ ActivityGraphView::_DrawHistory()
 						} else
 							y = frame.Height() - (value - min) * frame.Height() / range;
 						// Offset by 1 to leave room for the bottom-left corner at points[0]
-						points[i+1] = BPoint(i, y);
+						points[i+1] = BPoint(frame.left + i, y);
 					}
 					// Bottom-right corner for polygon fill
 					points[pointCount-1] = BPoint(frame.right, frame.bottom);
@@ -404,6 +405,7 @@ ActivityGraphView::_DrawHistory()
 					BFont viewFont;
 					view->GetFont(&viewFont);
 					float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
+					if (gridSpacing <= 0.0f) gridSpacing = 60.0f;
 					int64 startK = (int64)ceilf((newArea.left - (frame.right - fScrollOffset)) / gridSpacing);
 					for (int64 k = startK; ; k++) {
 						float x = frame.right - fScrollOffset + k * gridSpacing;
@@ -435,7 +437,7 @@ ActivityGraphView::_DrawHistory()
 						BPoint* points = fPoints.data();
 
 						// Bottom-start corner for partial polygon fill
-						points[0] = BPoint(startI, frame.bottom);
+						points[0] = BPoint(frame.left + startI, frame.bottom);
 
 						std::vector<int64> values(count, 0);
 						if (fHistory != NULL) {
@@ -462,10 +464,10 @@ ActivityGraphView::_DrawHistory()
 							} else
 								y = frame.Height() - (value - min) * frame.Height() / range;
 							// Offset by 1 to leave room for the bottom-start corner at points[0]
-							points[j+1] = BPoint(i, y);
+							points[j+1] = BPoint(frame.left + i, y);
 						}
 						// Bottom-end corner for partial polygon fill
-						points[polyCount-1] = BPoint(endI, frame.bottom);
+						points[polyCount-1] = BPoint(frame.left + endI, frame.bottom);
 
 						// Fill
 						if (fDrawFill) {

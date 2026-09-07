@@ -77,6 +77,9 @@ DataHistory::ValueAt(bigtime_t time, int32* hintIndex)
 		data_item* nextItem = fBuffer.ItemAt(left + 1);
 		if (nextItem == NULL || nextItem->time > time) {
 			// Found in the current interval [left, left+1)
+			if (hintIndex != NULL)
+				*hintIndex = left;
+
 			if (nextItem == NULL)
 				return item->value;
 

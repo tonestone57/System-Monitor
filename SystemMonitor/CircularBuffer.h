@@ -84,8 +84,8 @@ public:
 
 	status_t SetSize(uint32 size)
 	{
-		if (fSize == size)
-			return fInitStatus;
+		if (fSize == size && fInitStatus == B_OK)
+			return B_OK;
 
 		if (size == 0) {
 			delete[] fBuffer;
