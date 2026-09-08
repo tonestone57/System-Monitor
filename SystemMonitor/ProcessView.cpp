@@ -176,13 +176,17 @@ ProcessView::ProcessView()
 ProcessView::~ProcessView()
 {
 	fTerminated = true;
-	if (fQuitSem >= 0)
+	if (fQuitSem >= 0) {
 		delete_sem(fQuitSem);
+		fQuitSem = -1;
+	}
 	if (fUpdateThread != B_ERROR) {
 		status_t ret;
 		wait_for_thread(fUpdateThread, &ret);
+		fUpdateThread = B_ERROR;
 	}
 	delete fContextMenu;
+	fContextMenu = nullptr;
 
 	fProcessListView->MakeEmpty(); // Just clears pointers
 	for (auto& pair : fTeamItemMap) {
@@ -350,6 +354,8 @@ BString ProcessView::GetUserName(uid_t uid, std::vector<char>& buffer) {
 }
 
 void ProcessView::ShowContextMenu(BPoint screenPoint) {
+	if (fContextMenu == NULL) return;
+
 	int32 selection = fProcessListView->CurrentSelection();
 	if (selection < 0) return;
 
