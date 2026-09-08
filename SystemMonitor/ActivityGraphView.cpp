@@ -377,6 +377,7 @@ ActivityGraphView::_DrawHistory()
 					BFont viewFont;
 					view->GetFont(&viewFont);
 					float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
+					if (gridSpacing <= 0.0f) gridSpacing = 60.0f;
 					fScrollOffset += static_cast<float>(pixelsToScroll);
 					while (fScrollOffset >= gridSpacing)
 						fScrollOffset -= gridSpacing;
