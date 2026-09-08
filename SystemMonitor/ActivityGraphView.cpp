@@ -517,6 +517,7 @@ void
 ActivityGraphView::SetFillColor(rgb_color color)
 {
 	fFillColor = color;
+	fLastRangeValid = false;
 	Invalidate();
 }
 
@@ -524,6 +525,7 @@ void
 ActivityGraphView::SetDrawGrid(bool drawGrid)
 {
 	fDrawGrid = drawGrid;
+	fLastRangeValid = false;
 	Invalidate();
 }
 
@@ -531,5 +533,6 @@ void
 ActivityGraphView::SetDrawFill(bool drawFill)
 {
 	fDrawFill = drawFill;
+	fLastRangeValid = false;
 	Invalidate();
 }

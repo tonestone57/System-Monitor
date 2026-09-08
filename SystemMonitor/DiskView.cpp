@@ -134,7 +134,7 @@ void DiskView::AttachedToWindow()
 void DiskView::DetachedFromWindow()
 {
 	fTerminated = true;
-	stop_watching(BMessenger(this));
+	BVolumeRoster().StopWatching();
 	if (fScanSem >= 0) {
 		delete_sem(fScanSem);
 		fScanSem = -1;

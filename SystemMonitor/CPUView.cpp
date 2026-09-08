@@ -255,7 +255,7 @@ void CPUView::UpdateData()
 			fUptimeValue->SetText(::FormatUptime(now).String());
 	}
 
-	fCurrentUsage = overallUsage;
+	fCurrentUsage = (overallUsage >= 0.0f) ? overallUsage : 0.0f;
 	fLocker.Unlock();
 }
 
