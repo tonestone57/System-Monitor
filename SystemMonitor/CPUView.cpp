@@ -165,7 +165,7 @@ void CPUView::Pulse() {
 
 void CPUView::GetCPUUsage(bigtime_t now, float& overallUsage)
 {
-	if (fCpuCount == 0 || fPreviousActiveTime.empty() || fCpuInfos.empty()) {
+	if (fCpuCount == 0 || fPreviousActiveTime.size() < fCpuCount || fCpuInfos.size() < fCpuCount) {
 		overallUsage = -1.0f;
 		return;
 	}

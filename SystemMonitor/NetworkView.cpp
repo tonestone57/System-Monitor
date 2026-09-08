@@ -247,11 +247,13 @@ void NetworkView::UpdateData(BMessage* message)
 
 			if (!info->hasStats) {
 				// Preserve existing items by updating their generation
-				if (fPreviousStatsMap.count(name)) {
-					 fPreviousStatsMap[name].generation = fListGeneration;
+				auto statIt = fPreviousStatsMap.find(name);
+				if (statIt != fPreviousStatsMap.end()) {
+					statIt->second.generation = fListGeneration;
 				}
-				if (fInterfaceItemMap.count(name)) {
-					 fInterfaceItemMap[name]->SetGeneration(fListGeneration);
+				auto itemIt = fInterfaceItemMap.find(name);
+				if (itemIt != fInterfaceItemMap.end()) {
+					itemIt->second->SetGeneration(fListGeneration);
 				}
 				continue;
 			}
