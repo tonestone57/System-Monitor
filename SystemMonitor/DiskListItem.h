@@ -162,6 +162,8 @@ public:
 			percentStr.SetToFormat("%.0f%%", fPercent);
 			float percentWidth = owner->StringWidth(percentStr.String());
 			float percentX = barRect.left + (barWidth - percentWidth) / 2.0;
+			if (percentX < barRect.left)
+				percentX = barRect.left;
 			owner->DrawString(percentStr.String(), BPoint(percentX, y));
 
 			// Restore drawing mode

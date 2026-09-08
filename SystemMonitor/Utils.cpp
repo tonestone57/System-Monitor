@@ -1,4 +1,5 @@
 #include "Utils.h"
+#include <cmath>
 #include <Font.h>
 #include <OS.h>
 #include <Catalog.h>
@@ -92,7 +93,7 @@ void FormatBytes(BString& str, uint64 bytes, int precision) {
 }
 
 void FormatBytes(BString& str, double bytes, int precision) {
-	if (bytes < 0.0)
+	if (std::isnan(bytes) || bytes < 0.0)
 		bytes = 0.0;
 
 	if (bytes < 1024.0) {
