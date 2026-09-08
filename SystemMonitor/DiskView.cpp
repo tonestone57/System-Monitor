@@ -164,7 +164,7 @@ void DiskView::MessageReceived(BMessage* message)
 		if (message->FindInt32("opcode", &opcode) == B_OK) {
 			if (opcode == B_DEVICE_MOUNTED) {
 				dev_t device;
-				if (message->FindInt32("new_device", &device) == B_OK) {
+				if (message->FindInt32("new_device", &device) == B_OK || message->FindInt32("device", &device) == B_OK) {
 					BVolume volume(device);
 					if (volume.InitCheck() == B_OK && volume.Capacity() > 0) {
 						DiskInfo info;

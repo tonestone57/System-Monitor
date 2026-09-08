@@ -37,7 +37,7 @@ extern "C" const char* __get_haiku_revision();
 #define B_TRANSLATION_CONTEXT "Utils"
 
 ClickableHeaderView::ClickableHeaderView(const char* label, float width, int32 mode, BHandler* target)
-	: BStringView(NULL, label), fMode(mode), fTarget(target)
+	: BStringView(NULL, label != nullptr ? label : ""), fMode(mode), fTarget(target)
 {
 	SetExplicitMinSize(BSize(width, B_SIZE_UNSET));
 	SetExplicitMaxSize(BSize(width, B_SIZE_UNSET));
@@ -49,7 +49,7 @@ ClickableHeaderView::ClickableHeaderView(const char* label, float width, int32 m
 	SetHighColor(ui_color(B_DOCUMENT_TEXT_COLOR));
 	SetLowColor(docBg);
 
-	BString upperLabel(label);
+	BString upperLabel(label != nullptr ? label : "");
 	upperLabel.ToUpper();
 	SetText(upperLabel.String());
 }

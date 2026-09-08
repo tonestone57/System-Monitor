@@ -192,7 +192,7 @@ DataHistory::GetValues(int64* outValues, int32 count, bigtime_t startTime, bigti
 	data_item* nextItem = fBuffer.ItemAt(index + 1);
 
 	for (int32 i = 0; i < count; i++) {
-		bigtime_t time = startTime + i * timeStep;
+		bigtime_t time = startTime + static_cast<bigtime_t>(i) * timeStep;
 
 		while (nextItem != NULL && nextItem->time <= time) {
 			index++;
