@@ -60,21 +60,24 @@ public:
 
 		if (deviceChanged) {
 			fTruncatedDevice = fDevice;
-			if (font && fView)
-				font->TruncateString(&fTruncatedDevice, B_TRUNCATE_MIDDLE,
-					fView->DeviceWidth() - 25);
+			if (font && fView) {
+				float w = std::max(0.0f, fView->DeviceWidth() - 25.0f);
+				font->TruncateString(&fTruncatedDevice, B_TRUNCATE_MIDDLE, w);
+			}
 		}
 		if (mountChanged) {
 			fTruncatedMount = fMount;
-			if (font && fView)
-				font->TruncateString(&fTruncatedMount, B_TRUNCATE_MIDDLE,
-					fView->MountWidth() - 10);
+			if (font && fView) {
+				float w = std::max(0.0f, fView->MountWidth() - 10.0f);
+				font->TruncateString(&fTruncatedMount, B_TRUNCATE_MIDDLE, w);
+			}
 		}
 		if (fsChanged) {
 			fTruncatedFS = fFS;
-			if (font && fView)
-				font->TruncateString(&fTruncatedFS, B_TRUNCATE_END,
-					fView->FSWidth() - 10);
+			if (font && fView) {
+				float w = std::max(0.0f, fView->FSWidth() - 10.0f);
+				font->TruncateString(&fTruncatedFS, B_TRUNCATE_END, w);
+			}
 		}
 	}
 

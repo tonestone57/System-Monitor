@@ -193,6 +193,7 @@ void DiskView::MessageReceived(BMessage* message)
 
 void DiskView::SetRefreshInterval(bigtime_t interval)
 {
+	if (interval <= 0) return;
 	fRefreshInterval = interval;
 	if (fScanSem >= 0)
 		release_sem(fScanSem);
@@ -372,6 +373,8 @@ void DiskView::UpdateData(BMessage* message)
 		double usagePercent = 0.0;
 		if (totalSize > 0) {
 			usagePercent = static_cast<double>(usedSize) / totalSize * 100.0;
+			if (usagePercent < 0.0) usagePercent = 0.0;
+			if (usagePercent > 100.0) usagePercent = 100.0;
 		}
 
 		DiskListItem* item;

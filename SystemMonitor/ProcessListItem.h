@@ -50,8 +50,8 @@ public:
 		if (nameChanged) {
 			if (font && fView) {
 				fTruncatedName = fInfo.name;
-				font->TruncateString(&fTruncatedName, B_TRUNCATE_END,
-					fView->NameWidth() - 10);
+				float w = std::max(0.0f, fView->NameWidth() - 10.0f);
+				font->TruncateString(&fTruncatedName, B_TRUNCATE_END, w);
 			} else {
 				fTruncatedName = fInfo.name;
 			}
@@ -80,8 +80,8 @@ public:
 		if (userChanged) {
 			if (font && fView) {
 				fTruncatedUser = fInfo.userName;
-				font->TruncateString(&fTruncatedUser, B_TRUNCATE_END,
-					fView->UserWidth() - 10);
+				float w = std::max(0.0f, fView->UserWidth() - 10.0f);
+				font->TruncateString(&fTruncatedUser, B_TRUNCATE_END, w);
 			} else {
 				fTruncatedUser = fInfo.userName;
 			}

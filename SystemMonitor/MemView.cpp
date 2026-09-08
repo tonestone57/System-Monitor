@@ -23,9 +23,9 @@ MemView::MemView()
 	: BView("MemoryView", B_WILL_DRAW | B_SUPPORTS_LAYOUT),
 	  fCacheGraphView(NULL),
 	  fCurrentUsage(0.0f),
-	  fLastUsedBytes(0),
-	  fLastFreeBytes(0),
-	  fLastCachedBytes(0)
+	  fLastUsedBytes(UINT64_MAX),
+	  fLastFreeBytes(UINT64_MAX),
+	  fLastCachedBytes(UINT64_MAX)
 {
 	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -176,6 +176,7 @@ float MemView::GetCurrentUsage()
 
 void MemView::SetRefreshInterval(bigtime_t interval)
 {
+	if (interval <= 0) return;
 	BAutolock locker(fLocker);
 	if (locker.IsLocked()) {
 		if (fCacheGraphView)

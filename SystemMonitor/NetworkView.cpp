@@ -453,6 +453,7 @@ void NetworkView::_SortItems()
 
 void NetworkView::SetRefreshInterval(bigtime_t interval)
 {
+	if (interval <= 0) return;
 	fRefreshInterval = interval;
 	if (fScanSem >= 0)
 		release_sem(fScanSem);

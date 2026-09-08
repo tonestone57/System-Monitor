@@ -260,6 +260,8 @@ void MainWindow::LoadSettings() {
 
 				bigtime_t rate;
 				if (settings.FindInt64("pulse_rate", &rate) == B_OK) {
+					if (rate < 100000) rate = 100000;         // Min 100ms
+					if (rate > 10000000) rate = 10000000;     // Max 10s
 					SetPulseRate(rate);
 					if (fProcessView) fProcessView->SetRefreshInterval(rate);
 					if (fPerformanceView) fPerformanceView->SetRefreshInterval(rate);
