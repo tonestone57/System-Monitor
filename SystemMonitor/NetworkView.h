@@ -12,8 +12,10 @@
 #include <Font.h>
 #include "ActivityGraphView.h"
 
+class BBox;
 class BListView;
 class BListItem;
+class BStringView;
 class ClickableHeaderView;
 class InterfaceListItem; // Forward declaration
 class ActivityGraphView;
@@ -115,6 +117,11 @@ private:
 	float fRecvWidth;
 	float fTxSpeedWidth;
 	float fRxSpeedWidth;
+
+	BStringView* fIPAddrValue;
+	BStringView* fTotalSentValue;
+	BStringView* fTotalRecvValue;
+	BStringView* fSpeedSummaryValue;
 
 	NetworkSortMode fSortMode;
 	bool fSortAscending;

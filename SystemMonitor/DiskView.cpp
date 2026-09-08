@@ -42,12 +42,43 @@ DiskView::DiskView()
 	  fPerformanceViewVisible(true),
 	  fRefreshInterval(1000000),
 	  fListGeneration(0),
+	  fTotalCapValue(NULL),
+	  fTotalUsedValue(NULL),
+	  fTotalFreeValue(NULL),
+	  fRootVolValue(NULL),
 	  fSortMode(SORT_DISK_BY_DEVICE),
 	  fSortAscending(true)
 {
 	SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 	fScanSem = create_sem(0, "disk scan sem");
 
+	// Summary Box
+	fTotalCapValue = new BStringView("total_cap_val", "N/A");
+	fTotalUsedValue = new BStringView("total_used_val", "N/A");
+	fTotalFreeValue = new BStringView("total_free_val", "N/A");
+	fRootVolValue = new BStringView("root_vol_val", "N/A");
+
+	BBox* summaryBox = new BBox("DiskSummaryBox");
+	summaryBox->SetLabel(B_TRANSLATE("Disk Summary"));
+
+	BGridLayout* summaryGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+	summaryGrid->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+
+	summaryGrid->AddView(new BStringView(NULL, B_TRANSLATE("Total Storage:")), 0, 0);
+	summaryGrid->AddView(fTotalCapValue, 1, 0);
+
+	summaryGrid->AddView(new BStringView(NULL, B_TRANSLATE("Used Space:")), 2, 0);
+	summaryGrid->AddView(fTotalUsedValue, 3, 0);
+
+	summaryGrid->AddView(new BStringView(NULL, B_TRANSLATE("Free Space:")), 0, 1);
+	summaryGrid->AddView(fTotalFreeValue, 1, 1);
+
+	summaryGrid->AddView(new BStringView(NULL, B_TRANSLATE("Root Disk:")), 2, 1);
+	summaryGrid->AddView(fRootVolValue, 3, 1);
+
+	summaryGrid->SetColumnWeight(1, 1.0f);
+	summaryGrid->SetColumnWeight(3, 1.0f);
+	summaryBox->SetLayout(summaryGrid);
 
 	// Calculate scaling
 	BFont font;
@@ -90,8 +121,9 @@ DiskView::DiskView()
 	BScrollView* diskScrollView = new BScrollView("disk_scroll", fDiskListView, 0, false, true);
 	diskScrollView->SetBorder(B_NO_BORDER);
 
-	BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
-		.SetInsets(0)
+	BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
+		.SetInsets(B_USE_DEFAULT_SPACING)
+		.Add(summaryBox)
 		.Add(headerView)
 		.Add(diskScrollView)
 	.End();
@@ -411,6 +443,25 @@ void DiskView::UpdateData(BMessage* message)
 	_SortItems();
 
 	_RestoreSelection(selectedID);
+
+	// Update Disk Summary Box
+	uint64 sumTotal = 0, sumUsed = 0, sumFree = 0;
+	for (const auto& pair : fVolumeCache) {
+		sumTotal += pair.second.totalSize;
+		sumFree += pair.second.freeSize;
+		if (pair.second.totalSize >= pair.second.freeSize)
+			sumUsed += (pair.second.totalSize - pair.second.freeSize);
+	}
+	if (fTotalCapValue) {
+		BString capStr, usedStr, freeStr;
+		FormatBytes(capStr, sumTotal);
+		FormatBytes(usedStr, sumUsed);
+		FormatBytes(freeStr, sumFree);
+		fTotalCapValue->SetText(capStr.String());
+		fTotalUsedValue->SetText(usedStr.String());
+		fTotalFreeValue->SetText(freeStr.String());
+		fRootVolValue->SetText(GetRootDiskUsage().String());
+	}
 
 	fDiskListView->Invalidate();
 }

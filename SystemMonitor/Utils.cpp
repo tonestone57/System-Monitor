@@ -145,6 +145,7 @@ void GetMemoryUsage(uint64& used, uint64& total, uint64& physical) {
 	}
 }
 
+// Queries system swap usage in bytes (used and total pages * B_PAGE_SIZE)
 void GetSwapUsage(uint64& used, uint64& total) {
 	system_info info;
 	if (get_system_info(&info) == B_OK) {

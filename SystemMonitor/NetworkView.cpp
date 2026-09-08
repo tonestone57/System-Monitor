@@ -45,11 +45,43 @@ NetworkView::NetworkView()
 	fPerformanceViewVisible(true),
 	fRefreshInterval(1000000),
 	fListGeneration(0),
+	fIPAddrValue(NULL),
+	fTotalSentValue(NULL),
+	fTotalRecvValue(NULL),
+	fSpeedSummaryValue(NULL),
 	fSortMode(SORT_NET_BY_TX_SPEED),
 	fSortAscending(false)
 {
 	SetViewColor(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
 	fScanSem = create_sem(0, "network scan sem");
+
+	// Summary Box
+	fIPAddrValue = new BStringView("ip_val", GetLocalIPAddress().String());
+	fTotalSentValue = new BStringView("sent_val", "0 B");
+	fTotalRecvValue = new BStringView("recv_val", "0 B");
+	fSpeedSummaryValue = new BStringView("speed_val", "S: 0 B/s  R: 0 B/s");
+
+	BBox* summaryBox = new BBox("NetSummaryBox");
+	summaryBox->SetLabel(B_TRANSLATE("Network Summary"));
+
+	BGridLayout* summaryGrid = new BGridLayout(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+	summaryGrid->SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING);
+
+	summaryGrid->AddView(new BStringView(NULL, B_TRANSLATE("Local IP:")), 0, 0);
+	summaryGrid->AddView(fIPAddrValue, 1, 0);
+
+	summaryGrid->AddView(new BStringView(NULL, B_TRANSLATE("Current Speed:")), 2, 0);
+	summaryGrid->AddView(fSpeedSummaryValue, 3, 0);
+
+	summaryGrid->AddView(new BStringView(NULL, B_TRANSLATE("Total Sent:")), 0, 1);
+	summaryGrid->AddView(fTotalSentValue, 1, 1);
+
+	summaryGrid->AddView(new BStringView(NULL, B_TRANSLATE("Total Received:")), 2, 1);
+	summaryGrid->AddView(fTotalRecvValue, 3, 1);
+
+	summaryGrid->SetColumnWeight(1, 1.0f);
+	summaryGrid->SetColumnWeight(3, 1.0f);
+	summaryBox->SetLayout(summaryGrid);
 
 	auto* netBox = new BBox("NetworkInterfacesBox");
 	netBox->SetLabel(B_TRANSLATE("Network Interfaces"));
@@ -104,11 +136,24 @@ NetworkView::NetworkView()
 	fDownloadGraph = new ActivityGraphView("download_graph", {0, 0, 0, 0}, B_MENU_SELECTION_BACKGROUND_COLOR);
 	fUploadGraph = new ActivityGraphView("upload_graph", {0, 0, 0, 0}, B_FAILURE_COLOR);
 
+	BBox* downloadBox = new BBox("DownloadBox");
+	downloadBox->SetLabel(B_TRANSLATE("Download Speed (RX)"));
+	BLayoutBuilder::Group<>(downloadBox, B_VERTICAL, 0)
+		.SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING + 10, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
+		.Add(fDownloadGraph);
+
+	BBox* uploadBox = new BBox("UploadBox");
+	uploadBox->SetLabel(B_TRANSLATE("Upload Speed (TX)"));
+	BLayoutBuilder::Group<>(uploadBox, B_VERTICAL, 0)
+		.SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING + 10, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
+		.Add(fUploadGraph);
+
 	BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
 		.SetInsets(B_USE_DEFAULT_SPACING)
+		.Add(summaryBox)
 		.Add(netBox)
-		.Add(fDownloadGraph)
-		.Add(fUploadGraph)
+		.Add(downloadBox)
+		.Add(uploadBox)
 	.End();
 }
 
@@ -344,6 +389,26 @@ void NetworkView::UpdateData(BMessage* message)
 		fUploadGraph->AddValue(currentTime, fUploadSpeed);
 		fDownloadGraph->AddValue(currentTime, fDownloadSpeed);
 		fLastTotalUpdateTime = currentTime;
+	}
+
+	// Update Summary Box
+	uint64 grandSent = 0, grandRecv = 0;
+	for (const auto& pair : fPreviousStatsMap) {
+		grandSent += pair.second.bytesSent;
+		grandRecv += pair.second.bytesReceived;
+	}
+	if (fTotalSentValue) {
+		BString sentStr, recvStr, speedStr;
+		FormatBytes(sentStr, grandSent);
+		FormatBytes(recvStr, grandRecv);
+		fIPAddrValue->SetText(GetLocalIPAddress().String());
+		fTotalSentValue->SetText(sentStr.String());
+		fTotalRecvValue->SetText(recvStr.String());
+
+		BString txStr = FormatSpeed(static_cast<uint64>(fUploadSpeed), 1000000);
+		BString rxStr = FormatSpeed(static_cast<uint64>(fDownloadSpeed), 1000000);
+		speedStr.SetToFormat("S: %s  R: %s", txStr.String(), rxStr.String());
+		fSpeedSummaryValue->SetText(speedStr.String());
 	}
 }
 

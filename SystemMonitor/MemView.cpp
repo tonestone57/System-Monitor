@@ -2,7 +2,6 @@
 #include "Utils.h"
 #include <Box.h>
 #include <GridLayout.h>
-#include <GroupLayoutBuilder.h>
 #include <Autolock.h>
 #include <SpaceLayoutItem.h>
 #include <StringView.h>
@@ -42,6 +41,8 @@ MemView::MemView()
 	fFreeMemValue = new BStringView("free_mem_value", "N/A");
 	fCachedMemLabel = new BStringView("cached_mem_label", B_TRANSLATE("Cached Memory:"));
 	fCachedMemValue = new BStringView("cached_mem_value", "N/A");
+	fSwapMemLabel = new BStringView("swap_mem_label", B_TRANSLATE("Swap Usage:"));
+	fSwapMemValue = new BStringView("swap_mem_value", "N/A");
 
 	BLayoutBuilder::Grid<>(gridLayout)
 		.SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
@@ -59,7 +60,11 @@ MemView::MemView()
 
 		.Add(fCachedMemLabel, 0, 3)
 		.Add(fCachedMemValue, 1, 3)
-		.Add(BSpaceLayoutItem::CreateGlue(), 2, 3);
+		.Add(BSpaceLayoutItem::CreateGlue(), 2, 3)
+
+		.Add(fSwapMemLabel, 0, 4)
+		.Add(fSwapMemValue, 1, 4)
+		.Add(BSpaceLayoutItem::CreateGlue(), 2, 4);
 
 	gridLayout->SetColumnWeight(2, 1.0f);
 	statsBox->SetLayout(gridLayout);
@@ -142,6 +147,21 @@ void MemView::UpdateData()
 			fLastCachedBytes = cachedBytes;
 			::FormatBytes(fCachedCachedStr, cachedBytes);
 			fCachedMemValue->SetText(fCachedCachedStr.String());
+		}
+
+		uint64 swapUsed = 0, swapTotal = 0;
+		GetSwapUsage(swapUsed, swapTotal);
+		if (swapTotal > 0) {
+			BString swapUsedStr, swapTotalStr, swapStr;
+			FormatBytes(swapUsedStr, swapUsed);
+			FormatBytes(swapTotalStr, swapTotal);
+			double swapPercent = static_cast<double>(swapUsed) / swapTotal * 100.0;
+			BString percentStr;
+			fNumberFormat.FormatPercent(percentStr, swapPercent / 100.0);
+			swapStr.SetToFormat("%s / %s (%s)", swapUsedStr.String(), swapTotalStr.String(), percentStr.String());
+			fSwapMemValue->SetText(swapStr.String());
+		} else {
+			fSwapMemValue->SetText(B_TRANSLATE("Disabled / None"));
 		}
 
 		if (totalBytes > 0) {
