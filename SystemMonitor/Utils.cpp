@@ -120,6 +120,8 @@ void FormatBytes(BString& str, double bytes, int precision) {
 }
 
 uint64 BytesToMiB(uint64 bytes) {
+	if (bytes > UINT64_MAX - 1048575)
+		return UINT64_MAX / 1048576;
 	return (bytes + 1048575) / 1048576;
 }
 
@@ -333,12 +335,16 @@ BString GetGPUInfo()
 
 void GetPackageCount(BString& out)
 {
-	static int sSysPkgs = -1;
-	static int sUserPkgs = -1;
-	static bigtime_t sLastCheck = 0;
+	static std::atomic<int> sSysPkgs{-1};
+	static std::atomic<int> sUserPkgs{-1};
+	static std::atomic<bigtime_t> sLastCheck{0};
 	bigtime_t now = system_time();
 
-	if (sSysPkgs == -1 || now - sLastCheck > 10000000LL) { // Every 10 seconds
+	int sys = sSysPkgs.load();
+	int user = sUserPkgs.load();
+	bigtime_t last = sLastCheck.load();
+
+	if (sys == -1 || now - last > 10000000LL) { // Every 10 seconds
 		auto countPackages = [](const char* path) -> int {
 			BDirectory dir(path);
 			if (dir.InitCheck() != B_OK) return 0;
@@ -353,11 +359,13 @@ void GetPackageCount(BString& out)
 			}
 			return count;
 		};
-		sSysPkgs = countPackages("/boot/system/packages");
-		sUserPkgs = countPackages("/boot/home/config/packages");
-		sLastCheck = now;
+		sys = countPackages("/boot/system/packages");
+		user = countPackages("/boot/home/config/packages");
+		sSysPkgs.store(sys);
+		sUserPkgs.store(user);
+		sLastCheck.store(now);
 	}
-	out.SetToFormat(B_TRANSLATE("%d (hpkg-system), %d (hpkg-user)"), sSysPkgs, sUserPkgs);
+	out.SetToFormat(B_TRANSLATE("%d (hpkg-system), %d (hpkg-user)"), sys, user);
 }
 
 BString GetLocalIPAddress()

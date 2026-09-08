@@ -773,6 +773,9 @@ int32 ProcessView::UpdateThread(void* data)
 			currentProc.id = teamInfo.team;
 			currentProc.userID = teamInfo.uid;
 
+			char safeTeamArgs[sizeof(teamInfo.args) + 1] = {};
+			memcpy(safeTeamArgs, teamInfo.args, sizeof(teamInfo.args));
+
 			CachedTeamInfo* cachedInfo = nullptr;
 			bool cached = false;
 			bool memoryNeedsUpdate = true;
@@ -780,7 +783,7 @@ int32 ProcessView::UpdateThread(void* data)
 			if (it != view->fCachedTeamInfo.end()) {
 				cachedInfo = &it->second;
 				if (teamInfo.uid == cachedInfo->uid
-					&& strncmp(teamInfo.args, cachedInfo->args, sizeof(cachedInfo->args)) == 0) {
+					&& strncmp(safeTeamArgs, cachedInfo->args, sizeof(cachedInfo->args)) == 0) {
 					cached = true;
 					strlcpy(currentProc.name, cachedInfo->name, sizeof(currentProc.name));
 					strlcpy(currentProc.userName, cachedInfo->userName, sizeof(currentProc.userName));
@@ -795,17 +798,19 @@ int32 ProcessView::UpdateThread(void* data)
 				image_info imgInfo;
 				int32 imgCookie = 0;
 				if (get_next_image_info(teamInfo.team, &imgCookie, &imgInfo) == B_OK) {
-					const char* leafName = strrchr(imgInfo.name, '/');
+					char safeImgName[sizeof(imgInfo.name) + 1] = {};
+					memcpy(safeImgName, imgInfo.name, sizeof(imgInfo.name));
+					const char* leafName = strrchr(safeImgName, '/');
 					if (leafName != NULL)
 						strlcpy(currentProc.name, leafName + 1, sizeof(currentProc.name));
 					else
-						strlcpy(currentProc.name, imgInfo.name, sizeof(currentProc.name));
+						strlcpy(currentProc.name, safeImgName, sizeof(currentProc.name));
 				} else {
-					const char* leafName = strrchr(teamInfo.args, '/');
+					const char* leafName = strrchr(safeTeamArgs, '/');
 					if (leafName != NULL)
 						strlcpy(currentProc.name, leafName + 1, sizeof(currentProc.name));
 					else
-						strlcpy(currentProc.name, teamInfo.args, sizeof(currentProc.name));
+						strlcpy(currentProc.name, safeTeamArgs, sizeof(currentProc.name));
 
 					char* space = strchr(currentProc.name, ' ');
 					if (space != NULL)
@@ -819,12 +824,12 @@ int32 ProcessView::UpdateThread(void* data)
 				const char* userCStr = userName.String();
 				strlcpy(currentProc.userName, userCStr != nullptr ? userCStr : "", sizeof(currentProc.userName));
 
-				strlcpy(currentProc.args, teamInfo.args, sizeof(currentProc.args));
+				strlcpy(currentProc.args, safeTeamArgs, sizeof(currentProc.args));
 
 				CachedTeamInfo info;
 				strlcpy(info.name, currentProc.name, sizeof(info.name));
 				strlcpy(info.userName, currentProc.userName, sizeof(info.userName));
-				strlcpy(info.args, teamInfo.args, sizeof(info.args));
+				strlcpy(info.args, safeTeamArgs, sizeof(info.args));
 				info.uid = teamInfo.uid;
 				info.generation = view->fCurrentGeneration;
 				// Initialization for new cache entry (memory updated later)
