@@ -65,15 +65,17 @@ public:
 			}
 			fFirst = 0;
 			fIn = other.fIn;
+			fSize = other.fSize;
+			fInitStatus = B_OK;
 		} else {
 			fFirst = 0;
 			fIn = 0;
+			fSize = 0;
+			fInitStatus = other.fInitStatus;
 		}
 
 		delete[] fBuffer;
 		fBuffer = newBuffer;
-		fSize = other.fSize;
-		fInitStatus = B_OK;
 
 		return *this;
 	}

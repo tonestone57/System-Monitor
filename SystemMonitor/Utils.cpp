@@ -149,7 +149,10 @@ void GetSwapUsage(uint64& used, uint64& total) {
 	if (get_system_info(&info) == B_OK) {
 		total = static_cast<uint64>(info.max_swap_pages) * B_PAGE_SIZE;
 #ifdef __HAIKU__
-		used = static_cast<uint64>(info.max_swap_pages - info.free_swap_pages) * B_PAGE_SIZE;
+		if (info.max_swap_pages >= info.free_swap_pages)
+			used = static_cast<uint64>(info.max_swap_pages - info.free_swap_pages) * B_PAGE_SIZE;
+		else
+			used = 0;
 #else
 		// For the Linux mock testing environment where free_swap_pages is omitted
 		// and replaced with used_swap_pages
@@ -419,7 +422,8 @@ BString GetBatteryCapacity()
 				}
 
 				if (!capacityStr.IsEmpty()) {
-					capacityStr << "%";
+					if (!capacityStr.EndsWith("%"))
+						capacityStr << "%";
 					return capacityStr;
 				}
 			}
@@ -552,14 +556,14 @@ BString GetCPUFeatures()
 
 		if (__get_cpuid(1, &eax, &ebx, &ecx, &edx) == 1) {
 			for (int i = 0; i < 32; i++) {
-				if ((edx & (1 << i)) && kFeatures[i]) {
+				if ((edx & (1u << i)) && kFeatures[i]) {
 					if (features.Length() > 0)
 						features << " ";
 					features << kFeatures[i];
 				}
 			}
 			for (int i = 0; i < 32; i++) {
-				if ((ecx & (1 << i)) && kExtendedFeatures[i]) {
+				if ((ecx & (1u << i)) && kExtendedFeatures[i]) {
 					if (features.Length() > 0)
 						features << " ";
 					features << kExtendedFeatures[i];
@@ -569,7 +573,7 @@ BString GetCPUFeatures()
 
 		if (__get_cpuid(0x80000001, &eax, &ebx, &ecx, &edx) == 1) {
 			for (int i = 0; i < 32; i++) {
-				if ((edx & (1 << i)) && kAMDExtFeatures[i]) {
+				if ((edx & (1u << i)) && kAMDExtFeatures[i]) {
 					if (features.Length() > 0)
 						features << " ";
 					features << kAMDExtFeatures[i];
@@ -580,7 +584,7 @@ BString GetCPUFeatures()
 		if (__get_cpuid_max(0, NULL) >= 7) {
 			if (__get_cpuid_count(7, 0, &eax, &ebx, &ecx, &edx) == 1) {
 				for (int i = 0; i < 32; i++) {
-					if ((ebx & (1 << i)) && kLeaf7Features[i]) {
+					if ((ebx & (1u << i)) && kLeaf7Features[i]) {
 						if (features.Length() > 0)
 							features << " ";
 						features << kLeaf7Features[i];
@@ -621,9 +625,9 @@ BString GetRootDiskUsage()
 {
 	fs_info fs;
 	if (fs_stat_dev(dev_for_path("/boot"), &fs) == B_OK) {
-		uint64 total = fs.total_blocks * fs.block_size;
-		uint64 free = fs.free_blocks * fs.block_size;
-		uint64 used = total - free;
+		uint64 total = static_cast<uint64>(fs.total_blocks) * static_cast<uint64>(fs.block_size);
+		uint64 free = static_cast<uint64>(fs.free_blocks) * static_cast<uint64>(fs.block_size);
+		uint64 used = (total >= free) ? total - free : 0;
 		int percent = 0;
 		if (total > 0)
 			percent = static_cast<int>(100.0 * used / total);

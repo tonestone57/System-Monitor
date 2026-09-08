@@ -211,8 +211,8 @@ status_t DiskView::GetDiskInfo(BVolume& volume, DiskInfo& info) {
 	}
 
 	info.deviceID = fsInfo.dev;
-	info.totalSize = fsInfo.total_blocks * fsInfo.block_size;
-	info.freeSize = fsInfo.free_blocks * fsInfo.block_size;
+	info.totalSize = static_cast<uint64>(fsInfo.total_blocks) * static_cast<uint64>(fsInfo.block_size);
+	info.freeSize = static_cast<uint64>(fsInfo.free_blocks) * static_cast<uint64>(fsInfo.block_size);
 	info.fileSystemType = fsInfo.fsh_name;
 
 	BDirectory mountDir;
