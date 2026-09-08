@@ -144,9 +144,10 @@ public:
 			owner->FillRect(barRect);
 
 			// Fill
-			if (fPercent > 0) {
+			double percent = std::max(0.0, std::min(100.0, fPercent));
+			if (percent > 0) {
 				BRect fillRect = barRect;
-				fillRect.right = fillRect.left + (barWidth * (fPercent / 100.0));
+				fillRect.right = fillRect.left + (barWidth * (percent / 100.0));
 
 				rgb_color customColor = make_color(255, 207, 0, 255);
 				owner->SetHighColor(customColor);

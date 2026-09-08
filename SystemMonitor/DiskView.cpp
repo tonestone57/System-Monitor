@@ -287,8 +287,8 @@ int32 DiskView::UpdateThread(void* data)
 			if (fs_stat_dev(dev, &fsInfo) != B_OK)
 				continue;
 
-			uint64 totalSize = static_cast<uint64>(fsInfo.total_blocks) * fsInfo.block_size;
-			uint64 freeSize = static_cast<uint64>(fsInfo.free_blocks) * fsInfo.block_size;
+			uint64 totalSize = static_cast<uint64>(fsInfo.total_blocks) * static_cast<uint64>(fsInfo.block_size);
+			uint64 freeSize = static_cast<uint64>(fsInfo.free_blocks) * static_cast<uint64>(fsInfo.block_size);
 			const char* deviceName = (strlen(fsInfo.volume_name) > 0) ? fsInfo.volume_name : fsInfo.device_name;
 
 			{
