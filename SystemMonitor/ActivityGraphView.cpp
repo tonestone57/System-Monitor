@@ -508,8 +508,8 @@ ActivityGraphView::_DrawHistory()
 			}
 		}
 		view->Sync();
-		DrawBitmap(fOffscreen, viewBounds, Bounds());
 		fOffscreen->Unlock();
+		DrawBitmap(fOffscreen, viewBounds, Bounds());
 	}
 }
 

@@ -115,10 +115,14 @@ NetworkView::NetworkView()
 NetworkView::~NetworkView()
 {
 	fTerminated = true;
-	if (fScanSem >= 0) delete_sem(fScanSem);
+	if (fScanSem >= 0) {
+		delete_sem(fScanSem);
+		fScanSem = -1;
+	}
 	if (fUpdateThread >= 0) {
 		status_t dummy;
 		wait_for_thread(fUpdateThread, &dummy);
+		fUpdateThread = -1;
 	}
 
 	fInterfaceListView->MakeEmpty();

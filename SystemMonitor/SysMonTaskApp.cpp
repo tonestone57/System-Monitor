@@ -118,6 +118,7 @@ MainWindow::MainWindow(BRect frame)
 	speedMenu->AddItem(new BMenuItem(B_TRANSLATE("Normal (1s)"), new BMessage(MSG_REFRESH_SPEED_NORMAL)));
 	speedMenu->AddItem(new BMenuItem(B_TRANSLATE("Low (2s)"), new BMessage(MSG_REFRESH_SPEED_LOW)));
 	speedMenu->SetRadioMode(true);
+	speedMenu->SetTargetForItems(this);
 	viewMenu->AddItem(speedMenu);
 	menuBar->AddItem(viewMenu);
 
