@@ -445,8 +445,14 @@ BString SystemDetailsView::_GetKernelDateTime(system_info* sysInfo)
 {
 	BString kernelDateTime;
 
+	char safeDate[sizeof(sysInfo->kernel_build_date) + 1] = {};
+	memcpy(safeDate, sysInfo->kernel_build_date, sizeof(sysInfo->kernel_build_date));
+
+	char safeTime[sizeof(sysInfo->kernel_build_time) + 1] = {};
+	memcpy(safeTime, sysInfo->kernel_build_time, sizeof(sysInfo->kernel_build_time));
+
 	BString buildDateTime;
-	buildDateTime << sysInfo->kernel_build_date << " " << sysInfo->kernel_build_time;
+	buildDateTime << safeDate << " " << safeTime;
 
 	time_t buildDateTimeStamp = parsedate(buildDateTime, -1);
 

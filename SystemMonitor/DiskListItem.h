@@ -24,7 +24,7 @@ public:
 		const BString& device, const BString& mount, const BString& fs,
 		uint64 total, uint64 used, uint64 free, double percent,
 		const BFont* font, DiskView* view)
-		: BListItem(), fGeneration(0), fDeviceID(deviceID), fView(view), fIcon(NULL)
+		: BListItem(), fGeneration(0), fDeviceID(deviceID), fView(view), fIcon(NULL), fIconAttempted(false)
 	{
 		_UpdateIcon();
 		Update(device, mount, fs, total, used, free, percent, font, true);
@@ -225,6 +225,8 @@ public:
 
 private:
 	void _UpdateIcon() {
+		if (fIconAttempted) return;
+		fIconAttempted = true;
 		if (fIcon != NULL) return;
 		BVolume volume(fDeviceID);
 		if (volume.InitCheck() == B_OK) {
@@ -246,6 +248,7 @@ private:
 	dev_t    fDeviceID;
 	DiskView* fView;
 	BBitmap* fIcon;
+	bool     fIconAttempted;
 };
 
 #endif // DISKLISTITEM_H
