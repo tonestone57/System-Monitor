@@ -324,9 +324,9 @@ ActivityGraphView::_DrawHistory()
 						float y;
 						if (range == 0) {
 							if (min == 0) y = frame.Height();
-							else y = frame.Height() / 2;
+							else y = frame.Height() / 2.0f;
 						} else
-							y = frame.Height() - (value - min) * frame.Height() / range;
+							y = static_cast<float>(frame.Height() - static_cast<double>(value - min) / range * frame.Height());
 						// Offset by 1 to leave room for the bottom-left corner at points[0]
 						points[i+1] = BPoint(frame.left + i, y);
 					}
@@ -461,9 +461,9 @@ ActivityGraphView::_DrawHistory()
 							float y;
 							if (range == 0) {
 								if (min == 0) y = frame.Height();
-								else y = frame.Height() / 2;
+								else y = frame.Height() / 2.0f;
 							} else
-								y = frame.Height() - (value - min) * frame.Height() / range;
+								y = static_cast<float>(frame.Height() - static_cast<double>(value - min) / range * frame.Height());
 							// Offset by 1 to leave room for the bottom-start corner at points[0]
 							points[j+1] = BPoint(frame.left + i, y);
 						}

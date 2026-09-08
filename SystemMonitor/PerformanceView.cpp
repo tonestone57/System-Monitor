@@ -244,8 +244,8 @@ void
 PerformanceView::Hide()
 {
 	BView::Hide();
-	fNetworkView->SetPerformanceViewVisible(false);
-	fDiskView->SetPerformanceViewVisible(false);
+	if (fNetworkView) fNetworkView->SetPerformanceViewVisible(false);
+	if (fDiskView)    fDiskView->SetPerformanceViewVisible(false);
 }
 
 
@@ -253,8 +253,8 @@ void
 PerformanceView::Show()
 {
 	BView::Show();
-	fNetworkView->SetPerformanceViewVisible(true);
-	fDiskView->SetPerformanceViewVisible(true);
+	if (fNetworkView) fNetworkView->SetPerformanceViewVisible(true);
+	if (fDiskView)    fDiskView->SetPerformanceViewVisible(true);
 }
 
 

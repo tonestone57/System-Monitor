@@ -53,21 +53,24 @@ public:
 
 		if (nameChanged) {
 			fTruncatedName = fName;
-			if (font && fView)
-				font->TruncateString(&fTruncatedName, B_TRUNCATE_END,
-					fView->NameWidth() - 10);
+			if (font && fView) {
+				float w = std::max(0.0f, fView->NameWidth() - 10.0f);
+				font->TruncateString(&fTruncatedName, B_TRUNCATE_END, w);
+			}
 		}
 		if (typeChanged) {
 			fTruncatedType = fType;
-			if (font && fView)
-				font->TruncateString(&fTruncatedType, B_TRUNCATE_END,
-					fView->TypeWidth() - 10);
+			if (font && fView) {
+				float w = std::max(0.0f, fView->TypeWidth() - 10.0f);
+				font->TruncateString(&fTruncatedType, B_TRUNCATE_END, w);
+			}
 		}
 		if (addrChanged) {
 			fTruncatedAddr = fAddr;
-			if (font && fView)
-				font->TruncateString(&fTruncatedAddr, B_TRUNCATE_END,
-					fView->AddrWidth() - 10);
+			if (font && fView) {
+				float w = std::max(0.0f, fView->AddrWidth() - 10.0f);
+				font->TruncateString(&fTruncatedAddr, B_TRUNCATE_END, w);
+			}
 		}
 	}
 

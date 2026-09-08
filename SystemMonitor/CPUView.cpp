@@ -269,6 +269,7 @@ float CPUView::GetCurrentUsage()
 
 void CPUView::SetRefreshInterval(bigtime_t interval)
 {
+	if (interval <= 0) return;
 	BAutolock locker(fLocker);
 	if (locker.IsLocked()) {
 		for (auto* graph : fCoreGraphs) {
