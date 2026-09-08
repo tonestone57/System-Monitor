@@ -595,6 +595,9 @@ void ProcessView::Update(BMessage* message)
 	if (message->FindData("procs", B_RAW_TYPE, &data, &size) != B_OK)
 		return;
 
+	if (size < static_cast<ssize_t>(sizeof(ProcessInfo)) || size % sizeof(ProcessInfo) != 0)
+		return;
+
 	const ProcessInfo* infos = static_cast<const ProcessInfo*>(data);
 	size_t count = size / sizeof(ProcessInfo);
 

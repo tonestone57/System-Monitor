@@ -65,12 +65,12 @@ public:
 	ProcessView();
 	virtual ~ProcessView();
 
-	virtual void AttachedToWindow();
-	virtual void DetachedFromWindow();
-	virtual void MessageReceived(BMessage* message);
-	virtual void KeyDown(const char* bytes, int32 numBytes);
-	virtual void Hide();
-	virtual void Show();
+	virtual void AttachedToWindow() override;
+	virtual void DetachedFromWindow() override;
+	virtual void MessageReceived(BMessage* message) override;
+	virtual void KeyDown(const char* bytes, int32 numBytes) override;
+	virtual void Hide() override;
+	virtual void Show() override;
 
 	void SaveState(BMessage& state);
 	void LoadState(const BMessage& state);

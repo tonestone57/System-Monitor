@@ -25,6 +25,12 @@ public:
     void SetExplicitMaxSize(BSize s) {}
     void InvalidateLayout() {}
     virtual void AttachedToWindow() {}
+    virtual void DetachedFromWindow() {}
+    virtual void MessageReceived(BMessage* message) {}
+    virtual void Hide() {}
+    virtual void Show() {}
+    virtual void KeyDown(const char* bytes, int32 numBytes) {}
+    virtual void FrameResized(float width, float height) {}
     virtual void Pulse() {}
     virtual void Draw(BRect) {}
     virtual void MouseDown(BPoint) {}

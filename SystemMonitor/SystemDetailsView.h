@@ -13,9 +13,9 @@ public:
 	SystemDetailsView();
 	virtual ~SystemDetailsView();
 
-	virtual void AttachedToWindow();
-	virtual void Pulse();
-	virtual void MessageReceived(BMessage* message);
+	virtual void AttachedToWindow() override;
+	virtual void Pulse() override;
+	virtual void MessageReceived(BMessage* message) override;
 
 private:
 	void _UpdateText(BTextView* textView);

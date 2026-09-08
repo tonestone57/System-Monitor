@@ -14,8 +14,8 @@ public:
 	MemView();
 	virtual ~MemView();
 
-	virtual void AttachedToWindow();
-	virtual void Pulse();
+	virtual void AttachedToWindow() override;
+	virtual void Pulse() override;
 
 	float GetCurrentUsage();
 	void SetRefreshInterval(bigtime_t interval);

@@ -15,9 +15,9 @@ public:
 	CPUView();
 	virtual ~CPUView();
 
-	virtual void AttachedToWindow();
-	virtual void Pulse();
-	virtual void Draw(BRect updateRect);
+	virtual void AttachedToWindow() override;
+	virtual void Pulse() override;
+	virtual void Draw(BRect updateRect) override;
 
 	float GetCurrentUsage();
 	void SetRefreshInterval(bigtime_t interval);

@@ -17,10 +17,10 @@ class SummaryView;
 class PerformanceView : public BView {
 public:
 						PerformanceView();
-	virtual void		AttachedToWindow();
-	virtual void		Pulse();
-	virtual void		Hide();
-	virtual void		Show();
+	virtual void		AttachedToWindow() override;
+	virtual void		Pulse() override;
+	virtual void		Hide() override;
+	virtual void		Show() override;
 	void				SetRefreshInterval(bigtime_t interval);
 
 	void				SaveState(BMessage& state);

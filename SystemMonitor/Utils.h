@@ -14,8 +14,8 @@ constexpr uint32 MSG_HEADER_CLICKED = 'head';
 class ClickableHeaderView : public BStringView {
 public:
 	ClickableHeaderView(const char* label, float width, int32 mode, BHandler* target);
-	virtual void AttachedToWindow();
-	virtual void MouseDown(BPoint where);
+	virtual void AttachedToWindow() override;
+	virtual void MouseDown(BPoint where) override;
 	void SetWidth(float width);
 
 private:
