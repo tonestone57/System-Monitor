@@ -274,8 +274,8 @@ void NetworkView::UpdateData(BMessage* message)
 					uint64 recvDelta = (currentReceived > rec.bytesReceived) ? currentReceived - rec.bytesReceived : 0;
 
 					// Convert to Bytes/sec for SpeedField
-					sendSpeedBytes = sentDelta * 1000000 / dt;
-					recvSpeedBytes = recvDelta * 1000000 / dt;
+					sendSpeedBytes = static_cast<uint64>(static_cast<double>(sentDelta) * 1000000.0 / dt);
+					recvSpeedBytes = static_cast<uint64>(static_cast<double>(recvDelta) * 1000000.0 / dt);
 
 					if (!info->isLoopback) {
 						totalSentDelta += sentDelta;
