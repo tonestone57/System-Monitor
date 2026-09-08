@@ -200,6 +200,22 @@ void test_get_os_version() {
     assert(!osVersion.IsEmpty());
 }
 
+void test_get_swap_usage() {
+    uint64 used = 0, total = 0;
+    MockSystemInfoResult() = B_ERROR;
+    GetSwapUsage(used, total);
+    assert(used == 0);
+    assert(total == 0);
+
+    MockSystemInfoResult() = B_OK;
+    GetSwapUsage(used, total);
+}
+
+void test_get_cpu_features() {
+    BString features = GetCPUFeatures();
+    assert(!features.IsEmpty());
+}
+
 int main() {
     std::cout << "Testing Utils.cpp..." << std::endl;
 
@@ -284,6 +300,8 @@ int main() {
     test_get_cached_memory_bytes();
     test_get_battery_capacity();
     test_get_os_version();
+    test_get_swap_usage();
+    test_get_cpu_features();
 
     std::cout << "All Utils tests passed!" << std::endl;
     return 0;

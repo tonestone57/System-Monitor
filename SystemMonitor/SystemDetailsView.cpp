@@ -413,7 +413,7 @@ BString SystemDetailsView::_GetRamUsage(system_info* sysInfo)
 
 BString SystemDetailsView::_GetCachedUsage(system_info* sysInfo)
 {
-	uint64 cachedBytes = static_cast<uint64>(sysInfo->cached_pages + sysInfo->block_cache_pages) * B_PAGE_SIZE;
+	uint64 cachedBytes = (static_cast<uint64>(sysInfo->cached_pages) + static_cast<uint64>(sysInfo->block_cache_pages)) * B_PAGE_SIZE;
 	BString cachedStr;
 	::FormatBytes(cachedStr, cachedBytes);
 	BString cachedUsage;

@@ -95,6 +95,17 @@ int main() {
     // Test SetSize idempotent call
     assert(buffer.SetSize(0) == B_OK);
 
+    // Test copy assignment from zero / unallocated buffer
+    CircularBuffer<int> unallocBuffer(0);
+    CircularBuffer<int> copyTarget(10);
+    copyTarget = unallocBuffer;
+    assert(copyTarget.Size() == 0);
+    assert(copyTarget.CountItems() == 0);
+    assert(copyTarget.InitCheck() == B_OK);
+    // Ensure SetSize can re-allocate from this state
+    assert(copyTarget.SetSize(5) == B_OK);
+    assert(copyTarget.Size() == 5);
+
     // Test Zero-sized constructor AddItem
     CircularBuffer<int> zeroBuffer(0);
     assert(zeroBuffer.Size() == 0);
