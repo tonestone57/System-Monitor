@@ -63,6 +63,7 @@ void ClickableHeaderView::AttachedToWindow() {
 }
 
 void ClickableHeaderView::MouseDown(BPoint where) {
+	(void)where;
 	if (Window()) {
 		BMessenger target(fTarget);
 		BMessage msg(MSG_HEADER_CLICKED);

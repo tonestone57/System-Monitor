@@ -213,6 +213,8 @@ void ProcessView::AttachedToWindow()
 void ProcessView::DetachedFromWindow()
 {
 	fTerminated = true;
+	if (fContextMenu)
+		fContextMenu->Close();
 	if (fQuitSem >= 0) {
 		delete_sem(fQuitSem);
 		fQuitSem = -1;
