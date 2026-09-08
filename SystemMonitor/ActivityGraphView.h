@@ -12,10 +12,10 @@ public:
 						ActivityGraphView(const char* name, rgb_color color, color_which systemColor = (color_which)-1);
 	virtual				~ActivityGraphView();
 
-	virtual void		AttachedToWindow();
-	virtual void		MessageReceived(BMessage* message);
-	virtual void		FrameResized(float width, float height);
-	virtual void		Draw(BRect updateRect);
+	virtual void		AttachedToWindow() override;
+	virtual void		MessageReceived(BMessage* message) override;
+	virtual void		FrameResized(float width, float height) override;
+	virtual void		Draw(BRect updateRect) override;
 
 			void		AddValue(bigtime_t time, int64 value);
 			void		SetRefreshInterval(bigtime_t interval);

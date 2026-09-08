@@ -90,13 +90,11 @@ public:
 
 	virtual void DrawItem(BView* owner, BRect itemRect, bool complete = false) {
 		if (!fView) return;
-		if (IsSelected() || complete) {
-			rgb_color color = IsSelected()
-				? ui_color(B_LIST_SELECTED_BACKGROUND_COLOR)
-				: ui_color(B_LIST_BACKGROUND_COLOR);
-			owner->SetHighColor(color);
-			owner->FillRect(itemRect);
-		}
+		rgb_color color = IsSelected()
+			? ui_color(B_LIST_SELECTED_BACKGROUND_COLOR)
+			: ui_color(B_LIST_BACKGROUND_COLOR);
+		owner->SetHighColor(color);
+		owner->FillRect(itemRect);
 
 		rgb_color textColor = IsSelected()
 			? ui_color(B_LIST_SELECTED_ITEM_TEXT_COLOR)

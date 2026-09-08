@@ -52,11 +52,11 @@ public:
 	NetworkView();
 	virtual ~NetworkView();
 
-	virtual void AttachedToWindow();
-	virtual void DetachedFromWindow();
-	virtual void MessageReceived(BMessage* message);
-	virtual void Hide();
-	virtual void Show();
+	virtual void AttachedToWindow() override;
+	virtual void DetachedFromWindow() override;
+	virtual void MessageReceived(BMessage* message) override;
+	virtual void Hide() override;
+	virtual void Show() override;
 
 	float GetUploadSpeed();
 	float GetDownloadSpeed();

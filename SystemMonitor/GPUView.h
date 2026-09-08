@@ -10,8 +10,8 @@ public:
 	GPUView();
 	virtual ~GPUView();
 
-	virtual void AttachedToWindow();
-	virtual void Pulse();
+	virtual void AttachedToWindow() override;
+	virtual void Pulse() override;
 
 	void SetRefreshInterval(bigtime_t interval);
 

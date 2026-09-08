@@ -45,12 +45,12 @@ public:
 	DiskView();
 	virtual ~DiskView();
 
-	virtual void AttachedToWindow();
-	virtual void DetachedFromWindow();
-	virtual void MessageReceived(BMessage* message);
-	virtual void Draw(BRect updateRect);
-	virtual void Hide();
-	virtual void Show();
+	virtual void AttachedToWindow() override;
+	virtual void DetachedFromWindow() override;
+	virtual void MessageReceived(BMessage* message) override;
+	virtual void Draw(BRect updateRect) override;
+	virtual void Hide() override;
+	virtual void Show() override;
 
 	void SetRefreshInterval(bigtime_t interval);
 	void SetPerformanceViewVisible(bool visible) { fPerformanceViewVisible = visible; }
