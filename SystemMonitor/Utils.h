@@ -28,6 +28,7 @@ void FormatBytes(BString& out, double bytes, int precision = 2);
 uint64 BytesToMiB(uint64 bytes);
 void UpdateHeaderWidths(const std::vector<ClickableHeaderView*>& headers, std::initializer_list<float> widths);
 void GetMemoryUsage(uint64& used, uint64& total, uint64& physical);
+// Queries system swap usage in bytes (used and total pages * B_PAGE_SIZE)
 void GetSwapUsage(uint64& used, uint64& total);
 uint64 GetCachedMemoryBytes(const system_info& sysInfo);
 BString FormatHertz(uint64 hertz);
