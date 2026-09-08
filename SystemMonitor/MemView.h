@@ -31,6 +31,8 @@ private:
 	BStringView* fFreeMemValue;
 	BStringView* fCachedMemLabel;
 	BStringView* fCachedMemValue;
+	BStringView* fSwapMemLabel;
+	BStringView* fSwapMemValue;
 
 	ActivityGraphView* fCacheGraphView;
 

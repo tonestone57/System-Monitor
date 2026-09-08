@@ -34,6 +34,7 @@ private:
 	BStringView* fSpeedValue;
 	BStringView* fProcessesValue;
 	BStringView* fThreadsValue;
+	BStringView* fCoresValue;
 	BStringView* fUptimeValue;
 
 	std::vector<bigtime_t> fPreviousActiveTime;

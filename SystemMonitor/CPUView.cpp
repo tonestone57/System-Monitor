@@ -21,6 +21,7 @@ CPUView::CPUView()
 	  fSpeedValue(NULL),
 	  fProcessesValue(NULL),
 	  fThreadsValue(NULL),
+	  fCoresValue(NULL),
 	  fUptimeValue(NULL),
 	  fCpuCount(0),
 	  fPreviousTimeSnapshot(0),
@@ -122,7 +123,15 @@ void CPUView::CreateLayout()
 	fThreadsValue->SetFont(&bigFont);
 	infoGrid->AddView(fThreadsValue, 1, 3);
 
+	infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Cores")), 0, 4);
 	infoGrid->AddView(new BStringView(NULL, B_TRANSLATE("Up time")), 1, 4);
+
+	fCoresValue = new BStringView("cores", "0");
+	fCoresValue->SetFont(&bigFont);
+	BString coresStr;
+	coresStr.SetToFormat("%" B_PRIu32, fCpuCount);
+	fCoresValue->SetText(coresStr.String());
+	infoGrid->AddView(fCoresValue, 0, 5);
 
 	fUptimeValue = new BStringView("uptime", "0:00:00:00");
 	fUptimeValue->SetFont(&bigFont);

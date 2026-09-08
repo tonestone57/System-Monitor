@@ -104,11 +104,23 @@ NetworkView::NetworkView()
 	fDownloadGraph = new ActivityGraphView("download_graph", {0, 0, 0, 0}, B_MENU_SELECTION_BACKGROUND_COLOR);
 	fUploadGraph = new ActivityGraphView("upload_graph", {0, 0, 0, 0}, B_FAILURE_COLOR);
 
+	BBox* downloadBox = new BBox("DownloadBox");
+	downloadBox->SetLabel(B_TRANSLATE("Download Speed (RX)"));
+	BLayoutBuilder::Group<>(downloadBox, B_VERTICAL, 0)
+		.SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING + 10, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
+		.Add(fDownloadGraph);
+
+	BBox* uploadBox = new BBox("UploadBox");
+	uploadBox->SetLabel(B_TRANSLATE("Upload Speed (TX)"));
+	BLayoutBuilder::Group<>(uploadBox, B_VERTICAL, 0)
+		.SetInsets(B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING + 10, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
+		.Add(fUploadGraph);
+
 	BLayoutBuilder::Group<>(this, B_VERTICAL, B_USE_DEFAULT_SPACING)
 		.SetInsets(B_USE_DEFAULT_SPACING)
 		.Add(netBox)
-		.Add(fDownloadGraph)
-		.Add(fUploadGraph)
+		.Add(downloadBox)
+		.Add(uploadBox)
 	.End();
 }
 

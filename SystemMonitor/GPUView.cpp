@@ -142,7 +142,13 @@ void GPUView::UpdateData()
 		if (fCachedWidth != mode.virtual_width || fCachedHeight != mode.virtual_height) {
 			fCachedWidth = mode.virtual_width;
 			fCachedHeight = mode.virtual_height;
-			fCachedResolution.SetToFormat("%" B_PRId32 "x%" B_PRId32, fCachedWidth, fCachedHeight);
+			float refresh = 60.0f;
+			if (mode.timing.pixel_clock > 0 && mode.timing.h_total > 0 && mode.timing.v_total > 0) {
+				refresh = static_cast<double>(mode.timing.pixel_clock) * 1000.0
+					/ (static_cast<double>(mode.timing.h_total) * mode.timing.v_total);
+			}
+			fCachedResolution.SetToFormat("%" B_PRId32 "x%" B_PRId32 " @ %d Hz",
+				fCachedWidth, fCachedHeight, static_cast<int>(refresh + 0.5f));
 			fResolutionValue->SetText(fCachedResolution.String());
 		}
 	} else {
