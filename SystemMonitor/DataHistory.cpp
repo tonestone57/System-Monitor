@@ -27,7 +27,10 @@ DataHistory::~DataHistory()
 void
 DataHistory::AddValue(bigtime_t time, int64 value)
 {
-	bool full = fBuffer.Size() > 0 && static_cast<size_t>(fBuffer.CountItems()) == fBuffer.Size();
+	if (fBuffer.Size() == 0)
+		return;
+
+	bool full = static_cast<size_t>(fBuffer.CountItems()) == fBuffer.Size();
 	uint64 oldestSeq = 0;
 	if (full) {
 		data_item* oldest = fBuffer.ItemAt(0);

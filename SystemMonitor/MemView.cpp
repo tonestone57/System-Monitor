@@ -116,7 +116,7 @@ void MemView::UpdateData()
 
 	system_info sysInfo;
 	if (totalBytes > 0 && get_system_info(&sysInfo) == B_OK) {
-		uint64 freeBytes = totalBytes - usedBytes;
+		uint64 freeBytes = (totalBytes >= usedBytes) ? totalBytes - usedBytes : 0;
 
 		uint64 cachedBytes = GetCachedMemoryBytes(sysInfo);
 

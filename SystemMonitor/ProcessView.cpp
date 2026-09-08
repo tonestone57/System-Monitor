@@ -738,7 +738,7 @@ int32 ProcessView::UpdateThread(void* data)
 	procList.reserve(128);
 
 	long bufSize = sysconf(_SC_GETPW_R_SIZE_MAX);
-	if (bufSize == -1) bufSize = 16384;
+	if (bufSize <= 0) bufSize = 16384;
 	std::vector<char> pwdBuffer(bufSize);
 
 	const int32 coreCount = GetCoreCount();
