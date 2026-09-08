@@ -101,8 +101,10 @@ public:
 			}
 
 			if (fNetInfoText) {
-				BString txStr = FormatSpeed(static_cast<uint64>(fStats->uploadSpeed), 1000000);
-				BString rxStr = FormatSpeed(static_cast<uint64>(fStats->downloadSpeed), 1000000);
+				uint64 uploadBytes = fStats->uploadSpeed > 0.0f ? static_cast<uint64>(fStats->uploadSpeed) : 0;
+				uint64 downloadBytes = fStats->downloadSpeed > 0.0f ? static_cast<uint64>(fStats->downloadSpeed) : 0;
+				BString txStr = FormatSpeed(uploadBytes, 1000000);
+				BString rxStr = FormatSpeed(downloadBytes, 1000000);
 				BString netStr;
 				netStr.SetToFormat(B_TRANSLATE("S: %s R: %s"), txStr.String(), rxStr.String());
 				fNetInfoText->SetText(netStr.String());

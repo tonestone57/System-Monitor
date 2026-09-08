@@ -363,7 +363,10 @@ BString SystemDetailsView::_GetCPUCount(system_info* sysInfo)
 BString SystemDetailsView::_GetCPUInfo()
 {
 	BString cpuType = GetCPUBrandString();
-	cpuType << " @ " << _GetCPUFrequency();
+	uint64 freq = GetCpuFrequency();
+	if (freq > 0) {
+		cpuType << " @ " << ::FormatHertz(freq);
+	}
 	return cpuType;
 }
 
