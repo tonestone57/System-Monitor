@@ -52,6 +52,11 @@ int main() {
     test_format(1024LL * 1024 * 1024, 2, "1.00 GiB");
     test_format(1024LL * 1024 * 1024 * 10, 2, "10.00 GiB");
 
+    // TiB range
+    test_format(1024ULL * 1024 * 1024 * 1024, 2, "1.00 TiB");
+    test_format(1024ULL * 1024 * 1024 * 1024 * 2, 2, "2.00 TiB");
+    test_format_double(1024.0 * 1024.0 * 1024.0 * 1024.0 * 1.5, 2, "1.50 TiB");
+
     // Boundary checks
     test_format(1024 - 1, 2, "1023 B");
     test_format(1024, 2, "1.00 KiB");

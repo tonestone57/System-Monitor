@@ -105,6 +105,10 @@ public:
 			x += width;
 		};
 
+		if (fIcon == NULL) {
+			_UpdateIcon();
+		}
+
 		// Draw volume icon or placeholder
 		BRect iconRect(x, itemRect.top + (itemRect.Height() - 16) / 2, x + 15, itemRect.top + (itemRect.Height() - 16) / 2 + 15);
 		if (fIcon != NULL) {

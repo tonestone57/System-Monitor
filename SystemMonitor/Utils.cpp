@@ -116,7 +116,13 @@ void FormatBytes(BString& str, double bytes, int precision) {
 	}
 
 	double gb = mb / 1024.0;
-	str.SetToFormat(B_TRANSLATE("%.*f GiB"), precision, gb);
+	if (gb < 1024.0) {
+		str.SetToFormat(B_TRANSLATE("%.*f GiB"), precision, gb);
+		return;
+	}
+
+	double tb = gb / 1024.0;
+	str.SetToFormat(B_TRANSLATE("%.*f TiB"), precision, tb);
 }
 
 uint64 BytesToMiB(uint64 bytes) {

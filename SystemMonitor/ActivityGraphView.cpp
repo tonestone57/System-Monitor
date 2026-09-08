@@ -250,6 +250,12 @@ ActivityGraphView::_DrawHistory()
 			}
 
 			rgb_color bg = ViewColor();
+			if (bg == B_TRANSPARENT_COLOR) {
+				if (Parent() != NULL && Parent()->ViewColor() != B_TRANSPARENT_COLOR)
+					bg = Parent()->ViewColor();
+				else
+					bg = ui_color(B_DOCUMENT_BACKGROUND_COLOR);
+			}
 			rgb_color gridColor = tint_color(bg, B_DARKEN_1_TINT);
 
 			int64 min, max;
@@ -502,11 +508,8 @@ ActivityGraphView::_DrawHistory()
 			}
 		}
 		view->Sync();
-		fOffscreen->Unlock();
-	}
-
-	if (locked && view != NULL) {
 		DrawBitmap(fOffscreen, viewBounds, Bounds());
+		fOffscreen->Unlock();
 	}
 }
 

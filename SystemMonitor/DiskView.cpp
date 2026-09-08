@@ -173,6 +173,8 @@ void DiskView::MessageReceived(BMessage* message)
 								fVolumeCache[info.deviceID] = info;
 								fLocker.Unlock();
 							}
+							if (fScanSem >= 0)
+								release_sem(fScanSem);
 						}
 					}
 				}
@@ -183,6 +185,8 @@ void DiskView::MessageReceived(BMessage* message)
 						fVolumeCache.erase(device);
 						fLocker.Unlock();
 					}
+					if (fScanSem >= 0)
+						release_sem(fScanSem);
 				}
 			}
 		}
