@@ -16,6 +16,7 @@
 class BBox;
 class BListView;
 class BListItem;
+class BStringView;
 class ClickableHeaderView;
 class DiskListItem; // Forward declaration
 
@@ -90,6 +91,11 @@ private:
 	float fUsedWidth;
 	float fFreeWidth;
 	float fPercentWidth;
+
+	BStringView* fTotalCapValue;
+	BStringView* fTotalUsedValue;
+	BStringView* fTotalFreeValue;
+	BStringView* fRootVolValue;
 
 	DiskSortMode fSortMode;
 	bool fSortAscending;
