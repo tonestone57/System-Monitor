@@ -97,6 +97,10 @@ private:
 	BStringView* fTotalFreeValue;
 	BStringView* fRootVolValue;
 
+	uint64 fLastSumTotal;
+	uint64 fLastSumUsed;
+	uint64 fLastSumFree;
+
 	DiskSortMode fSortMode;
 	bool fSortAscending;
 

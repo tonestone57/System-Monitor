@@ -283,6 +283,15 @@ ActivityGraphView::_DrawHistory()
 				view->SetLowColor(bg);
 				view->FillRect(frame, B_SOLID_LOW);
 
+				// Calculate grid spacing once for grid drawing and scrolling
+				float gridSpacing = 60.0f;
+				if (fDrawGrid || !fullRedraw) {
+					BFont viewFont;
+					view->GetFont(&viewFont);
+					gridSpacing = 60.0f * GetScaleFactor(&viewFont);
+					if (gridSpacing <= 0.0f) gridSpacing = 60.0f;
+				}
+
 				// Draw Grid
 				if (fDrawGrid) {
 					view->SetDrawingMode(B_OP_COPY);
@@ -295,10 +304,6 @@ ActivityGraphView::_DrawHistory()
 						view->StrokeLine(BPoint(frame.left, y), BPoint(frame.right, y));
 					}
 					// Vertical lines
-					BFont viewFont;
-					view->GetFont(&viewFont);
-					float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
-					if (gridSpacing <= 0.0f) gridSpacing = 60.0f;
 					for (float x = 0; x < frame.Width(); x += gridSpacing) {
 						 view->StrokeLine(BPoint(frame.left + x, frame.top), BPoint(frame.left + x, frame.bottom));
 					}
@@ -374,16 +379,20 @@ ActivityGraphView::_DrawHistory()
 				// Partial or sub-pixel Update
 				int32 redrawWidth = std::max((int32)1, pixelsToScroll);
 
+				float gridSpacing = 60.0f;
+				if (fDrawGrid || pixelsToScroll > 0) {
+					BFont viewFont;
+					view->GetFont(&viewFont);
+					gridSpacing = 60.0f * GetScaleFactor(&viewFont);
+					if (gridSpacing <= 0.0f) gridSpacing = 60.0f;
+				}
+
 				if (pixelsToScroll > 0) {
 					// Scroll
 					BRect src(pixelsToScroll, 0, frame.right, frame.bottom);
 					BRect dst(0, 0, frame.right - pixelsToScroll, frame.bottom);
 					view->CopyBits(src, dst);
 
-					BFont viewFont;
-					view->GetFont(&viewFont);
-					float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
-					if (gridSpacing <= 0.0f) gridSpacing = 60.0f;
 					fScrollOffset += static_cast<float>(pixelsToScroll);
 					while (fScrollOffset >= gridSpacing)
 						fScrollOffset -= gridSpacing;
@@ -409,10 +418,6 @@ ActivityGraphView::_DrawHistory()
 					}
 
 					// Vertical lines
-					BFont viewFont;
-					view->GetFont(&viewFont);
-					float gridSpacing = 60.0f * GetScaleFactor(&viewFont);
-					if (gridSpacing <= 0.0f) gridSpacing = 60.0f;
 					int64 startK = (int64)ceilf((newArea.left - (frame.right - fScrollOffset)) / gridSpacing);
 					for (int64 k = startK; ; k++) {
 						float x = frame.right - fScrollOffset + k * gridSpacing;

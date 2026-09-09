@@ -42,6 +42,8 @@ private:
 	uint64 fLastUsedBytes;
 	uint64 fLastFreeBytes;
 	uint64 fLastCachedBytes;
+	uint64 fLastSwapUsed;
+	uint64 fLastSwapTotal;
 
 	BString fCachedUsedStr;
 	BString fCachedFreeStr;

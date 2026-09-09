@@ -24,7 +24,9 @@ MemView::MemView()
 	  fCurrentUsage(0.0f),
 	  fLastUsedBytes(UINT64_MAX),
 	  fLastFreeBytes(UINT64_MAX),
-	  fLastCachedBytes(UINT64_MAX)
+	  fLastCachedBytes(UINT64_MAX),
+	  fLastSwapUsed(UINT64_MAX),
+	  fLastSwapTotal(UINT64_MAX)
 {
 	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 
@@ -151,17 +153,21 @@ void MemView::UpdateData()
 
 		uint64 swapUsed = 0, swapTotal = 0;
 		GetSwapUsage(swapUsed, swapTotal);
-		if (swapTotal > 0) {
-			BString swapUsedStr, swapTotalStr, swapStr;
-			FormatBytes(swapUsedStr, swapUsed);
-			FormatBytes(swapTotalStr, swapTotal);
-			double swapPercent = static_cast<double>(swapUsed) / swapTotal * 100.0;
-			BString percentStr;
-			fNumberFormat.FormatPercent(percentStr, swapPercent / 100.0);
-			swapStr.SetToFormat("%s / %s (%s)", swapUsedStr.String(), swapTotalStr.String(), percentStr.String());
-			fSwapMemValue->SetText(swapStr.String());
-		} else {
-			fSwapMemValue->SetText(B_TRANSLATE("Disabled / None"));
+		if (swapUsed != fLastSwapUsed || swapTotal != fLastSwapTotal) {
+			fLastSwapUsed = swapUsed;
+			fLastSwapTotal = swapTotal;
+			if (swapTotal > 0) {
+				BString swapUsedStr, swapTotalStr, swapStr;
+				FormatBytes(swapUsedStr, swapUsed);
+				FormatBytes(swapTotalStr, swapTotal);
+				double swapPercent = static_cast<double>(swapUsed) / swapTotal * 100.0;
+				BString percentStr;
+				fNumberFormat.FormatPercent(percentStr, swapPercent / 100.0);
+				swapStr.SetToFormat("%s / %s (%s)", swapUsedStr.String(), swapTotalStr.String(), percentStr.String());
+				fSwapMemValue->SetText(swapStr.String());
+			} else {
+				fSwapMemValue->SetText(B_TRANSLATE("Disabled / None"));
+			}
 		}
 
 		if (totalBytes > 0) {
