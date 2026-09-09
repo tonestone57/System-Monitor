@@ -46,6 +46,9 @@ DiskView::DiskView()
 	  fTotalUsedValue(NULL),
 	  fTotalFreeValue(NULL),
 	  fRootVolValue(NULL),
+	  fLastSumTotal(UINT64_MAX),
+	  fLastSumUsed(UINT64_MAX),
+	  fLastSumFree(UINT64_MAX),
 	  fSortMode(SORT_DISK_BY_DEVICE),
 	  fSortAscending(true)
 {
@@ -452,7 +455,10 @@ void DiskView::UpdateData(BMessage* message)
 		if (pair.second.totalSize >= pair.second.freeSize)
 			sumUsed += (pair.second.totalSize - pair.second.freeSize);
 	}
-	if (fTotalCapValue) {
+	if (fTotalCapValue && (sumTotal != fLastSumTotal || sumUsed != fLastSumUsed || sumFree != fLastSumFree)) {
+		fLastSumTotal = sumTotal;
+		fLastSumUsed = sumUsed;
+		fLastSumFree = sumFree;
 		BString capStr, usedStr, freeStr;
 		FormatBytes(capStr, sumTotal);
 		FormatBytes(usedStr, sumUsed);

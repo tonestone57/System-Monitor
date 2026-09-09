@@ -576,7 +576,10 @@ void ProcessView::FilterRows()
 
 	BRect bounds = fProcessListView->Bounds();
 	std::unordered_set<team_id> newVisibleTeams;
-	for (int32 i = 0; i < fProcessListView->CountItems(); i++) {
+	int32 countItems = fProcessListView->CountItems();
+	if (countItems > 0)
+		newVisibleTeams.reserve(static_cast<size_t>(countItems));
+	for (int32 i = 0; i < countItems; i++) {
 		BRect frame = fProcessListView->ItemFrame(i);
 		if (frame.Intersects(bounds)) {
 			ProcessListItem* item = static_cast<ProcessListItem*>(fProcessListView->ItemAt(i));
